@@ -9,8 +9,8 @@ module spi (
 	// Interrupt
 	output logic interrupt,
 	// IO ports
-	input logic miso,
-	output logic cs, mosi, sck
+	input logic cs, miso,
+	output logic mosi, sck
 );
 
 /*** Internal registers ***/
@@ -104,7 +104,8 @@ pulse sh_done_pulse (.clk(clk), .n_reset(n_sh_reset), .d(sh_done), .q(sh_done_s)
 // Bit capture
 
 logic cap_din;
-dff cap_dff (.clk(spiclk), .n_reset(sh_loaded), .d(cap_din), .q(sh_din));
+assign sh_din = cap_din;
+//dff cap_dff (.clk(spiclk), .n_reset(sh_loaded), .d(cap_din), .q(sh_din));
 
 /*** Control logic ***/
 
@@ -140,10 +141,14 @@ always_ff @(posedge clk, negedge n_reset, negedge enabled)
 
 /*** IO logic ***/
 
-assign cs = enabled;
-assign sck = enabled & ((sh_loaded & sclk) ^ cpol);
-assign mosi = sh_dout;
 assign cap_din = miso;
+
+logic io_sck, io_mosi;
+assign sck = enabled & (io_sck ^ cpol);
+assign io_mosi = sh_dout;
+
+dff io_sck_dff (.d((sh_loaded & sclk)), .q(io_sck), .*);
+dff io_mosi_dff (.d(io_mosi), .q(mosi), .*);
 
 assign interrupt = 1'b0;
 

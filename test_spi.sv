@@ -27,6 +27,7 @@ begin
 	periph_addr = `SPI_CTRL;
 	test_data = `SPI_CTRL_CPOL | `SPI_CTRL_CPHA | 0;
 	test_data = 0;
+	cs = 1'b1;
 	#1us n_reset = 1'b0;
 	#1us n_reset = 1'b1;
 	#1us periph_sel = 'b1;
@@ -34,6 +35,8 @@ begin
 	
 	#2us periph_addr = `SPI_CTRL;
 	test_data = test_data | `SPI_CTRL_EN;
+	
+	#1us cs = 1'b0;
 	
 	#1us periph_addr = `SPI_DATA;
 	test_data = 'b10101100;

@@ -77,8 +77,8 @@ logic [`DATA_N - 1 : 0] sh_data;
 assign sh_dout = sh_data[`DATA_N - 1];
 assign sh_done = sh_cnt == `DATA_N + 1;
 
-always_ff @(negedge spiclk, negedge n_reset, negedge n_sh_reset)
-	if (~n_reset || ~n_sh_reset) begin
+always_ff @(negedge spiclk, negedge n_reset, negedge n_sh_reset, negedge enabled)
+	if (~n_reset || ~n_sh_reset || ~enabled) begin
 		sh_data <= 'b0;
 		sh_cnt <= 0;
 	end else begin
@@ -95,29 +95,42 @@ always_ff @(negedge spiclk, negedge n_reset, negedge n_sh_reset)
 
 logic cap_din;
 
-always_ff @(posedge spiclk, negedge n_reset)
-	if (~n_reset)
+always_ff @(posedge spiclk, negedge n_reset, negedge enabled)
+	if (~n_reset || ~enabled)
 		sh_din <= 'b0;
 	else
 		sh_din <= cap_din;
 
-/*** Control logic and status report ***/
+/*** Control logic ***/
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
+always_ff @(posedge clk, negedge n_reset, negedge enabled)
+	if (~n_reset || ~enabled) begin
 		n_sh_reset <= 'b0;
 		reg_data[`RX] <= `DATA_N'b0;
-		reg_stat <= `DATA_N'b0;
-	end else if (enabled) begin
+	end else begin
 		if (we && periph_addr == `SPI_DATA) begin
 			n_sh_reset <= 'b1;
 		end else if (n_sh_reset && sh_done) begin
 			n_sh_reset <= 'b0;
 			reg_data[`RX] <= sh_data;
-			reg_stat <= reg_stat | `SPI_STAT_FLAG;
 		end
-	end else
-		n_sh_reset <= 'b0;
+	end
+
+/*** Status report ***/
+
+always_ff @(posedge clk, negedge n_reset, negedge enabled)
+	if (~n_reset || ~enabled) begin
+		reg_stat <= `DATA_N'b0 | `SPI_STAT_TXE;
+	end else begin
+		if (oe && periph_addr == `SPI_DATA)
+			reg_stat[`SPI_STAT_RXNE_] <= 1'b0;
+		else if (n_sh_reset && sh_done)
+			reg_stat[`SPI_STAT_RXNE_] <= 1'b1;
+		if (we && periph_addr == `SPI_DATA)
+			reg_stat[`SPI_STAT_TXE_] <= 1'b0;
+		else if (sh_done)
+			reg_stat[`SPI_STAT_TXE_] <= 1'b1;
+	end
 
 /*** IO logic ***/
 

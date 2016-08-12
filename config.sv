@@ -8,7 +8,7 @@
 /*** Architecture configuration ***/
 `define ADDR_N			16
 `define PERIPHBUS_N	8
-`define PERIPH_N		3
+`define PERIPH_N		2
 `define DATA_N			8
 
 /*** SPI peripheral registers ***/
@@ -19,6 +19,9 @@
 `define SPI_CTRL_PR		8'b00000111
 `define SPI_CTRL_MASK	(`SPI_CTRL_EN | `SPI_CTRL_CPOL | `SPI_CTRL_CPHA | `SPI_CTRL_PR)
 `define SPI_STAT			1
-`define SPI_STAT_FLAG	8'b10000000
-`define SPI_STAT_MASK	(`SPI_STAT_FLAG)
+`define SPI_STAT_RXNE_	7
+`define SPI_STAT_RXNE	(8'b1 << `SPI_STAT_RXNE_)
+`define SPI_STAT_TXE_	6
+`define SPI_STAT_TXE		(8'b1 << `SPI_STAT_TXE_)
+`define SPI_STAT_MASK	(`SPI_STAT_RXNE | `SPI_STAT_TXE)
 `define SPI_DATA			2

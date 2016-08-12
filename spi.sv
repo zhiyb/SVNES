@@ -109,8 +109,8 @@ assign sh_din = cap_din;
 
 /*** Control logic ***/
 
-always_ff @(posedge clk, negedge n_reset, negedge enabled)
-	if (~n_reset || ~enabled) begin
+always_ff @(posedge clk, negedge enabled)
+	if (~enabled) begin
 		n_sh_reset <= 'b0;
 		reg_data[`RX] <= `DATA_N'b0;
 	end else begin
@@ -125,8 +125,8 @@ always_ff @(posedge clk, negedge n_reset, negedge enabled)
 
 /*** Status report ***/
 
-always_ff @(posedge clk, negedge n_reset, negedge enabled)
-	if (~n_reset || ~enabled) begin
+always_ff @(posedge clk, negedge enabled)
+	if (~enabled) begin
 		reg_stat <= `DATA_N'b0 | `SPI_STAT_TXE;
 	end else begin
 		if (n_sh_reset && sh_done_s)

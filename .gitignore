@@ -1,0 +1,12 @@
+*.bak
+work
+db
+*_db
+*_temp
+*_tmp
+simulation
+output_files
+*.cr.mti
+.*.swp
+*.wlf
+*.rpt

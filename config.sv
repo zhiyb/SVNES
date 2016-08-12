@@ -2,6 +2,9 @@
 `define WRITE	0
 `define READ	1
 
+`define TX	0
+`define RX	1
+
 /*** Architecture configuration ***/
 `define ADDR_N			16
 `define PERIPHBUS_N	8

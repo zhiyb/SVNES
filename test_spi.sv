@@ -22,24 +22,41 @@ begin
 	n_reset = 1'b1;
 	bus_we = 1'b0;
 	bus_oe = 1'b0;
+	assign test_oe = bus_we;
 	periph_sel = 'b0;
 	periph_addr = `SPI_CTRL;
-	test_data = 1;
+	test_data = `SPI_CTRL_CPOL | `SPI_CTRL_CPHA | 0;
+	test_data = 0;
 	#1us n_reset = 1'b0;
 	#1us n_reset = 1'b1;
 	#1us periph_sel = 'b1;
-	#1us test_oe = 1'b1;
-	bus_we = 1'b1;
+	#1us bus_we = 1'b1;
+	
 	#2us periph_addr = `SPI_CTRL;
-	test_data = `SPI_CTRL_EN | 1;
+	test_data = test_data | `SPI_CTRL_EN;
+	
 	#1us periph_addr = `SPI_DATA;
 	test_data = 'b10101100;
-	#1us test_oe = 1'b0;
-	bus_we = 1'b0;
+	
+	#1us bus_we = 1'b0;
+	
 	#1us bus_oe = 1'b1;
+	periph_addr = `SPI_STAT;
+	
+	for (;;)
+		#1us if ((bus_data & `SPI_STAT_TXE) != 'b0)
+			break;
+	
+	#1us periph_addr = `SPI_DATA;
+	test_data = ~test_data;
+	bus_oe = 1'b0;
+	bus_we = 1'b1;
+	
+	#1us bus_oe = 1'b1;
+	bus_we = 1'b0;
 	periph_addr = 'b0;
 	forever begin
-		#1us periph_addr++;
+		#2us periph_addr++;
 	end
 	#1us bus_oe = 1'b0;
 end

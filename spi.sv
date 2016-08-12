@@ -13,17 +13,39 @@ module spi (
 	output logic cs, mosi, sck
 );
 
-/*** Bus and peripheral arbiter ***/
+/*** Internal registers ***/
+
+logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
+
+/*** Register read & write ***/
 
 logic we, oe;
-assign we = periph_sel & bus_we, oe = periph_sel & bus_oe;
+assign we = periph_sel & bus_we;
+assign oe = periph_sel & bus_oe;
 
 logic [`DATA_N - 1 : 0] periph_data;
 assign bus_data = oe ? periph_data : {`DATA_N{1'bz}};
 
-/*** Internal registers ***/
+always_comb
+begin
+	case (periph_addr)
+	`SPI_CTRL:	periph_data = reg_ctrl & `SPI_CTRL_MASK;
+	`SPI_STAT:	periph_data = reg_stat & `SPI_STAT_MASK;
+	`SPI_DATA:	periph_data = reg_data[`RX];
+	default:		periph_data = {`DATA_N{1'b0}};
+	endcase
+end
 
-logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset) begin
+		reg_ctrl <= `DATA_N'b0;
+		reg_data[`TX] <= `DATA_N'b0;
+	end else if (we) begin
+		case (periph_addr)
+		`SPI_CTRL:	reg_ctrl <= bus_data;
+		`SPI_DATA:	reg_data[`TX] <= bus_data;
+		endcase
+	end
 
 /*** Control signals ***/
 
@@ -49,13 +71,13 @@ assign spiclk = sclk ^ cpha;
 /*** Shift register ***/
 
 logic n_sh_reset, sh_done, sh_din, sh_dout;
-logic [$clog2(`DATA_N) - 1 : 0] sh_cnt;
+logic [$clog2(`DATA_N + 2) - 1 : 0] sh_cnt;
 logic [`DATA_N - 1 : 0] sh_data;
 
 assign sh_dout = sh_data[`DATA_N - 1];
-assign sh_done = sh_cnt == `DATA_N;
+assign sh_done = sh_cnt == `DATA_N + 1;
 
-always_ff @(posedge spiclk, negedge n_reset, negedge n_sh_reset)
+always_ff @(negedge spiclk, negedge n_reset, negedge n_sh_reset)
 	if (~n_reset || ~n_sh_reset) begin
 		sh_data <= 'b0;
 		sh_cnt <= 0;
@@ -63,50 +85,47 @@ always_ff @(posedge spiclk, negedge n_reset, negedge n_sh_reset)
 		if (sh_cnt == 0) begin
 			sh_data <= reg_data[`TX];
 			sh_cnt <= sh_cnt + 1;
-		end else begin
+		end else if (~sh_done) begin
 			sh_data <= {sh_data[`DATA_N - 2 : 0], sh_din};
-			if (~sh_done)
-				sh_cnt <= sh_cnt + 1;
+			sh_cnt <= sh_cnt + 1;
 		end
 	end
+
+/*** Bit capture ***/
+
+logic cap_din;
+
+always_ff @(posedge spiclk, negedge n_reset)
+	if (~n_reset)
+		sh_din <= 'b0;
+	else
+		sh_din <= cap_din;
+
+/*** Control logic and status report ***/
+
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset) begin
+		n_sh_reset <= 'b0;
+		reg_data[`RX] <= `DATA_N'b0;
+		reg_stat <= `DATA_N'b0;
+	end else if (enabled) begin
+		if (we && periph_addr == `SPI_DATA) begin
+			n_sh_reset <= 'b1;
+		end else if (n_sh_reset && sh_done) begin
+			n_sh_reset <= 'b0;
+			reg_data[`RX] <= sh_data;
+			reg_stat <= reg_stat | `SPI_STAT_FLAG;
+		end
+	end else
+		n_sh_reset <= 'b0;
 
 /*** IO logic ***/
 
 assign cs = enabled;
 assign sck = enabled & ((n_sh_reset & sclk) ^ cpol);
 assign mosi = sh_dout;
-assign sh_din = miso;
+assign cap_din = miso;
 
 assign interrupt = 1'b0;
-
-/*** Register RW operation ***/
-
-always_comb
-begin
-	periph_data = `DATA_N'b0;
-	case (periph_addr)
-	`SPI_CTRL:	periph_data = reg_ctrl & `SPI_CTRL_MASK;
-	`SPI_STAT:	periph_data = reg_stat & `SPI_STAT_MASK;
-	`SPI_DATA:	periph_data = reg_data[`RX];
-	endcase
-end
-
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
-		reg_ctrl <= `DATA_N'b0;
-		reg_stat <= `DATA_N'b0;
-		reg_data[`TX] <= `DATA_N'b0;
-		reg_data[`RX] <= `DATA_N'b0;
-	end else begin
-		if (we) begin
-			case (periph_addr)
-			`SPI_CTRL:	reg_ctrl <= bus_data;
-			`SPI_DATA:
-				if (enabled) begin
-					reg_data[`TX] <= bus_data;
-				end
-			endcase
-		end
-	end
 
 endmodule

@@ -24,13 +24,14 @@ begin
 	bus_oe = 1'b0;
 	periph_sel = 'b0;
 	periph_addr = `SPI_CTRL;
-	test_data = `SPI_CTRL_EN | 1;
-	miso = 1'b1;
+	test_data = 1;
 	#1us n_reset = 1'b0;
 	#1us n_reset = 1'b1;
 	#1us periph_sel = 'b1;
 	#1us test_oe = 1'b1;
 	bus_we = 1'b1;
+	#2us periph_addr = `SPI_CTRL;
+	test_data = `SPI_CTRL_EN | 1;
 	#1us periph_addr = `SPI_DATA;
 	test_data = 'b10101100;
 	#1us test_oe = 1'b0;
@@ -41,6 +42,12 @@ begin
 		#1us periph_addr++;
 	end
 	#1us bus_oe = 1'b0;
+end
+
+initial
+begin
+	miso = 1'b0;
+	forever #2us miso = ~miso;
 end
 
 initial

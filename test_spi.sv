@@ -1,4 +1,4 @@
-`include "config.h"
+`include "config.sv"
 
 module test_spi;
 

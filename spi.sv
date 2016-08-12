@@ -1,4 +1,4 @@
-`include "config.h"
+`include "config.sv"
 
 module spi (
 	// Peripheral clock, reset and buses

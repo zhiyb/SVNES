@@ -19,13 +19,13 @@
 #
 # Quartus Prime
 # Version 16.0.2 Build 222 07/20/2016 SJ Lite Edition
-# Date created = 01:09:40  August 10, 2016
+# Date created = 17:30:46  August 13, 2016
 #
 # -------------------------------------------------------------------------- #
 
 QUARTUS_VERSION = "16.0"
-DATE = "01:09:40  August 10, 2016"
+DATE = "17:30:46  August 13, 2016"
 
 # Revisions
 
-PROJECT_REVISION = "wrapper"
+PROJECT_REVISION = "SVCPU"

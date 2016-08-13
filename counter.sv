@@ -1,7 +1,7 @@
-module counter #(parameter bits = 3) (
+module counter #(parameter n = 3) (
 	input logic n_reset, clk, in, output logic out,
-	input logic [bits - 1:0] top,
-	output logic [bits - 1:0] counter
+	input logic [n - 1:0] top,
+	output logic [n - 1:0] counter
 );
 
 always_ff @(posedge in, negedge n_reset)

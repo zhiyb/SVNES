@@ -5,9 +5,9 @@ module gpio (
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periph_sel,
 	input periphLogic periph_addr,
-	inout wire dataLogic bus_data,
+	inout dataLogic bus_data,
 	// IO ports
-	inout wire dataLogic io
+	inout dataLogic io
 );
 
 /*** Internal registers ***/
@@ -50,8 +50,9 @@ assign reg_in = io;
 
 genvar i;
 generate
-for (i = 0; i != `DATA_N; i++)
+for (i = 0; i != `DATA_N; i++) begin: gen_io
 	assign io[i] = reg_dir[i] ? reg_out[i] : 1'bz;
+end
 endgenerate
 
 endmodule

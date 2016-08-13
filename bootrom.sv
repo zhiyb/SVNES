@@ -4,7 +4,7 @@ module bootrom (
 	// Clock, reset and buses
 	input logic bus_oe,
 	input bootromLogic bootrom_addr,
-	output wire idataLogic bus_idata
+	output idataLogic bus_idata
 );
 
 idataLogic rom[`BOOTROM_SIZE / 2] = '{

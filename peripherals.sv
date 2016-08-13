@@ -5,9 +5,9 @@ module peripherals (
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periphs_sel,
 	input periphsLogic periphs_addr,
-	inout wire dataLogic bus_data,
+	inout dataLogic bus_data,
 	// GPIO
-	inout wire dataLogic io[2],
+	inout dataLogic io[2],
 	// SPI
 	input logic cs, miso,
 	output logic mosi, sck

@@ -5,7 +5,7 @@ module spi (
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periph_sel,
 	input periphLogic periph_addr,
-	inout wire dataLogic bus_data,
+	inout dataLogic bus_data,
 	// Interrupt
 	output logic interrupt,
 	// IO ports

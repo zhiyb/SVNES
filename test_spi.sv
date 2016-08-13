@@ -1,16 +1,17 @@
-`include "config.sv"
+`include "config.h"
 
 module test_spi;
 
 logic clk, n_reset;
 logic bus_we, bus_oe;
-logic [`DATA_N - 1 : 0] test_data;
-wire [`DATA_N - 1 : 0] bus_data;
+dataLogic test_data;
+wire dataLogic bus_data;
 
 logic test_oe;
+assign test_oe = bus_we;
 assign bus_data = test_oe ? test_data : 'bz;
 
-logic [`PERIPH_N - 1 : 0] periph_addr;
+periphLogic periph_addr;
 logic periph_sel;
 
 logic interrupt;
@@ -22,7 +23,6 @@ begin
 	n_reset = 1'b1;
 	bus_we = 1'b0;
 	bus_oe = 1'b0;
-	assign test_oe = bus_we;
 	periph_sel = 'b0;
 	periph_addr = `SPI_CTRL;
 	test_data = `SPI_CTRL_CPOL | `SPI_CTRL_CPHA | 0;

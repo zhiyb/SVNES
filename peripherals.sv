@@ -1,13 +1,13 @@
-`include "config.sv"
+`include "config.h"
 
 module peripherals (
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe,
-	input logic [`PERIPHBUS_N : 0] periphbus_addr,
-	inout wire [`DATA_N - 1 : 0] bus_data
+	input periphBusLogic periphbus_addr,
+	inout wire dataLogic bus_data
 );
 
-logic [`PERIPH_N - 1 : 0] periph_addr;
+periphLogic periph_addr;
 assign periph_addr = periphbus_addr[`PERIPH_N - 1 : 0];
 
 parameter MAP_N = `PERIPHBUS_N - `PERIPH_N;

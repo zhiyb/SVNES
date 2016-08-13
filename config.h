@@ -11,6 +11,15 @@
 `define PERIPH_N		2
 `define DATA_N			8
 
+typedef logic [`DATA_N - 1 : 0]		dataLogic;
+typedef logic [`PERIPH_N - 1 : 0]	periphLogic;
+typedef logic [`PERIPHBUS_N : 0]		periphBusLogic;
+
+/*** GPIO peripheral registers ***/
+`define GPIO_DIR	0
+`define GPIO_OUT	1
+`define GPIO_IN	2
+
 /*** SPI peripheral registers ***/
 `define SPI_CTRL			0
 `define SPI_CTRL_EN		8'b01000000

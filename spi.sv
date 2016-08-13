@@ -1,11 +1,11 @@
-`include "config.sv"
+`include "config.h"
 
 module spi (
 	// Peripheral clock, reset and buses
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periph_sel,
-	input logic [`PERIPH_N - 1 : 0] periph_addr,
-	inout logic [`DATA_N - 1 : 0] bus_data,
+	input periphLogic periph_addr,
+	inout wire dataLogic bus_data,
 	// Interrupt
 	output logic interrupt,
 	// IO ports
@@ -15,7 +15,7 @@ module spi (
 
 /*** Internal registers ***/
 
-logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
+dataLogic reg_ctrl, reg_stat, reg_data[2];
 
 /*** Register read & write ***/
 
@@ -23,7 +23,7 @@ logic we, oe;
 assign we = periph_sel & bus_we;
 assign oe = periph_sel & bus_oe;
 
-logic [`DATA_N - 1 : 0] periph_data;
+dataLogic periph_data;
 assign bus_data = oe ? periph_data : {`DATA_N{1'bz}};
 
 always_comb
@@ -72,7 +72,7 @@ assign spiclk = sclk ^ cpha;
 
 logic sh_loaded, sh_done, sh_din, sh_dout;
 logic [$clog2(`DATA_N + 2) - 1 : 0] sh_cnt;
-logic [`DATA_N - 1 : 0] sh_data;
+dataLogic sh_data;
 
 assign sh_dout = sh_data[`DATA_N - 1];
 assign sh_loaded = !sh_done && sh_cnt != 0;

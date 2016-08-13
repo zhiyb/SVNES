@@ -6,15 +6,21 @@
 `define RX	1
 
 /*** Architecture configuration ***/
+`define BOOTROM_N		8
+`define BOOTROM_SIZE	(2 ** `BOOTROM_N)
 `define ADDR_N			16
 `define PERIPHS_N		8
 `define PERIPH_N		2
 `define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
+`define IDATA_N		16
 `define DATA_N			8
 
-typedef logic [`DATA_N - 1 : 0]		dataLogic;
-typedef logic [`PERIPH_N - 1 : 0]	periphLogic;
+typedef logic [`BOOTROM_N : 0]		bootromLogic;
+typedef logic [`ADDR_N : 0]			addrLogic;
 typedef logic [`PERIPHS_N : 0]		periphsLogic;
+typedef logic [`PERIPH_N - 1 : 0]	periphLogic;
+typedef logic [`IDATA_N - 1 : 0]		idataLogic;
+typedef logic [`DATA_N - 1 : 0]		dataLogic;
 
 /*** Base addresses ***/
 `define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + 0, `PERIPH_N'b0}

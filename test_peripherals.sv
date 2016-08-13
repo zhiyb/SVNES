@@ -4,17 +4,17 @@ module test_peripherals;
 
 logic clk, n_reset;
 logic bus_we, bus_oe, periphs_sel;
-dataLogic test_data;
-wire dataLogic bus_data;
+logic [`DATA_N - 1 : 0] test_data;
+wire [`DATA_N - 1 : 0] bus_data;
 
 logic test_oe;
 assign test_oe = bus_we;
 assign bus_data = test_oe ? test_data : 'bz;
 
-periphsLogic periphs_addr;
+logic [`PERIPHS_N - 1 : 0] periphs_addr;
 
 // GPIO
-wire dataLogic io[2];
+wire [`DATA_N - 1 : 0] io[2];
 assign io[1] = ~io[0];
 // SPI
 logic cs, miso;

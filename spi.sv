@@ -4,8 +4,8 @@ module spi (
 	// Peripheral clock, reset and buses
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periph_sel,
-	input periphLogic periph_addr,
-	inout dataLogic bus_data,
+	input logic [`PERIPH_N - 1 : 0] periph_addr,
+	inout wire [`DATA_N - 1 : 0] bus_data,
 	// Interrupt
 	output logic interrupt,
 	// IO ports
@@ -15,7 +15,7 @@ module spi (
 
 /*** Internal registers ***/
 
-dataLogic reg_ctrl, reg_stat, reg_data[2];
+logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
 
 /*** Register read & write ***/
 
@@ -23,7 +23,7 @@ logic we, oe;
 assign we = periph_sel & bus_we;
 assign oe = periph_sel & bus_oe;
 
-dataLogic periph_data;
+logic [`DATA_N - 1 : 0] periph_data;
 assign bus_data = oe ? periph_data : {`DATA_N{1'bz}};
 
 always_comb
@@ -72,7 +72,7 @@ assign spiclk = sclk ^ cpha;
 
 logic sh_loaded, sh_done, sh_din, sh_dout;
 logic [$clog2(`DATA_N + 2) - 1 : 0] sh_cnt;
-dataLogic sh_data;
+logic [`DATA_N - 1 : 0] sh_data;
 
 assign sh_dout = sh_data[`DATA_N - 1];
 assign sh_loaded = !sh_done && sh_cnt != 0;
@@ -143,12 +143,17 @@ always_ff @(posedge clk, negedge enabled)
 
 assign cap_din = miso;
 
-logic io_sck, io_mosi;
-assign sck = enabled & (io_sck ^ cpol);
-assign io_mosi = sh_dout;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		sck <= 1'b0;
+	else
+		sck <= enabled & ((sh_loaded & sclk) ^ cpol);
 
-dff io_sck_dff (.d((sh_loaded & sclk)), .q(io_sck), .*);
-dff io_mosi_dff (.d(io_mosi), .q(mosi), .*);
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		mosi <= 1'b0;
+	else
+		mosi <= sh_dout;
 
 assign interrupt = 1'b0;
 

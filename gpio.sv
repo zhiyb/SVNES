@@ -4,15 +4,15 @@ module gpio (
 	// Peripheral clock, reset and buses
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periph_sel,
-	input periphLogic periph_addr,
-	inout dataLogic bus_data,
+	input logic [`PERIPH_N - 1 : 0] periph_addr,
+	inout wire [`DATA_N - 1 : 0] bus_data,
 	// IO ports
-	inout dataLogic io
+	inout wire [`DATA_N - 1 : 0] io
 );
 
 /*** Internal registers ***/
 
-dataLogic reg_dir, reg_in, reg_out;
+logic [`DATA_N - 1 : 0] reg_dir, reg_in, reg_out;
 
 /*** Register read & write ***/
 
@@ -20,7 +20,7 @@ logic we, oe;
 assign we = periph_sel & bus_we;
 assign oe = periph_sel & bus_oe;
 
-dataLogic periph_data;
+logic [`DATA_N - 1 : 0] periph_data;
 assign bus_data = oe ? periph_data : {`DATA_N{1'bz}};
 
 always_comb

@@ -3,8 +3,8 @@
 module pc (
 	// Clock, reset and buses
 	input logic clk, n_reset,
-	input dataLogic bus_data,
-	output addrLogic pc
+	input wire [`DATA_N - 1 : 0] bus_data,
+	output logic [`ADDR_N : 0] pc
 );
 
 always_ff @(posedge clk, negedge n_reset)

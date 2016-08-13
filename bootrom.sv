@@ -3,11 +3,11 @@
 module bootrom (
 	// Clock, reset and buses
 	input logic bus_oe,
-	input bootromLogic bootrom_addr,
-	output idataLogic bus_idata
+	input logic [`BOOTROM_N : 0] bootrom_addr,
+	output wire [`IDATA_N - 1 : 0] bus_idata
 );
 
-idataLogic rom[`BOOTROM_SIZE / 2] = '{
+logic [`IDATA_N - 1 : 0] rom[`BOOTROM_SIZE / (`IDATA_N / 8)] = '{
 	0:		'h0000,
 	1:		'h55aa,
 	2:		'haa55,
@@ -15,7 +15,7 @@ idataLogic rom[`BOOTROM_SIZE / 2] = '{
 	default: 'h0
 };
 
-idataLogic data;
+logic [`IDATA_N - 1 : 0] data;
 
 assign bus_idata = bus_oe ? data : 'bz;
 assign data = rom[bootrom_addr];

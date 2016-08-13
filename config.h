@@ -10,19 +10,16 @@
 `define BOOTROM_SIZE	(2 ** `BOOTROM_N)
 `define ADDR_N			16
 `define PERIPHS_N		8
+`define ADDR_MAP_N	(`ADDR_N - `PERIPHS_N)
 `define PERIPH_N		2
 `define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
 `define IDATA_N		16
 `define DATA_N			8
 
-typedef logic [`BOOTROM_N : 0]		bootromLogic;
-typedef logic [`ADDR_N : 0]			addrLogic;
-typedef logic [`PERIPHS_N : 0]		periphsLogic;
-typedef logic [`PERIPH_N - 1 : 0]	periphLogic;
-typedef logic [`IDATA_N - 1 : 0]		idataLogic;
-typedef logic [`DATA_N - 1 : 0]		dataLogic;
-
 /*** Base addresses ***/
+`define PERIPH_BASE	16'hff00
+`define PERIPH_MASK	16'h00ff
+
 `define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + 0, `PERIPH_N'b0}
 `define P_GPIO1	{{`PERIPH_MAP_N{1'b0}} + 1, `PERIPH_N'b0}
 `define P_SPI0		{{`PERIPH_MAP_N{1'b0}} + 2, `PERIPH_N'b0}

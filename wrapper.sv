@@ -1,3 +1,5 @@
+`include "config.h"
+
 module wrapper (
 	input logic CLOCK_50,
 	input logic [1:0] KEY,
@@ -34,16 +36,15 @@ assign clk50M = CLOCK_50;
 counter #(.n($clog2(50 - 1))) p0 (.top(50 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1M));
 counter #(.n($clog2(50000000 - 1))) p1 (.top(50000000 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1));
 
-system sys0 (.clk(clk1), .n_reset(n_reset));
+// GPIO
+wire [`DATA_N - 1 : 0] io[2];
+assign io[0] = {GPIO_1_IN, GPIO_0_IN, SW};
+assign LED = io[1];
 
-/*logic [7:0] cnt;
+// SPI
+logic cs, miso;
+logic mosi, sck;
 
-always_ff @(posedge clk1, negedge n_reset)
-	if (~n_reset)
-		cnt <= 'b0;
-	else
-		cnt <= cnt + 1'b1;
-
-assign LED = cnt;*/
+system sys0 (.clk(clk1), .*);
 
 endmodule

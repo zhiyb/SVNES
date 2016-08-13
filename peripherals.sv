@@ -4,16 +4,16 @@ module peripherals (
 	// Clock, reset and buses
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periphs_sel,
-	input periphsLogic periphs_addr,
-	inout dataLogic bus_data,
+	input wire [`PERIPHS_N : 0] periphs_addr,
+	inout wire [`DATA_N - 1 : 0] bus_data,
 	// GPIO
-	inout dataLogic io[2],
+	inout wire [`DATA_N - 1 : 0] io[2],
 	// SPI
 	input logic cs, miso,
 	output logic mosi, sck
 );
 
-periphLogic periph_addr;
+logic [`PERIPH_N - 1 : 0] periph_addr;
 assign periph_addr = periphs_addr[`PERIPH_N - 1 : 0];
 
 logic [2 ** `PERIPH_MAP_N - 1 : 0] periph_sel;

@@ -4,14 +4,14 @@ module test_spi;
 
 logic clk, n_reset;
 logic bus_we, bus_oe;
-dataLogic test_data;
-wire dataLogic bus_data;
+logic [`DATA_N - 1 : 0] test_data;
+wire [`DATA_N - 1 : 0] bus_data;
 
 logic test_oe;
 assign test_oe = bus_we;
 assign bus_data = test_oe ? test_data : 'bz;
 
-periphLogic periph_addr;
+logic [`PERIPH_N - 1 : 0] periph_addr;
 logic periph_sel;
 
 logic interrupt;

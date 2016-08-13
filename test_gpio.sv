@@ -4,19 +4,19 @@ module test_gpio;
 
 logic clk, n_reset;
 logic bus_we, bus_oe;
-dataLogic test_data;
-wire dataLogic bus_data;
+logic [`DATA_N - 1 : 0] test_data;
+wire [`DATA_N - 1 : 0] bus_data;
 
 assign bus_data = bus_we ? test_data : 'bz;
 
-periphLogic periph_addr;
+logic [`PERIPH_N - 1 : 0] periph_addr;
 logic periph_sel;
 
-wire dataLogic io;
+wire [`DATA_N - 1 : 0] io;
 gpio gpio0 (.*);
 
-dataLogic test_io;
-dataLogic test_oe;
+logic [`DATA_N - 1 : 0] test_io;
+logic [`DATA_N - 1 : 0] test_oe;
 genvar i;
 generate
 for (i = 0; i != `DATA_N; i++)

@@ -226,7 +226,6 @@ set_global_assignment -name CDF_FILE CPU_demo.cdf
 set_global_assignment -name SYSTEMVERILOG_FILE spi.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripherals.sv
 set_global_assignment -name SYSTEMVERILOG_FILE demux.sv
-set_global_assignment -name SYSTEMVERILOG_FILE dff.sv
 set_global_assignment -name SYSTEMVERILOG_FILE pulse.sv
 set_global_assignment -name SYSTEMVERILOG_FILE gpio.sv
 set_global_assignment -name SYSTEMVERILOG_FILE bootrom.sv

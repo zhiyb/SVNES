@@ -34,7 +34,9 @@ assign clk50M = CLOCK_50;
 counter #(.n($clog2(50 - 1))) p0 (.top(50 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1M));
 counter #(.n($clog2(50000000 - 1))) p1 (.top(50000000 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1));
 
-logic [7:0] cnt;
+system sys0 (.clk(clk1), .n_reset(n_reset));
+
+/*logic [7:0] cnt;
 
 always_ff @(posedge clk1, negedge n_reset)
 	if (~n_reset)
@@ -42,6 +44,6 @@ always_ff @(posedge clk1, negedge n_reset)
 	else
 		cnt <= cnt + 1'b1;
 
-assign LED = cnt;
+assign LED = cnt;*/
 
 endmodule

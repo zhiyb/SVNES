@@ -7,13 +7,19 @@
 
 /*** Architecture configuration ***/
 `define ADDR_N			16
-`define PERIPHBUS_N	8
+`define PERIPHS_N		8
 `define PERIPH_N		2
+`define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
 `define DATA_N			8
 
 typedef logic [`DATA_N - 1 : 0]		dataLogic;
 typedef logic [`PERIPH_N - 1 : 0]	periphLogic;
-typedef logic [`PERIPHBUS_N : 0]		periphBusLogic;
+typedef logic [`PERIPHS_N : 0]		periphsLogic;
+
+/*** Base addresses ***/
+`define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + '0, `PERIPH_N'b0}
+`define P_GPIO1	{{`PERIPH_MAP_N{1'b0}} + '1, `PERIPH_N'b0}
+`define P_SPI0		{{`PERIPH_MAP_N{1'b0}} + '2, `PERIPH_N'b0}
 
 /*** GPIO peripheral registers ***/
 `define GPIO_DIR	0

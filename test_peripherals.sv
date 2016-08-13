@@ -3,7 +3,7 @@
 module test_peripherals;
 
 logic clk, n_reset;
-logic bus_we, bus_oe;
+logic bus_we, bus_oe, periphs_sel;
 dataLogic test_data;
 wire dataLogic bus_data;
 
@@ -15,6 +15,7 @@ periphsLogic periphs_addr;
 
 // GPIO
 wire dataLogic io[2];
+assign io[1] = ~io[0];
 // SPI
 logic cs, miso;
 logic mosi, sck;
@@ -25,42 +26,51 @@ begin
 	n_reset = 1'b1;
 	bus_we = 1'b0;
 	bus_oe = 1'b0;
-	periphs_addr = `P_GPIO0;
+	periphs_sel = 1'b0;
+	periphs_addr = `P_SPI0 | `SPI_CTRL;
 	test_data = `SPI_CTRL_CPOL | `SPI_CTRL_CPHA | 0;
 	test_data = 0;
 	cs = 1'b1;
 	#1us n_reset = 1'b0;
 	#1us n_reset = 1'b1;
-	#1us periph_sel = 'b1;
+	#1us periphs_sel = 1'b1;
 	#1us bus_we = 1'b1;
 	
-	#2us periph_addr = `SPI_CTRL;
+	#2us periphs_addr = `P_SPI0 | `SPI_CTRL;
 	test_data = test_data | `SPI_CTRL_EN;
 	
 	#1us cs = 1'b0;
 	
-	#1us periph_addr = `SPI_DATA;
+	#1us periphs_addr = `P_SPI0 | `SPI_DATA;
 	test_data = 'b10101100;
 	
 	#1us bus_we = 1'b0;
 	
 	#1us bus_oe = 1'b1;
-	periph_addr = `SPI_STAT;
+	periphs_addr = `P_SPI0 | `SPI_STAT;
 	
 	for (;;)
 		#1us if ((bus_data & `SPI_STAT_TXE) != 'b0)
 			break;
 	
-	#1us periph_addr = `SPI_DATA;
+	#1us periphs_addr = `P_SPI0 | `SPI_DATA;
 	test_data = ~test_data;
 	bus_oe = 1'b0;
 	bus_we = 1'b1;
 	
+	#1us periphs_addr = `P_GPIO0 | `GPIO_DIR;
+	test_data = 8'hff;
+	
+	#1us periphs_addr = `P_GPIO0 | `GPIO_OUT;
+	test_data = 8'hac;
+	
 	#1us bus_oe = 1'b1;
 	bus_we = 1'b0;
-	periph_addr = 'b0;
+	for (periphs_addr = 'b0; periphs_addr != `P_SPI0; periphs_addr++)
+		#1us;
 	forever begin
-		#2us periph_addr++;
+		for (periphs_addr = `P_SPI0; periphs_addr != `P_SPI0 + 2 ** `PERIPH_N; periphs_addr++)
+			#1us;
 	end
 	#1us bus_oe = 1'b0;
 end

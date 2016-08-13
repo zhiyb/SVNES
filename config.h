@@ -17,9 +17,9 @@ typedef logic [`PERIPH_N - 1 : 0]	periphLogic;
 typedef logic [`PERIPHS_N : 0]		periphsLogic;
 
 /*** Base addresses ***/
-`define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + '0, `PERIPH_N'b0}
-`define P_GPIO1	{{`PERIPH_MAP_N{1'b0}} + '1, `PERIPH_N'b0}
-`define P_SPI0		{{`PERIPH_MAP_N{1'b0}} + '2, `PERIPH_N'b0}
+`define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + 0, `PERIPH_N'b0}
+`define P_GPIO1	{{`PERIPH_MAP_N{1'b0}} + 1, `PERIPH_N'b0}
+`define P_SPI0		{{`PERIPH_MAP_N{1'b0}} + 2, `PERIPH_N'b0}
 
 /*** GPIO peripheral registers ***/
 `define GPIO_DIR	0

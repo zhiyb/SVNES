@@ -4,21 +4,21 @@ module peripherals (
 	// Clock, reset and buses
 	input logic clk, n_reset,
 	input logic bus_we, bus_oe, periphs_sel,
-	input wire [`PERIPHS_N : 0] periphs_addr,
-	inout wire [`DATA_N - 1 : 0] bus_data,
+	input wire [`PERIPHS_N:0] periphs_addr,
+	inout wire [`DATA_N - 1:0] bus_data,
 	// GPIO
-	inout wire [`DATA_N - 1 : 0] io[2],
+	inout wire [`DATA_N - 1:0] io[2],
 	// SPI
 	input logic cs, miso,
 	output logic mosi, sck
 );
 
-logic [`PERIPH_N - 1 : 0] periph_addr;
-assign periph_addr = periphs_addr[`PERIPH_N - 1 : 0];
+logic [`PERIPH_N - 1:0] periph_addr;
+assign periph_addr = periphs_addr[`PERIPH_N - 1:0];
 
-logic [2 ** `PERIPH_MAP_N - 1 : 0] periph_sel;
+logic [2 ** `PERIPH_MAP_N - 1:0] periph_sel;
 demux #(.N(`PERIPH_MAP_N)) demux0 (
-	.sel(periphs_addr[`PERIPHS_N - 1 : `PERIPH_N]),
+	.sel(periphs_addr[`PERIPHS_N - 1:`PERIPH_N]),
 	.oe(periphs_sel), .q(periph_sel)
 );
 

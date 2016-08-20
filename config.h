@@ -13,7 +13,6 @@
 `define ADDR_MAP_N	(`ADDR_N - `PERIPHS_N)
 `define PERIPH_N		2
 `define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
-`define IDATA_N		16
 `define DATA_N			8
 
 /*** Base addresses ***/

@@ -3,7 +3,7 @@
 module test_bootrom;
 
 logic bus_oe;
-logic [`BOOTROM_N : 0] bootrom_addr;
+logic [`BOOTROM_N - 1 : 0] bootrom_addr;
 wire [`IDATA_N - 1 : 0] bus_idata;
 
 bootrom r0 (.*);

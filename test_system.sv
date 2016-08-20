@@ -2,15 +2,20 @@
 
 module test_system;
 
-logic clk, n_reset;
+logic clk, n_reset, n_reset_in;
+
+// GPIO
+wire [`DATA_N - 1:0] io[2];
+// SPI
+logic cs, miso;
+logic mosi, sck;
 
 system sys0 (.*);
 
 initial
 begin
-	n_reset = 1'b1;
-	#1us n_reset = 1'b0;
-	#1us n_reset = 1'b1;
+	n_reset_in = 1'b1;
+	#1us n_reset_in = 1'b1;
 end
 
 initial

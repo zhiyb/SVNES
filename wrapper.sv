@@ -30,7 +30,6 @@ module wrapper (
 
 logic n_reset, clk1, clk1M, clk50M;
 
-assign n_reset = KEY[1];
 assign clk50M = CLOCK_50;
 
 counter #(.n($clog2(50 - 1))) p0 (.top(50 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1M));
@@ -45,6 +44,6 @@ assign LED = io[1];
 logic cs, miso;
 logic mosi, sck;
 
-system sys0 (.clk(clk1), .*);
+system sys0 (.clk(clk1), .n_reset_in(KEY[1]), .*);
 
 endmodule

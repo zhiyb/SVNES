@@ -1,22 +1,22 @@
 `include "config.h"
 
 module pc (
-	// Clock, reset and buses
-	input logic clk, n_reset,
+	sys_if sys,
+	sysbus_if sysbus,
+	// Read & write control
 	input logic pc_addr_oe,
-	input logic [1:0] pc_bytes,
-	input wire [`DATA_N - 1:0] bus_data,
-	output wire [`ADDR_N - 1:0] bus_addr
+	input logic pc_next,
+	input logic [1:0] pc_bytes
 );
 
 logic [`ADDR_N - 1:0] pc;
 
-assign bus_addr = pc_addr_oe ? pc : 'bz;
+assign sysbus.addr = pc_addr_oe ? pc : 'bz;
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset)
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
 		pc <= 'b0;
-	else
+	else if (pc_next)
 		pc <= pc + pc_bytes;
 
 endmodule

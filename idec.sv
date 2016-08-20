@@ -2,7 +2,7 @@
 import typepkg::*;
 
 module idec (
-	input logic [`DATA_N - 1:0] ins,
+	input dataLogic ins,
 	output Opcode opcode,
 	output Addressing mode,
 	output logic [1:0] pc_bytes

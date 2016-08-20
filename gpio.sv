@@ -1,11 +1,9 @@
 `include "config.h"
 
 module gpio (
-	// Peripheral clock, reset and buses
-	input logic clk, n_reset,
-	input logic bus_we, bus_oe, periph_sel,
-	input logic [`PERIPH_N - 1 : 0] periph_addr,
-	inout wire [`DATA_N - 1 : 0] bus_data,
+	sys_if sys,
+	input logic sel,
+	periphbus_if pbus,
 	// IO ports
 	inout wire [`DATA_N - 1 : 0] io
 );
@@ -17,15 +15,15 @@ logic [`DATA_N - 1 : 0] reg_dir, reg_in, reg_out;
 /*** Register read & write ***/
 
 logic we, oe;
-assign we = periph_sel & bus_we;
-assign oe = periph_sel & bus_oe;
+assign we = sel & pbus.we;
+assign oe = sel & pbus.oe;
 
 logic [`DATA_N - 1 : 0] periph_data;
-assign bus_data = oe ? periph_data : {`DATA_N{1'bz}};
+assign pbus.data = oe ? periph_data : {`DATA_N{1'bz}};
 
 always_comb
 begin
-	case (periph_addr)
+	case (pbus.addr)
 	`GPIO_DIR:	periph_data = reg_dir;
 	`GPIO_OUT:	periph_data = reg_out;
 	`GPIO_IN:	periph_data = reg_in;
@@ -33,14 +31,14 @@ begin
 	endcase
 end
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset) begin
 		reg_dir <= 'b0;
 		reg_out <= 'b0;
 	end else if (we) begin
-		case (periph_addr)
-		`GPIO_DIR:	reg_dir <= bus_data;
-		`GPIO_OUT:	reg_out <= bus_data;
+		case (pbus.addr)
+		`GPIO_DIR:	reg_dir <= pbus.data;
+		`GPIO_OUT:	reg_out <= pbus.data;
 		endcase
 	end
 

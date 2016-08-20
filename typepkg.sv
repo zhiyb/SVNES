@@ -1,14 +1,10 @@
+`include "config.h"
+
 package typepkg;
 
-parameter BOOTROM_N		= 8;
-parameter BOOTROM_SIZE	= (2 ** BOOTROM_N);
-parameter ADDR_N			= 16;
-parameter PERIPHS_N		= 8;
-parameter ADDR_MAP_N		= (ADDR_N - PERIPHS_N);
-parameter PERIPH_N		= 2;
-parameter PERIPH_MAP_N	= (PERIPHS_N - PERIPH_N);
-parameter DATA_N			= 8;
+typedef logic [`DATA_N - 1:0] dataLogic;
 
+// Opcodes
 typedef enum {
 	// Arithmetic operations
 	ADC, SBC, AND, ORA, EOR,
@@ -38,6 +34,7 @@ typedef enum {
 	SLO, RLA, SRE, RRA, SAX, LAX, DCP, ISC, ANC, ALR, ARR, XAA, AXS, AHX, SHY, SHX, TAS, LAS, KIL
 } Opcode;
 
+// Addressing modes
 // Implied, Immediate, Indirect(+X/Y), Zero page(+X/Y), Absolute(+X/Y), Relative
 typedef enum {Imp, Imm, Ind, IndX, IndY, Zpg, ZpgX, ZpgY, Abs, AbsX, AbsY, Rlt} Addressing;
 

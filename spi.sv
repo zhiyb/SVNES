@@ -1,11 +1,9 @@
 `include "config.h"
 
 module spi (
-	// Peripheral clock, reset and buses
-	input logic clk, n_reset,
-	input logic bus_we, bus_oe, periph_sel,
-	input logic [`PERIPH_N - 1 : 0] periph_addr,
-	inout wire [`DATA_N - 1 : 0] bus_data,
+	sys_if sys,
+	input logic sel,
+	periphbus_if pbus,
 	// Interrupt
 	output logic interrupt,
 	// IO ports
@@ -20,15 +18,15 @@ logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
 /*** Register read & write ***/
 
 logic we, oe;
-assign we = periph_sel & bus_we;
-assign oe = periph_sel & bus_oe;
+assign we = sel & pbus.we;
+assign oe = sel & pbus.oe;
 
 logic [`DATA_N - 1 : 0] periph_data;
-assign bus_data = oe ? periph_data : {`DATA_N{1'bz}};
+assign pbus.data = oe ? periph_data : {`DATA_N{1'bz}};
 
 always_comb
 begin
-	case (periph_addr)
+	case (pbus.addr)
 	`SPI_CTRL:	periph_data = reg_ctrl & `SPI_CTRL_MASK;
 	`SPI_STAT:	periph_data = reg_stat & `SPI_STAT_MASK;
 	`SPI_DATA:	periph_data = reg_data[`RX];
@@ -36,14 +34,14 @@ begin
 	endcase
 end
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset) begin
 		reg_ctrl <= `DATA_N'b0;
 		reg_data[`TX] <= `DATA_N'b0;
 	end else if (we) begin
-		case (periph_addr)
-		`SPI_CTRL:	reg_ctrl <= bus_data;
-		`SPI_DATA:	reg_data[`TX] <= bus_data;
+		case (pbus.addr)
+		`SPI_CTRL:	reg_ctrl <= pbus.data;
+		`SPI_DATA:	reg_data[`TX] <= pbus.data;
 		endcase
 	end
 
@@ -114,7 +112,7 @@ always_ff @(posedge clk, negedge enabled)
 		n_sh_reset <= 'b0;
 		reg_data[`RX] <= `DATA_N'b0;
 	end else begin
-		if (we && periph_addr == `SPI_DATA) begin
+		if (we && pbus.addr == `SPI_DATA) begin
 			n_sh_reset <= 'b1;
 		end else if (sh_done_s) begin
 			if (reg_stat[`SPI_STAT_TXE_])
@@ -131,9 +129,9 @@ always_ff @(posedge clk, negedge enabled)
 	end else begin
 		if (n_sh_reset && sh_done_s)
 			reg_stat[`SPI_STAT_RXNE_] <= 1'b1;
-		else if (oe && periph_addr == `SPI_DATA)
+		else if (oe && pbus.addr == `SPI_DATA)
 			reg_stat[`SPI_STAT_RXNE_] <= 1'b0;
-		if (we && periph_addr == `SPI_DATA)
+		if (we && pbus.addr == `SPI_DATA)
 			reg_stat[`SPI_STAT_TXE_] <= 1'b0;
 		else if (sh_loaded_s)
 			reg_stat[`SPI_STAT_TXE_] <= 1'b1;

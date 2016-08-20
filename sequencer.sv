@@ -2,44 +2,60 @@
 import typepkg::*;
 
 module sequencer (
-	// Clock and reset
-	input logic clk, n_reset,
+	sys_if sys,
+	
+	// Instruction infomation
+	input Opcode opcode,
+	input Addressing mode,
 	
 	// Bus control
 	output logic bus_we, bus_oe,
 	
-	// Program counter fetching enable
-	output logic pc_addr_oe,
+	// Program counter
+	pc_addr_oe, pc_next,
 	
-	// Instruction write enable
-	output logic ins_we,
+	// Instruction register
+	ins_we,
 	
-	input Opcode opcode,
-	input Addressing mode
+	// Accumulator
+	acc_we, acc_oe
 );
 
-enum {Fetch} state;
+enum {Reset, Fetch, Execute} state, state_next;
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset)
-		state <= Fetch;
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		state <= Reset;
 	else
-		case (state)
-			Fetch: begin
-			end
-		endcase
+		state <= state_next;
 
 always_comb
 begin
 	bus_we = 1'b0;
 	bus_oe = 1'b0;
 	pc_addr_oe = 1'b0;
+	pc_next = 1'b0;
 	ins_we = 1'b0;
+	acc_we = 1'b0;
+	acc_oe = 1'b0;
+	state_next = state;
 	case (state)
+	Reset: begin
+		bus_oe = 1'b1;
+		pc_addr_oe = 1'b1;
+		ins_we = 1'b1;
+		state_next = Fetch;
+	end
 	Fetch: begin
 		bus_oe = 1'b1;
 		pc_addr_oe = 1'b1;
 		ins_we = 1'b1;
+		pc_next = 1'b1;
+		state_next = Fetch;
+	end
+	Execute: begin
+		pc_next = 1'b1;
+		state_next = Fetch;
 	end
 	endcase
 end

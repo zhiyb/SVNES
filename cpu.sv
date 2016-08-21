@@ -32,6 +32,7 @@ assign alu_in_b = abus_b.bus ? sysbus.data : 'bz;
 constants con_b (.oe(abus_b.con), .sel(abus_b.consel), .out(alu_in_b));
 
 alu_bus_o_t abus_o;
+assign sysbus.data = abus_o.bus ? alu_out : 'bz;
 
 // Registers
 dataLogic acc;
@@ -62,14 +63,24 @@ dataLogic sp;
 regbus_if sp0bus (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp));
 register sp0 (.regbus(sp0bus), .*);
 
+// Address registers
+dataLogic adl, adh;
+logic ad_addr_oe;
+regbus_if adl0bus (.we(abus_o.adl), .oe(abus_a.adl), .in(alu_out), .out(alu_in_a), .data(adl));
+register adl0 (.regbus(adl0bus), .*);
+regbus_if adh0bus (.we(abus_o.adh), .oe(abus_a.adh), .in(alu_out), .out(alu_in_a), .data(adh));
+register adh0 (.regbus(adh0bus), .*);
+//assign adh = sysbus.data;
+assign sysbus.addr = ad_addr_oe ? {adh, adl} : 'bz;
+
 // Program counter
 logic pc_addr_oe;
-logic pc_inc;
+logic pc_inc, pc_load;
 pc pc0 (
 	.oel(abus_a.pcl), .oeh(abus_a.pch),
 	.wel(abus_o.pcl), .weh(abus_o.pch),
 	.in(alu_out), .out(alu_in_a),
-	.*);
+	.load({sysbus.data, adl}), .*);
 
 // Instruction decoder
 Opcode opcode;
@@ -77,6 +88,6 @@ Addressing mode;
 idec idec0 (.pc_bytes(), .*);
 
 // Control sequencer
-sequencer seq0 (.bus_we(we), .bus_oe(oe), .*);
+sequencer seq0 (.bus_we(we), .*);
 
 endmodule

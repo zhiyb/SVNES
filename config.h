@@ -26,7 +26,9 @@
 `define STATUS_C	0
 
 /*** Base addresses ***/
-`define PERIPH_BASE	16'hff00
+`define BOOTROM_BASE	16'hff00
+`define RAM0_TOP		16'h2000
+`define PERIPH_BASE	16'h3000
 `define PERIPH_MASK	16'h00ff
 
 `define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + 0, `PERIPH_N'b0}

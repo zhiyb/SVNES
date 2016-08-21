@@ -1,3 +1,4 @@
+`timescale 1 ps / 1 ps
 `include "config.h"
 
 module test_system;

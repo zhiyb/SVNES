@@ -29,4 +29,10 @@ bootrom rom0 (.*);
 
 peripherals periph0 (.*);
 
+logic ram0sel;
+assign ram0sel = sysbus.addr < `RAM0_TOP;
+logic [`DATA_N - 1:0] ram0q;
+assign sysbus.data = ram0sel ? ram0q : 'bz;
+ram2k ram0 (.address(sysbus.addr[10:0]), .clock(~sys.clk), .data(sysbus.data), .wren(sysbus.we & ram0sel), .q(ram0q));
+
 endmodule

@@ -7,7 +7,7 @@ interface sys_if (
 endinterface
 
 interface sysbus_if (
-	input logic we, oe,
+	input logic we,
 	inout wire [`ADDR_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data
 );

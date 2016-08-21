@@ -18,8 +18,8 @@ demux #(.N(`PERIPH_MAP_N)) demux0 (
 );
 
 periphbus_if pbus (
-	.we(sysbus.we), .oe(sysbus.oe),
-	.data(sysbus.data), .addr(sysbus.addr[`PERIPH_N - 1:0])
+	.we(sysbus.we), .data(sysbus.data),
+	.addr(sysbus.addr[`PERIPH_N - 1:0])
 );
 
 gpio gpio0 (.sel(periph_sel[0]), .io(io[0]), .*);

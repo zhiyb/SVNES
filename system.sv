@@ -18,7 +18,7 @@ always_ff @(posedge clk)
 sys_if sys (.*);
 
 // Interconnections and buses
-logic we, oe;
+logic we;
 wire [`ADDR_N - 1 : 0] addr;
 wire [`DATA_N - 1 : 0] data;
 sysbus_if sysbus (.*);

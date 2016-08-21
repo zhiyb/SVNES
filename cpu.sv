@@ -3,18 +3,12 @@ import typepkg::*;
 
 module cpu (
 	sys_if sys,
-	output logic we, oe,
+	output logic we,
 	output wire [`ADDR_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data
 );
 
 sysbus_if sysbus (.*);
-
-// Program counter
-logic pc_addr_oe, pc_oe;
-logic pc_inc, pc_next;
-logic [1:0] pc_bytes;
-pc pc0 (.*);
 
 // Instruction register
 dataLogic ins;
@@ -52,7 +46,8 @@ dataLogic y;
 regbus_if y0bus (.we(abus_o.y), .oe(abus_a.x), .in(alu_out), .out(alu_in_a), .data(y));
 register y0 (.regbus(y0bus), .*);
 
-dataLogic p, p_in, p_din;	// Status register
+// Status register
+dataLogic p, p_in, p_din;
 dataLogic p_mask, p_set, p_clr;
 logic p_brk, p_int;
 assign p_brk = 1'b0, p_int = 1'b0;
@@ -62,14 +57,24 @@ assign alu_cin = p[`STATUS_C];
 regbus_if p0bus (.we(1'b1), .oe(abus_a.p), .in(p_din), .out(alu_in_a), .data(p));
 register p0 (.regbus(p0bus), .*);
 
+// Stack pointer
 dataLogic sp;
 regbus_if sp0bus (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp));
 register sp0 (.regbus(sp0bus), .*);
 
+// Program counter
+logic pc_addr_oe;
+logic pc_inc;
+pc pc0 (
+	.oel(abus_a.pcl), .oeh(abus_a.pch),
+	.wel(abus_o.pcl), .weh(abus_o.pch),
+	.in(alu_out), .out(alu_in_a),
+	.*);
+
 // Instruction decoder
 Opcode opcode;
 Addressing mode;
-idec idec0 (.*);
+idec idec0 (.pc_bytes(), .*);
 
 // Control sequencer
 sequencer seq0 (.bus_we(we), .bus_oe(oe), .*);

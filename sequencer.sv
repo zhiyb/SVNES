@@ -12,8 +12,7 @@ module sequencer (
 	output logic bus_we, bus_oe,
 	
 	// Program counter
-	pc_addr_oe, pc_oe,
-	pc_inc, pc_next,
+	pc_addr_oe, pc_inc,
 	
 	// Instruction register
 	ins_we,
@@ -38,14 +37,13 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	else
 		state <= state_next;
 
+logic execute;
 always_comb
 begin
 	bus_we = 1'b0;
 	bus_oe = 1'b0;
 	pc_addr_oe = 1'b0;
-	pc_oe = 1'b0;
 	pc_inc = 1'b0;
-	pc_next = 1'b0;
 	ins_we = 1'b0;
 	
 	abus_a.bus = 1'b0;
@@ -56,6 +54,8 @@ begin
 	abus_a.y = 1'b0;
 	abus_a.p = 1'b0;
 	abus_a.sp = 1'b0;
+	abus_a.pcl = 1'b0;
+	abus_a.pch = 1'b0;
 	
 	abus_b.bus = 1'b0;
 	abus_b.con = 1'b1;	// Use constants to minimise switching
@@ -65,6 +65,8 @@ begin
 	abus_o.x = 1'b0;
 	abus_o.y = 1'b0;
 	abus_o.sp = 1'b0;
+	abus_o.pcl = 1'b0;
+	abus_o.pch = 1'b0;
 	
 	alu_func = ALUAdd;
 	p_mask = 'h0;
@@ -72,6 +74,8 @@ begin
 	p_set = 'h0;
 	p_clr = 'h0;
 	state_next = state;
+	
+	execute = 1'b0;
 	case (state)
 	Fetch: begin
 		bus_oe = 1'b1;
@@ -81,36 +85,51 @@ begin
 		state_next = Decode;
 	end
 	Decode: begin
+		bus_oe = 1'b1;
+		pc_addr_oe = 1'b1;
+		pc_inc = 1'b1;
 		if (mode == Imm) begin
-			bus_oe = 1'b1;
-			pc_addr_oe = 1'b1;
-			pc_inc = 1'b1;
 			state_next = Fetch;
-			case (opcode)
-			LDA: begin
-				abus_a.bus = 1'b1;
-				abus_a.con = 1'b0;
-				abus_o.acc = 1'b1;
-				p_mask[`STATUS_N] = 1'b1;
-				p_mask[`STATUS_Z] = 1'b1;
-			end
-			ADC: begin
-				abus_a.acc = 1'b1;
-				abus_a.con = 1'b0;
-				abus_b.bus = 1'b1;
-				abus_b.con = 1'b0;
-				abus_o.acc = 1'b1;
-				p_mask[`STATUS_N] = 1'b1;
-				p_mask[`STATUS_Z] = 1'b1;
-				p_mask[`STATUS_C] = 1'b1;
-				p_mask[`STATUS_V] = 1'b1;
-			end
-			endcase
+			execute = 1'b1;
 		end
 	end
 	Execute: begin
 	end
 	endcase
+	
+	if (execute)
+		case (opcode)
+		ADC: begin
+			abus_a.acc = 1'b1;
+			abus_a.con = 1'b0;
+			abus_b.bus = 1'b1;
+			abus_b.con = 1'b0;
+			abus_o.acc = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+			p_mask[`STATUS_C] = 1'b1;
+			p_mask[`STATUS_V] = 1'b1;
+		end
+		SBC: begin
+			alu_func = ALUSub;
+			abus_a.acc = 1'b1;
+			abus_a.con = 1'b0;
+			abus_b.bus = 1'b1;
+			abus_b.con = 1'b0;
+			abus_o.acc = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+			p_mask[`STATUS_C] = 1'b1;
+			p_mask[`STATUS_V] = 1'b1;
+		end
+		LDA: begin
+			abus_a.bus = 1'b1;
+			abus_a.con = 1'b0;
+			abus_o.acc = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		endcase
 end
 
 endmodule

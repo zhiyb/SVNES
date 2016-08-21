@@ -19,7 +19,7 @@ logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
 
 logic we, oe;
 assign we = sel & pbus.we;
-assign oe = sel & pbus.oe;
+assign oe = sel & ~pbus.we;
 
 logic [`DATA_N - 1 : 0] periph_data;
 assign pbus.data = oe ? periph_data : {`DATA_N{1'bz}};

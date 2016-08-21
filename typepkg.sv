@@ -49,6 +49,7 @@ typedef struct {
 	logic bus, con;
 	Constants consel;
 	logic acc, x, y, p, sp;
+	logic pch, pcl;
 } alu_bus_a_t;
 
 // ALU input B output enables
@@ -60,6 +61,7 @@ typedef struct {
 // ALU output write enables
 typedef struct {
 	logic acc, x, y, sp;
+	logic pch, pcl;
 } alu_bus_o_t;
 
 endpackage

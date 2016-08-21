@@ -16,7 +16,7 @@ logic [`DATA_N - 1 : 0] reg_dir, reg_in, reg_out;
 
 logic we, oe;
 assign we = sel & pbus.we;
-assign oe = sel & pbus.oe;
+assign oe = sel & ~pbus.we;
 
 logic [`DATA_N - 1 : 0] periph_data;
 assign pbus.data = oe ? periph_data : {`DATA_N{1'bz}};

@@ -18,21 +18,16 @@ module sequencer (
 	// Instruction register
 	ins_we,
 	
-	// Registers
-	acc_we, acc_oe,
-	x_we, x_oe,
-	y_we, y_oe,
-	sp_we, sp_oe,
-	
-	// ALU input select
-	alu_a_bus, alu_a_con,
-	alu_b_bus, alu_b_con,
-	
-	// ALU input constants select
-	Constants alu_a_con_sel, alu_b_con_sel,
+	// ALU buses controls
+	output alu_bus_a_t abus_a,
+	output alu_bus_b_t abus_b,
+	output alu_bus_o_t abus_o,
 	
 	// ALU function select
-	output ALUFunc alu_func
+	output ALUFunc alu_func,
+	
+	// Status register
+	output dataLogic p_mask, p_set, p_clr
 );
 
 enum {Reset, Fetch, Decode, Execute} state, state_next;
@@ -52,21 +47,30 @@ begin
 	pc_inc = 1'b0;
 	pc_next = 1'b0;
 	ins_we = 1'b0;
-	acc_we = 1'b0;
-	acc_oe = 1'b0;
-	x_we = 1'b0;
-	x_oe = 1'b0;
-	y_we = 1'b0;
-	y_oe = 1'b0;
-	sp_we = 1'b0;
-	sp_oe = 1'b0;
-	alu_a_bus = 1'b0;
-	alu_a_con = 1'b1;		// Use constants to minimise dynamic power consumption
-	alu_a_con_sel = Con0;
-	alu_b_bus = 1'b0;
-	alu_b_con = 1'b1;
-	alu_b_con_sel = Con0;
+	
+	abus_a.bus = 1'b0;
+	abus_a.con = 1'b1;	// Use constants to minimise switching
+	abus_a.consel = Con0;
+	abus_a.acc = 1'b0;
+	abus_a.x = 1'b0;
+	abus_a.y = 1'b0;
+	abus_a.p = 1'b0;
+	abus_a.sp = 1'b0;
+	
+	abus_b.bus = 1'b0;
+	abus_b.con = 1'b1;	// Use constants to minimise switching
+	abus_b.consel = Con0;
+	
+	abus_o.acc = 1'b0;
+	abus_o.x = 1'b0;
+	abus_o.y = 1'b0;
+	abus_o.sp = 1'b0;
+	
 	alu_func = ALUAdd;
+	p_mask = 'h0;
+	p_mask[`STATUS_R] = 1'b1;
+	p_set = 'h0;
+	p_clr = 'h0;
 	state_next = state;
 	case (state)
 	Fetch: begin
@@ -84,16 +88,22 @@ begin
 			state_next = Fetch;
 			case (opcode)
 			LDA: begin
-				alu_a_bus = 1'b1;
-				alu_a_con = 1'b0;
-				acc_we = 1'b1;
+				abus_a.bus = 1'b1;
+				abus_a.con = 1'b0;
+				abus_o.acc = 1'b1;
+				p_mask[`STATUS_N] = 1'b1;
+				p_mask[`STATUS_Z] = 1'b1;
 			end
 			ADC: begin
-				acc_oe = 1'b1;
-				alu_a_con = 1'b0;
-				alu_b_bus = 1'b1;
-				alu_b_con = 1'b0;
-				acc_we = 1'b1;
+				abus_a.acc = 1'b1;
+				abus_a.con = 1'b0;
+				abus_b.bus = 1'b1;
+				abus_b.con = 1'b0;
+				abus_o.acc = 1'b1;
+				p_mask[`STATUS_N] = 1'b1;
+				p_mask[`STATUS_Z] = 1'b1;
+				p_mask[`STATUS_C] = 1'b1;
+				p_mask[`STATUS_V] = 1'b1;
 			end
 			endcase
 		end

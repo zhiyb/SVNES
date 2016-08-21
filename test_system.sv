@@ -12,6 +12,8 @@ logic mosi, sck;
 
 system sys0 (.*);
 
+assign io[1] = ~io[0];
+
 initial
 begin
 	n_reset_in = 1'b1;

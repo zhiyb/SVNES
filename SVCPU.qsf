@@ -217,7 +217,8 @@ set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
 set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name SYSTEMVERILOG_FILE typepkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE interfaces.sv
 set_global_assignment -name SOURCE_FILE config.h
 set_global_assignment -name SYSTEMVERILOG_FILE bootrom.sv
 set_global_assignment -name SYSTEMVERILOG_FILE system.sv
@@ -234,5 +235,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE cpu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE pc.sv
 set_global_assignment -name SYSTEMVERILOG_FILE idec.sv
 set_global_assignment -name SYSTEMVERILOG_FILE sequencer.sv
-set_global_assignment -name SYSTEMVERILOG_FILE typepkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE register.sv
+set_global_assignment -name SYSTEMVERILOG_FILE alu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE constants.sv
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

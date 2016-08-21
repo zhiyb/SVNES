@@ -26,39 +26,44 @@ register ins0 (.regbus(ins0bus), .*);
 wire [`DATA_N - 1:0] alu_in_a, alu_in_b;
 dataLogic alu_out;
 ALUFunc alu_func;
-logic cin, sign, zero, cout, ovf;
-assign cin = 'b0;
+logic alu_cin, alu_cout, alu_sign, alu_zero, alu_ovf;
 alu alu0 (.*);
 
-logic alu_a_bus, alu_a_con;
-assign alu_in_a = alu_a_bus ? sysbus.data : 'bz;
-Constants alu_a_con_sel;
-constants con_a (.oe(alu_a_con), .sel(alu_a_con_sel), .out(alu_in_a));
+alu_bus_a_t abus_a;
+assign alu_in_a = abus_a.bus ? sysbus.data : 'bz;
+constants con_a (.oe(abus_a.con), .sel(abus_a.consel), .out(alu_in_a));
 
-logic alu_b_bus, alu_b_con;
-assign alu_in_b = alu_b_bus ? sysbus.data : 'bz;
-Constants alu_b_con_sel;
-constants con_b (.oe(alu_b_con), .sel(alu_b_con_sel), .out(alu_in_b));
+alu_bus_b_t abus_b;
+assign alu_in_b = abus_b.bus ? sysbus.data : 'bz;
+constants con_b (.oe(abus_b.con), .sel(abus_b.consel), .out(alu_in_b));
+
+alu_bus_o_t abus_o;
 
 // Registers
 dataLogic acc;
-logic acc_we, acc_oe;
-regbus_if acc0bus (.we(acc_we), .oe(acc_oe), .in(alu_out), .out(alu_in_a), .data(acc));
+regbus_if acc0bus (.we(abus_o.acc), .oe(abus_a.acc), .in(alu_out), .out(alu_in_a), .data(acc));
 register acc0 (.regbus(acc0bus), .*);
 
 dataLogic x;
-logic x_we, x_oe;
-regbus_if x0bus (.we(x_we), .oe(x_oe), .in(alu_out), .out(alu_in_a), .data(x));
+regbus_if x0bus (.we(abus_o.x), .oe(abus_a.x), .in(alu_out), .out(alu_in_a), .data(x));
 register x0 (.regbus(x0bus), .*);
 
 dataLogic y;
-logic y_we, y_oe;
-regbus_if y0bus (.we(y_we), .oe(y_oe), .in(alu_out), .out(alu_in_a), .data(y));
+regbus_if y0bus (.we(abus_o.y), .oe(abus_a.x), .in(alu_out), .out(alu_in_a), .data(y));
 register y0 (.regbus(y0bus), .*);
 
+dataLogic p, p_in, p_din;	// Status register
+dataLogic p_mask, p_set, p_clr;
+logic p_brk, p_int;
+assign p_brk = 1'b0, p_int = 1'b0;
+assign p_in = {alu_sign, alu_ovf, 1'b1, p_brk, 1'b0, p_int, alu_zero, alu_cout};
+assign p_din = ((~p_mask & p) | (p_mask & p_in) | p_set) & ~p_clr;
+assign alu_cin = p[`STATUS_C];
+regbus_if p0bus (.we(1'b1), .oe(abus_a.p), .in(p_din), .out(alu_in_a), .data(p));
+register p0 (.regbus(p0bus), .*);
+
 dataLogic sp;
-logic sp_we, sp_oe;
-regbus_if sp0bus (.we(sp_we), .oe(sp_oe), .in(alu_out), .out(alu_in_a), .data(sp));
+regbus_if sp0bus (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp));
 register sp0 (.regbus(sp0bus), .*);
 
 // Instruction decoder

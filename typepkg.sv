@@ -44,4 +44,22 @@ typedef enum {ALUAdd, ALUSub} ALUFunc;
 // Constants select
 typedef enum {Con0, Con1} Constants;
 
+// ALU input A output enables
+typedef struct {
+	logic bus, con;
+	Constants consel;
+	logic acc, x, y, p, sp;
+} alu_bus_a_t;
+
+// ALU input B output enables
+typedef struct {
+	logic bus, con;
+	Constants consel;
+} alu_bus_b_t;
+
+// ALU output write enables
+typedef struct {
+	logic acc, x, y, sp;
+} alu_bus_o_t;
+
 endpackage

@@ -15,6 +15,16 @@
 `define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
 `define DATA_N			8
 
+/*** Status register ***/
+`define STATUS_N	7
+`define STATUS_V	6
+`define STATUS_R	5
+`define STATUS_B	4
+`define STATUS_D	3
+`define STATUS_I	2
+`define STATUS_Z	1
+`define STATUS_C	0
+
 /*** Base addresses ***/
 `define PERIPH_BASE	16'hff00
 `define PERIPH_MASK	16'h00ff

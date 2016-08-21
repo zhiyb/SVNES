@@ -38,4 +38,10 @@ typedef enum {
 // Implied, Immediate, Indirect(+X/Y), Zero page(+X/Y), Absolute(+X/Y), Relative
 typedef enum {Imp, Imm, Ind, IndX, IndY, Zpg, ZpgX, ZpgY, Abs, AbsX, AbsY, Rlt} Addressing;
 
+// ALU function select
+typedef enum {ALUAdd, ALUSub} ALUFunc;
+
+// Constants select
+typedef enum {Con0, Con1} Constants;
+
 endpackage

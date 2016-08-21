@@ -60,7 +60,7 @@ assign pr_sel = reg_ctrl[2:0];
 parameter PR_N = 8;
 logic n_sh_reset;
 logic [PR_N : 0] pr_clk;
-prescaler #(.n(PR_N)) p0 (.n_reset(n_reset && n_sh_reset), .clk(clk), .counter(pr_clk));
+prescaler #(.n(PR_N)) p0 (.n_reset(n_reset && n_sh_reset), .clk(clk), .counter(pr_clk), .out());
 
 logic sclk, spiclk;
 assign sclk = pr_clk[pr_sel + 1];

@@ -39,7 +39,12 @@ typedef enum {
 typedef enum {Imp, Imm, Ind, IndX, IndY, Zpg, ZpgX, ZpgY, Abs, AbsX, AbsY, Rlt} Addressing;
 
 // ALU function select
-typedef enum {ALUAdd, ALUSub} ALUFunc;
+typedef enum {
+	ALUTXA, ALUTXB,
+	ALUADD, ALUSUB,
+	ALUASL, ALULSR, ALUROL, ALUROR,
+	ALUAND, ALUORA, ALUEOR
+} ALUFunc;
 
 // Constants select
 typedef enum {Con0, Con1} Constants;

@@ -43,7 +43,7 @@ regbus_if x0bus (.we(abus_o.x), .oe(abus_a.x), .in(alu_out), .out(alu_in_a), .da
 register x0 (.regbus(x0bus), .*);
 
 dataLogic y;
-regbus_if y0bus (.we(abus_o.y), .oe(abus_a.x), .in(alu_out), .out(alu_in_a), .data(y));
+regbus_if y0bus (.we(abus_o.y), .oe(abus_a.y), .in(alu_out), .out(alu_in_a), .data(y));
 register y0 (.regbus(y0bus), .*);
 
 // Status register

@@ -11,8 +11,15 @@ logic [7:0] rom[`BOOTROM_SIZE];
 always_comb
 begin
 	rom = '{`BOOTROM_SIZE{'h00}};
-	rom[0:69] = '{
+	rom[0:76] = '{
 		'ha9, 'h55,			// LDA #$55
+		'haa,					// TAX
+		'ha8,					// TAY
+		'hba,					// TSX
+		'h8a,					// TXA
+		'h98,					// TYA
+		'haa,					// TAX
+		'h9a,					// TXS
 		'ha2, 'h5a,			// LDX #$5a
 		'ha0, 'ha5,			// LDY #$a5
 		'h8d, 'h00, 'h30, // STA $3000

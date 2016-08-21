@@ -130,8 +130,6 @@ begin
 	end
 	Absolute: begin
 		ad_addr_oe = 1'b1;
-		p_mask[`STATUS_N] = 1'b1;
-		p_mask[`STATUS_Z] = 1'b1;
 		state_next = Fetch;
 		execute = 1'b1;
 	end
@@ -207,50 +205,6 @@ begin
 			abus_o.acc = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
-		end
-		// Memory load
-		LDA:	begin
-			alu_func = ALUTXB;
-			abus_b.bus = 1'b1;
-			abus_o.acc = 1'b1;
-			p_mask[`STATUS_N] = 1'b1;
-			p_mask[`STATUS_Z] = 1'b1;
-		end
-		LDX:	begin
-			alu_func = ALUTXB;
-			abus_b.bus = 1'b1;
-			abus_o.x = 1'b1;
-			p_mask[`STATUS_N] = 1'b1;
-			p_mask[`STATUS_Z] = 1'b1;
-		end
-		LDY:	begin
-			alu_func = ALUTXB;
-			abus_b.bus = 1'b1;
-			abus_o.y = 1'b1;
-			p_mask[`STATUS_N] = 1'b1;
-			p_mask[`STATUS_Z] = 1'b1;
-		end
-		// Memory store
-		STA:	begin
-			alu_func = ALUTXA;
-			abus_a.bus = 1'b0;
-			abus_a.acc = 1'b1;
-			abus_o.bus = 1'b1;
-			bus_we = 1'b1;
-		end
-		STX:	begin
-			alu_func = ALUTXA;
-			abus_a.bus = 1'b0;
-			abus_a.x = 1'b1;
-			abus_o.bus = 1'b1;
-			bus_we = 1'b1;
-		end
-		STY:	begin
-			alu_func = ALUTXA;
-			abus_a.bus = 1'b0;
-			abus_a.y = 1'b1;
-			abus_o.bus = 1'b1;
-			bus_we = 1'b1;
 		end
 		// Shifting operations
 		ASL:	begin
@@ -331,6 +285,99 @@ begin
 			abus_b.con = 1'b1;
 			abus_b.consel = Con1;
 			abus_o.y = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		// Memory load
+		LDA:	begin
+			alu_func = ALUTXB;
+			abus_b.bus = 1'b1;
+			abus_o.acc = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		LDX:	begin
+			alu_func = ALUTXB;
+			abus_b.bus = 1'b1;
+			abus_o.x = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		LDY:	begin
+			alu_func = ALUTXB;
+			abus_b.bus = 1'b1;
+			abus_o.y = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		// Memory store
+		STA:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.acc = 1'b1;
+			abus_o.bus = 1'b1;
+			bus_we = 1'b1;
+		end
+		STX:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_o.bus = 1'b1;
+			bus_we = 1'b1;
+		end
+		STY:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.y = 1'b1;
+			abus_o.bus = 1'b1;
+			bus_we = 1'b1;
+		end
+		// Register transfer operations
+		TAX:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.acc = 1'b1;
+			abus_o.x = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		TAY:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.acc = 1'b1;
+			abus_o.y = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		TSX:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.sp = 1'b1;
+			abus_o.x = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		TXA:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_o.acc = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		TXS:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_o.sp = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+		end
+		TYA:	begin
+			alu_func = ALUTXA;
+			abus_a.bus = 1'b0;
+			abus_a.y = 1'b1;
+			abus_o.acc = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
 		end

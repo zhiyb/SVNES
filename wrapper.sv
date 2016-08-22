@@ -29,13 +29,14 @@ module wrapper (
 	input logic [2:0] GPIO_2_IN
 );
 
-logic n_reset_in, n_reset, clk1, clk1M, clk50M, dbg;
+logic n_reset_in, n_reset, clk1, clk1M, clk1k25, clk50M, dbg;
 
 assign n_reset_in = KEY[1];
 assign clk50M = CLOCK_50;
 
-counter #(.n($clog2(50 - 1))) p0 (.top(50 - 1), .clk(clk50M), .n_reset(n_reset_in), .out(clk1M));
-counter #(.n($clog2(50000000 - 1))) p1 (.top(50000000 - 1), .clk(clk50M), .n_reset(n_reset_in), .out(clk1));
+pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clk1M), .c4(clk1k25));
+
+counter #(.n($clog2(1250 - 1))) p1 (.top(1250 - 1), .clk(clk1k25), .n_reset(n_reset_in), .out(clk1));
 
 // GPIO
 wire [`DATA_N - 1 : 0] io[2];

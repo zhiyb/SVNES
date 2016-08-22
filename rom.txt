@@ -1,6 +1,7 @@
 38;	-- SEC
 F8;	-- SED
 78;	-- SEI
+ea;	-- NOP
 18;	-- CLC
 d8;	-- CLD
 58;	-- CLI

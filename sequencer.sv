@@ -20,6 +20,9 @@ module sequencer (
 	// Instruction register
 	ins_we,
 	
+	// ALU flags
+	input logic alu_cin, alu_cout, alu_sign, alu_zero, alu_ovf,
+	
 	// ALU buses controls
 	output alu_bus_a_t abus_a,
 	output alu_bus_b_t abus_b,
@@ -29,10 +32,11 @@ module sequencer (
 	output ALUFunc alu_func,
 	
 	// Status register
+	input dataLogic p,
 	output dataLogic p_mask, p_set, p_clr
 );
 
-enum {Fetch, Decode, JumpL, JumpH, ReadH, Absolute} state, state_next;
+enum int unsigned {JumpL, JumpH, Fetch, Decode, ReadH, Absolute} state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -52,7 +56,6 @@ begin
 	
 	abus_a.bus = 1'b1;
 	abus_a.con = 1'b0;
-	abus_a.consel = Con0;
 	abus_a.acc = 1'b0;
 	abus_a.x = 1'b0;
 	abus_a.y = 1'b0;
@@ -65,7 +68,6 @@ begin
 	
 	abus_b.bus = 1'b1;
 	abus_b.con = 1'b0;
-	abus_b.consel = Con0;
 	
 	abus_o.bus = 1'b0;
 	abus_o.acc = 1'b0;
@@ -84,7 +86,7 @@ begin
 	p_clr = 'h0;
 	state_next = state;
 	
-	dbg = state == sys.n_reset;
+	dbg = state == Fetch;
 	
 	execute = 1'b0;
 	case (state)
@@ -112,6 +114,8 @@ begin
 			abus_b.bus = 1'b1;
 			abus_o.dll = 1'b1;
 			state_next = ReadH;
+		end
+		Rlt: begin
 		end
 		default:	;
 		endcase
@@ -249,7 +253,6 @@ begin
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
-			abus_b.consel = Con1;
 			abus_o.x = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -260,7 +263,6 @@ begin
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
-			abus_b.consel = Con1;
 			abus_o.y = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -271,7 +273,6 @@ begin
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
-			abus_b.consel = Con1;
 			abus_o.x = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -282,7 +283,6 @@ begin
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
-			abus_b.consel = Con1;
 			abus_o.y = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;

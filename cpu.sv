@@ -25,11 +25,11 @@ alu alu0 (.*);
 
 alu_bus_a_t abus_a;
 assign alu_in_a = abus_a.bus ? sysbus.data : {`DATA_N{1'bz}};
-constants con_a (.oe(abus_a.con), .sel(abus_a.consel), .out(alu_in_a));
+assign alu_in_a = abus_a.con ? {{`DATA_N - 1{1'b0}}, 1'b1} : {`DATA_N{1'bz}};
 
 alu_bus_b_t abus_b;
 assign alu_in_b = abus_b.bus ? sysbus.data : {`DATA_N{1'bz}};
-constants con_b (.oe(abus_b.con), .sel(abus_b.consel), .out(alu_in_b));
+assign alu_in_b = abus_b.con ? {{`DATA_N - 1{1'b0}}, 1'b1} : {`DATA_N{1'bz}};
 
 alu_bus_o_t abus_o;
 assign sysbus.data = abus_o.bus ? alu_out : {`DATA_N{1'bz}};

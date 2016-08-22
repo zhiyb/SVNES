@@ -5,7 +5,7 @@ package typepkg;
 typedef logic [`DATA_N - 1:0] dataLogic;
 
 // Opcodes
-typedef enum {
+typedef enum logic [6:0] {
 	// Arithmetic operations
 	ADC, SBC, AND, ORA, EOR,
 	// Shifting operations
@@ -36,23 +36,19 @@ typedef enum {
 
 // Addressing modes
 // Implied, Immediate, Indirect(+X/Y), Zero page(+X/Y), Absolute(+X/Y), Relative
-typedef enum {Imp, Imm, Ind, IndX, IndY, Zpg, ZpgX, ZpgY, Abs, AbsX, AbsY, Rlt} Addressing;
+typedef enum logic [3:0] {Imp, Imm, Ind, IndX, IndY, Zpg, ZpgX, ZpgY, Abs, AbsX, AbsY, Rlt} Addressing;
 
 // ALU function select
-typedef enum {
+typedef enum logic [3:0] {
 	ALUTXA, ALUTXB,
 	ALUADD, ALUSUB,
 	ALUASL, ALULSR, ALUROL, ALUROR,
 	ALUAND, ALUORA, ALUEOR
 } ALUFunc;
 
-// Constants select
-typedef enum {Con0, Con1} Constants;
-
 // ALU input A output enables
 typedef struct {
 	logic bus, con;
-	Constants consel;
 	logic acc, x, y, p, sp;
 	logic dlh, dll, pch, pcl;
 } alu_bus_a_t;
@@ -60,7 +56,6 @@ typedef struct {
 // ALU input B output enables
 typedef struct {
 	logic bus, con;
-	Constants consel;
 } alu_bus_b_t;
 
 // ALU output write enables

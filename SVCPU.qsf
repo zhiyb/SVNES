@@ -236,9 +236,9 @@ set_global_assignment -name SYSTEMVERILOG_FILE idec.sv
 set_global_assignment -name SYSTEMVERILOG_FILE sequencer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE register.sv
 set_global_assignment -name SYSTEMVERILOG_FILE alu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE constants.sv
 set_global_assignment -name QIP_FILE ram2k.qip
 set_global_assignment -name CDF_FILE SVCPU.cdf
 set_global_assignment -name MIF_FILE rom.mif
 set_global_assignment -name QIP_FILE rom.qip
+set_global_assignment -name QIP_FILE pll.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

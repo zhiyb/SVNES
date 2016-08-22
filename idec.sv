@@ -33,22 +33,22 @@ assign opcode = LUT_op[ins];
 Addressing LUT_addr[256];
 assign LUT_addr = '{
 //	+00	+01	+02	+03	+04	+05	+06	+07	+08	+09	+0a	+0b	+0c	+0d	+0e	+0f
-	Imp,	IndX,	Imp,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 00
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgX,	ZpgX,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsX,	AbsX,	// 10
-	Abs,	IndX,	Imp,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 20
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgX,	ZpgX,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsX,	AbsX,	// 30
-	Imp,	IndX,	Imp,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 40
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgX,	ZpgX,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsX,	AbsX,	// 50
-	Imp,	IndX,	Imp,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Ind,	Abs,	Abs,	Abs,	// 60
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgX,	ZpgX,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsX,	AbsX,	// 70
-	Imm,	IndX,	Imm,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 80
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgY,	ZpgY,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsY,	AbsY,	// 90
-	Imm,	IndX,	Imm,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// a0
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgY,	ZpgY,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsY,	AbsY,	// b0
-	Imm,	IndX,	Imm,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// c0
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgX,	ZpgX,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsX,	AbsX,	// d0
-	Imm,	IndX,	Imm,	IndX,	Zpg,	Zpg,	Zpg,	Zpg,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// e0
-	Rlt,	IndY,	Imp,	IndY,	ZpgX,	ZpgX,	ZpgX,	ZpgX,	Imp,	AbsY,	Imp,	AbsY,	AbsX,	AbsX,	AbsX,	AbsX	// f0
+	Imp,	IzX,	Imp,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 00
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX,	// 10
+	Abs,	IzX,	Imp,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 20
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX,	// 30
+	Imp,	IzX,	Imp,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 40
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX,	// 50
+	Imp,	IzX,	Imp,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Ind,	Abs,	Abs,	Abs,	// 60
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX,	// 70
+	Imm,	IzX,	Imm,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 80
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpY,	ZpY,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbY,	AbY,	// 90
+	Imm,	IzX,	Imm,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// a0
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpY,	ZpY,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbY,	AbY,	// b0
+	Imm,	IzX,	Imm,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// c0
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX,	// d0
+	Imm,	IzX,	Imm,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// e0
+	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX	// f0
 };
 assign mode = LUT_addr[ins];
 
@@ -62,15 +62,15 @@ begin
 	Imp:	bytes = 2'h1;
 	Imm:	bytes = 2'h2;
 	Ind:	bytes = 2'h3;
-	IndX:	bytes = 2'h2;
-	IndY:	bytes = 2'h2;
-	Zpg:	bytes = 2'h2;
-	ZpgX:	bytes = 2'h2;
-	ZpgY:	bytes = 2'h2;
+	IzX:	bytes = 2'h2;
+	IzY:	bytes = 2'h2;
+	Zp:	bytes = 2'h2;
+	ZpX:	bytes = 2'h2;
+	ZpY:	bytes = 2'h2;
 	Abs:	bytes = 2'h3;
-	AbsX:	bytes = 2'h3;
-	AbsY:	bytes = 2'h3;
-	Rlt:	bytes = 2'h2;
+	AbX:	bytes = 2'h3;
+	AbY:	bytes = 2'h3;
+	Rel:	bytes = 2'h2;
 	endcase
 end
 

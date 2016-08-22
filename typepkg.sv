@@ -36,14 +36,15 @@ typedef enum logic [6:0] {
 
 // Addressing modes
 // Implied, Immediate, Indirect(+X/Y), Zero page(+X/Y), Absolute(+X/Y), Relative
-typedef enum logic [3:0] {Imp, Imm, Ind, IndX, IndY, Zpg, ZpgX, ZpgY, Abs, AbsX, AbsY, Rlt} Addressing;
+typedef enum logic [3:0] {Imp, Imm, Zp, ZpX, ZpY, IzX, IzY, Abs, AbX, AbY, Ind, Rel} Addressing;
 
 // ALU function select
 typedef enum logic [3:0] {
 	ALUTXA, ALUTXB,
 	ALUADD, ALUSUB,
-	ALUASL, ALULSR, ALUROL, ALUROR,
-	ALUAND, ALUORA, ALUEOR
+	ALUROL, ALUROR,
+	ALUAND, ALUORA, ALUEOR,
+	ALUBIT
 } ALUFunc;
 
 // ALU input A output enables
@@ -61,7 +62,7 @@ typedef struct {
 // ALU output write enables
 typedef struct {
 	logic bus;
-	logic acc, x, y, sp;
+	logic acc, x, y, p, sp;
 	logic dlh, dll, pch, pcl;
 } alu_bus_o_t;
 

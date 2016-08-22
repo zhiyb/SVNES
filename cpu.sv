@@ -20,7 +20,7 @@ register ins0 (.regbus(ins0bus), .*);
 wire [`DATA_N - 1:0] alu_in_a, alu_in_b;
 dataLogic alu_out;
 ALUFunc alu_func;
-logic alu_cin, alu_cout, alu_sign, alu_zero, alu_ovf;
+logic alu_cin, alu_cinclr, alu_cout, alu_sign, alu_zero, alu_ovf;
 alu alu0 (.*);
 
 alu_bus_a_t abus_a;
@@ -53,22 +53,26 @@ dataLogic p_mask, p_set, p_clr;
 logic p_brk, p_int;
 assign p_brk = 1'b0, p_int = 1'b0;
 assign p_in = {alu_sign, alu_ovf, 1'b1, p_brk, 1'b0, p_int, alu_zero, alu_cout};
-assign p_din = ((~p_mask & p) | (p_mask & p_in) | p_set) & ~p_clr;
+assign p_din = abus_o.p ? alu_out : ((~p_mask & p) | (p_mask & p_in) | p_set) & ~p_clr;
 assign alu_cin = p[`STATUS_C];
-regbus_if p0bus (.we(1'b1), .oe(abus_a.p), .in(p_din), .out(alu_in_a), .data(p));
+regbus_if p0bus (.we(1'b1), .oe(abus_a.p), .in(p_din | ({{`DATA_N - 1{1'b0}}, 1'b1} << `STATUS_R)), .out(alu_in_a), .data(p));
 register p0 (.regbus(p0bus), .*);
 
 // Stack pointer
 dataLogic sp;
+logic sp_addr_oe;
 regbus_if sp0bus (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp));
 register sp0 (.regbus(sp0bus), .*);
+assign sysbus.addr = sp_addr_oe ? {{`ADDR_N - `DATA_N - 1{1'b0}}, 1'b1, sp} : {`ADDR_N{1'bz}};
 
 // Data latching registers
 dataLogic dll, dlh;
-logic dl_addr_oe;
+logic dl_addr_oe, dlh_clr;
 regbus_if dll0bus (.we(abus_o.dll), .oe(abus_a.dll), .in(alu_out), .out(alu_in_a), .data(dll));
 register dll0 (.regbus(dll0bus), .*);
-regbus_if dlh0bus (.we(abus_o.dlh), .oe(abus_a.dlh), .in(alu_out), .out(alu_in_a), .data(dlh));
+wire [`DATA_N - 1:0] dlh_in;
+assign dlh_in = dlh_clr ? {`DATA_N{1'b0}} : alu_out;
+regbus_if dlh0bus (.we(abus_o.dlh), .oe(abus_a.dlh), .in(dlh_in), .out(alu_in_a), .data(dlh));
 register dlh0 (.regbus(dlh0bus), .*);
 //assign adh = sysbus.data;
 assign sysbus.addr = dl_addr_oe ? {dlh, dll} : {`ADDR_N{1'bz}};

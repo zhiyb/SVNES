@@ -1,3 +1,15 @@
+38;	-- SEC
+F8;	-- SED
+78;	-- SEI
+18;	-- CLC
+d8;	-- CLD
+58;	-- CLI
+a9;	-- LDA #$7f
+7f;
+69;	-- ADC #$01
+01;
+b8;	-- CLV
+
 a9;	-- LDA #$ff
 ff;
 8d;	-- STA $3004	-- GPIO1_DIR

@@ -63,15 +63,15 @@ dataLogic sp;
 regbus_if sp0bus (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp));
 register sp0 (.regbus(sp0bus), .*);
 
-// Address registers
-dataLogic adl, adh;
-logic ad_addr_oe;
-regbus_if adl0bus (.we(abus_o.adl), .oe(abus_a.adl), .in(alu_out), .out(alu_in_a), .data(adl));
-register adl0 (.regbus(adl0bus), .*);
-regbus_if adh0bus (.we(abus_o.adh), .oe(abus_a.adh), .in(alu_out), .out(alu_in_a), .data(adh));
-register adh0 (.regbus(adh0bus), .*);
+// Data latching registers
+dataLogic dll, dlh;
+logic dl_addr_oe;
+regbus_if dll0bus (.we(abus_o.dll), .oe(abus_a.dll), .in(alu_out), .out(alu_in_a), .data(dll));
+register dll0 (.regbus(dll0bus), .*);
+regbus_if dlh0bus (.we(abus_o.dlh), .oe(abus_a.dlh), .in(alu_out), .out(alu_in_a), .data(dlh));
+register dlh0 (.regbus(dlh0bus), .*);
 //assign adh = sysbus.data;
-assign sysbus.addr = ad_addr_oe ? {adh, adl} : {`ADDR_N{1'bz}};
+assign sysbus.addr = dl_addr_oe ? {dlh, dll} : {`ADDR_N{1'bz}};
 
 // Program counter
 logic pc_addr_oe;
@@ -80,7 +80,7 @@ pc pc0 (
 	.oel(abus_a.pcl), .oeh(abus_a.pch),
 	.wel(abus_o.pcl), .weh(abus_o.pch),
 	.in(alu_out), .out(alu_in_a),
-	.load({sysbus.data, adl}), .*);
+	.load({sysbus.data, dll}), .*);
 
 // Instruction decoder
 Opcode opcode;

@@ -15,7 +15,7 @@ module sequencer (
 	pc_addr_oe, pc_inc, pc_load,
 	
 	// Address register
-	ad_addr_oe,
+	dl_addr_oe,
 	
 	// Instruction register
 	ins_we,
@@ -45,7 +45,7 @@ always_comb
 begin
 	bus_we = 1'b0;
 	pc_addr_oe = 1'b0;
-	ad_addr_oe = 1'b0;
+	dl_addr_oe = 1'b0;
 	pc_inc = 1'b0;
 	pc_load = 1'b0;
 	ins_we = 1'b0;
@@ -58,8 +58,8 @@ begin
 	abus_a.y = 1'b0;
 	abus_a.p = 1'b0;
 	abus_a.sp = 1'b0;
-	abus_a.adl = 1'b0;
-	abus_a.adh = 1'b0;
+	abus_a.dll = 1'b0;
+	abus_a.dlh = 1'b0;
 	abus_a.pcl = 1'b0;
 	abus_a.pch = 1'b0;
 	
@@ -72,8 +72,8 @@ begin
 	abus_o.x = 1'b0;
 	abus_o.y = 1'b0;
 	abus_o.sp = 1'b0;
-	abus_o.adl = 1'b0;
-	abus_o.adh = 1'b0;
+	abus_o.dll = 1'b0;
+	abus_o.dlh = 1'b0;
 	abus_o.pcl = 1'b0;
 	abus_o.pch = 1'b0;
 	
@@ -110,7 +110,7 @@ begin
 		Abs:	begin
 			alu_func = ALUTXB;
 			abus_b.bus = 1'b1;
-			abus_o.adl = 1'b1;
+			abus_o.dll = 1'b1;
 			state_next = ReadH;
 		end
 		default:	;
@@ -120,7 +120,7 @@ begin
 		pc_addr_oe = 1'b1;
 		alu_func = ALUTXB;
 		abus_b.bus = 1'b1;
-		abus_o.adh = 1'b1;
+		abus_o.dlh = 1'b1;
 		if (opcode == JMP || opcode == JSR) begin
 			pc_load = 1'b1;
 			state_next = Fetch;
@@ -130,7 +130,7 @@ begin
 		end
 	end
 	Absolute: begin
-		ad_addr_oe = 1'b1;
+		dl_addr_oe = 1'b1;
 		state_next = Fetch;
 		execute = 1'b1;
 	end
@@ -139,7 +139,7 @@ begin
 		pc_inc = 1'b1;
 		alu_func = ALUTXB;
 		abus_b.bus = 1'b1;
-		abus_o.adl = 1'b1;
+		abus_o.dll = 1'b1;
 		state_next = JumpH;
 	end
 	JumpH: begin
@@ -147,7 +147,7 @@ begin
 		pc_load = 1'b1;
 		alu_func = ALUTXB;
 		abus_b.bus = 1'b1;
-		abus_o.adh = 1'b1;
+		abus_o.dlh = 1'b1;
 		state_next = Fetch;
 	end
 	endcase
@@ -331,6 +331,14 @@ begin
 			abus_o.bus = 1'b1;
 			bus_we = 1'b1;
 		end
+		// Status register operations
+		SEC:	p_set[`STATUS_C] = 1'b1;
+		SED:	p_set[`STATUS_D] = 1'b1;
+		SEI:	p_set[`STATUS_I] = 1'b1;
+		CLC:	p_clr[`STATUS_C] = 1'b1;
+		CLD:	p_clr[`STATUS_D] = 1'b1;
+		CLI:	p_clr[`STATUS_I] = 1'b1;
+		CLV:	p_clr[`STATUS_V] = 1'b1;
 		// Register transfer operations
 		TAX:	begin
 			alu_func = ALUTXA;

@@ -1,3 +1,31 @@
+a9;	-- LDA #$ee
+55;
+8d;	-- STA $3004	-- GPIO1_DIR
+04;
+30;
+
+a9;	-- LDA #$55
+55;
+c9;	-- CMP #$5a
+aa;
+cd;	-- CMP $3004
+04;
+30;
+a2;	-- LDX #$5a
+5a;
+e0;	-- CPX #$a5
+a5;
+ec;	-- CPX $3004
+04;
+30;
+a0;	-- LDY #$a5
+a5;
+c0;	-- CPY #$aa
+aa;
+cc;	-- CPY $3004
+04;
+30;
+
 38;	-- SEC
 F8;	-- SED
 78;	-- SEI

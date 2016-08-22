@@ -181,6 +181,34 @@ begin
 			p_mask[`STATUS_C] = 1'b1;
 			p_mask[`STATUS_V] = 1'b1;
 		end
+		// Compare operations
+		CMP:	begin
+			alu_func = ALUSUB;
+			abus_a.bus = 1'b0;
+			abus_a.acc = 1'b1;
+			abus_b.bus = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+			p_mask[`STATUS_C] = 1'b1;
+		end
+		CPX:	begin
+			alu_func = ALUSUB;
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_b.bus = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+			p_mask[`STATUS_C] = 1'b1;
+		end
+		CPY:	begin
+			alu_func = ALUSUB;
+			abus_a.bus = 1'b0;
+			abus_a.y = 1'b1;
+			abus_b.bus = 1'b1;
+			p_mask[`STATUS_N] = 1'b1;
+			p_mask[`STATUS_Z] = 1'b1;
+			p_mask[`STATUS_C] = 1'b1;
+		end
 		// Logical operations
 		AND:	begin
 			alu_func = ALUAND;

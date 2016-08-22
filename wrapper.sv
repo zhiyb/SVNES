@@ -1,4 +1,5 @@
 `include "config.h"
+import typepkg::*;
 
 module wrapper (
 	input logic CLOCK_50,
@@ -28,22 +29,42 @@ module wrapper (
 	input logic [2:0] GPIO_2_IN
 );
 
-logic n_reset, clk1, clk1M, clk50M;
+logic n_reset_in, n_reset, clk1, clk1M, clk50M, dbg;
 
+assign n_reset_in = KEY[1];
 assign clk50M = CLOCK_50;
 
-counter #(.n($clog2(50 - 1))) p0 (.top(50 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1M));
-counter #(.n($clog2(50000000 - 1))) p1 (.top(50000000 - 1), .clk(clk50M), .n_reset(n_reset), .out(clk1));
+counter #(.n($clog2(50 - 1))) p0 (.top(50 - 1), .clk(clk50M), .n_reset(n_reset_in), .out(clk1M));
+counter #(.n($clog2(50000000 - 1))) p1 (.top(50000000 - 1), .clk(clk50M), .n_reset(n_reset_in), .out(clk1));
 
 // GPIO
 wire [`DATA_N - 1 : 0] io[2];
-assign io[0] = {GPIO_1_IN, GPIO_0_IN, SW};
-assign LED = io[1];
+dataLogic iodir[2];
+
+dataLogic ioin;
+assign ioin = {GPIO_1_IN, GPIO_0_IN, SW};
+
+genvar i;
+generate
+	for (i = 0; i != `DATA_N; i++) begin: gen_io0
+		assign io[0][i] = iodir[0][i] ? 1'bz : ioin[i];
+	end
+endgenerate
+
+//assign LED[6:0] = io[1][6:0];
+assign LED[0] = clk50M;
+assign LED[1] = clk1M;
+assign LED[2] = clk1;
+assign LED[3] = io[1][0];
+assign LED[4] = io[1][1];
+assign LED[5] = dbg;
+assign LED[6] = n_reset;
+assign LED[7] = n_reset_in;
 
 // SPI
 logic cs, miso;
 logic mosi, sck;
 
-system sys0 (.clk(clk1), .n_reset_in(KEY[1]), .*);
+system sys0 (.clk(clk1M), .*);
 
 endmodule

@@ -8,13 +8,13 @@ module constants (
 );
 
 dataLogic con;
-assign out = oe ? con : 'bz;
+assign out = oe ? con : {`DATA_N{1'bz}};
 
 always_comb
 begin
-	con = 'h0;
 	case (sel)
-	Con1:	con = 'h1;
+	Con1:		con = 'h1;
+	default:	con = 'h0;
 	endcase
 end
 

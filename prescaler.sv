@@ -1,6 +1,5 @@
 module prescaler #(parameter n) (
 	input logic n_reset, clk,
-	output logic out,
 	output logic [n : 0] counter
 );
 

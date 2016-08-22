@@ -220,7 +220,6 @@ set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name SYSTEMVERILOG_FILE typepkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE interfaces.sv
 set_global_assignment -name SOURCE_FILE config.h
-set_global_assignment -name SYSTEMVERILOG_FILE bootrom.sv
 set_global_assignment -name SYSTEMVERILOG_FILE system.sv
 set_global_assignment -name SYSTEMVERILOG_FILE prescaler.sv
 set_global_assignment -name SYSTEMVERILOG_FILE counter.sv
@@ -238,5 +237,8 @@ set_global_assignment -name SYSTEMVERILOG_FILE sequencer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE register.sv
 set_global_assignment -name SYSTEMVERILOG_FILE alu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE constants.sv
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name QIP_FILE ram2k.qip
+set_global_assignment -name CDF_FILE SVCPU.cdf
+set_global_assignment -name MIF_FILE rom.mif
+set_global_assignment -name QIP_FILE rom.qip
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -15,16 +15,16 @@ module pc (
 
 logic [`ADDR_N - 1:0] pc;
 
-assign sysbus.addr = pc_addr_oe ? pc : 'bz;
+assign sysbus.addr = pc_addr_oe ? pc : {`ADDR_N{1'bz}};
 
-assign out = oeh ? pc[`ADDR_N - 1:`ADDR_N - `DATA_N] : 'bz;
-assign out = oel ? pc[`DATA_N - 1:0] : 'bz;
+assign out = oeh ? pc[`ADDR_N - 1:`ADDR_N - `DATA_N] : {`DATA_N{1'bz}};
+assign out = oel ? pc[`DATA_N - 1:0] : {`DATA_N{1'bz}};
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		pc <= 16'hfffc;
 	else if (pc_inc)
-		pc <= pc + 1;
+		pc <= pc + 16'h1;
 	else if (pc_load)
 		pc <= load;
 	else if (weh)

@@ -9,7 +9,7 @@ module register (
 dataLogic data;
 
 assign regbus.data = data;
-assign regbus.out = regbus.oe ? data : 'bz;
+assign regbus.out = regbus.oe ? data : {`DATA_N{1'bz}};
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)

@@ -1,23 +1,25 @@
 `timescale 1 ps / 1 ps
 `include "config.h"
+import typepkg::*;
 
 module test_system;
 
-logic clk, n_reset, n_reset_in;
+logic clk, n_reset_in, n_reset, dbg;
 
 // GPIO
 wire [`DATA_N - 1:0] io[2];
+dataLogic iodir[2];
 // SPI
 logic cs, miso;
 logic mosi, sck;
 
 system sys0 (.*);
 
-assign io[1] = ~io[0];
+assign io[0] = io[1];
 
 initial
 begin
-	n_reset_in = 1'b1;
+	n_reset_in = 1'b0;
 	#1us n_reset_in = 1'b1;
 end
 

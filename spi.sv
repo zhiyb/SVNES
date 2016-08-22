@@ -60,7 +60,7 @@ assign pr_sel = reg_ctrl[2:0];
 parameter PR_N = 8;
 logic n_sh_reset;
 logic [PR_N : 0] pr_clk;
-prescaler #(.n(PR_N)) p0 (.n_reset(n_reset && n_sh_reset), .clk(clk), .counter(pr_clk), .out());
+prescaler #(.n(PR_N)) p0 (.n_reset(sys.n_reset && n_sh_reset), .clk(sys.clk), .counter(pr_clk));
 
 logic sclk, spiclk;
 assign sclk = pr_clk[pr_sel + 1];
@@ -83,21 +83,21 @@ always_ff @(negedge spiclk, negedge n_sh_reset)
 	end else begin
 		if (sh_cnt == 0) begin
 			sh_data <= reg_data[`TX];
-			sh_cnt <= sh_cnt + 1;
+			sh_cnt <= sh_cnt + 4'h1;
 		end else if (~sh_done) begin
 			sh_data <= {sh_data[`DATA_N - 2 : 0], sh_din};
-			sh_cnt <= sh_cnt + 1;
+			sh_cnt <= sh_cnt + 4'h1;
 		end else if (!reg_stat[`SPI_STAT_TXE_]) begin
 			sh_data <= reg_data[`TX];
-			sh_cnt <= 1;
+			sh_cnt <= 4'h1;
 		end
 	end
 
 // Short pulses
 
 logic sh_loaded_s, sh_done_s;
-pulse sh_loaded_pulse (.clk(clk), .n_reset(n_sh_reset), .d(sh_loaded), .q(sh_loaded_s));
-pulse sh_done_pulse (.clk(clk), .n_reset(n_sh_reset), .d(sh_done), .q(sh_done_s));
+pulse sh_loaded_pulse (.clk(sys.clk), .n_reset(n_sh_reset), .d(sh_loaded), .q(sh_loaded_s));
+pulse sh_done_pulse (.clk(sys.clk), .n_reset(n_sh_reset), .d(sh_done), .q(sh_done_s));
 
 // Bit capture
 
@@ -107,7 +107,7 @@ assign sh_din = cap_din;
 
 /*** Control logic ***/
 
-always_ff @(posedge clk, negedge enabled)
+always_ff @(posedge sys.clk, negedge enabled)
 	if (~enabled) begin
 		n_sh_reset <= 'b0;
 		reg_data[`RX] <= `DATA_N'b0;
@@ -123,9 +123,9 @@ always_ff @(posedge clk, negedge enabled)
 
 /*** Status report ***/
 
-always_ff @(posedge clk, negedge enabled)
+always_ff @(posedge sys.clk, negedge enabled)
 	if (~enabled) begin
-		reg_stat <= `DATA_N'b0 | `SPI_STAT_TXE;
+		reg_stat <= `SPI_STAT_TXE;
 	end else begin
 		if (n_sh_reset && sh_done_s)
 			reg_stat[`SPI_STAT_RXNE_] <= 1'b1;
@@ -141,14 +141,14 @@ always_ff @(posedge clk, negedge enabled)
 
 assign cap_din = miso;
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset)
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
 		sck <= 1'b0;
 	else
 		sck <= enabled & ((sh_loaded & sclk) ^ cpol);
 
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset)
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
 		mosi <= 1'b0;
 	else
 		mosi <= sh_dout;

@@ -22,7 +22,7 @@ interface regbus_if (
 endinterface
 
 interface periphbus_if (
-	input logic we, oe,
+	input logic we,
 	input logic [`PERIPH_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data
 );

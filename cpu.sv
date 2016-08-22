@@ -3,7 +3,7 @@ import typepkg::*;
 
 module cpu (
 	sys_if sys,
-	output logic we,
+	output logic we, dbg,
 	output wire [`ADDR_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data
 );
@@ -24,15 +24,15 @@ logic alu_cin, alu_cout, alu_sign, alu_zero, alu_ovf;
 alu alu0 (.*);
 
 alu_bus_a_t abus_a;
-assign alu_in_a = abus_a.bus ? sysbus.data : 'bz;
+assign alu_in_a = abus_a.bus ? sysbus.data : {`DATA_N{1'bz}};
 constants con_a (.oe(abus_a.con), .sel(abus_a.consel), .out(alu_in_a));
 
 alu_bus_b_t abus_b;
-assign alu_in_b = abus_b.bus ? sysbus.data : 'bz;
+assign alu_in_b = abus_b.bus ? sysbus.data : {`DATA_N{1'bz}};
 constants con_b (.oe(abus_b.con), .sel(abus_b.consel), .out(alu_in_b));
 
 alu_bus_o_t abus_o;
-assign sysbus.data = abus_o.bus ? alu_out : 'bz;
+assign sysbus.data = abus_o.bus ? alu_out : {`DATA_N{1'bz}};
 
 // Registers
 dataLogic acc;
@@ -71,7 +71,7 @@ register adl0 (.regbus(adl0bus), .*);
 regbus_if adh0bus (.we(abus_o.adh), .oe(abus_a.adh), .in(alu_out), .out(alu_in_a), .data(adh));
 register adh0 (.regbus(adh0bus), .*);
 //assign adh = sysbus.data;
-assign sysbus.addr = ad_addr_oe ? {adh, adl} : 'bz;
+assign sysbus.addr = ad_addr_oe ? {adh, adl} : {`ADDR_N{1'bz}};
 
 // Program counter
 logic pc_addr_oe;

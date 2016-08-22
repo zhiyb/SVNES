@@ -1,10 +1,12 @@
 `include "config.h"
+import typepkg::*;
 
 module peripherals (
 	sys_if sys,
 	sysbus_if sysbus,
 	// GPIO
 	inout wire [`DATA_N - 1:0] io[2],
+	output dataLogic iodir[2],
 	// SPI
 	input logic cs, miso,
 	output logic mosi, sck
@@ -22,8 +24,8 @@ periphbus_if pbus (
 	.addr(sysbus.addr[`PERIPH_N - 1:0])
 );
 
-gpio gpio0 (.sel(periph_sel[0]), .io(io[0]), .*);
-gpio gpio1 (.sel(periph_sel[1]), .io(io[1]), .*);
+gpio gpio0 (.sel(periph_sel[0]), .io(io[0]), .iodir(iodir[0]), .*);
+gpio gpio1 (.sel(periph_sel[1]), .io(io[1]), .iodir(iodir[1]), .*);
 
 logic interrupt;
 spi spi0 (.sel(periph_sel[2]), .*);

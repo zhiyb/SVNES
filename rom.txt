@@ -1,0 +1,109 @@
+a9;	-- LDA #$ff
+ff;
+8d;	-- STA $3004	-- GPIO1_DIR
+04;
+30;
+ad;	-- LDA $3002	-- GPIO0_IN
+02;
+30;
+8d;	-- STA $0256
+56;
+02;
+a9;	-- LDA #$ff
+ff;
+ad;	-- LDA $0256
+56;
+02;
+49;	-- EOR #$ff
+ff;
+8d;	-- STA $3005	-- GPIO1_OUT
+05;
+30;
+4c;	-- JMP #$ff00
+00;
+ff;
+
+a9;	-- LDA #$55
+55;
+aa;	-- TAX
+a8;	-- TAY
+ba;	-- TSX
+8a;	-- TXA
+98;	-- TYA
+aa;	-- TAX
+9a;	-- TXS
+a2;	-- LDX #$5a
+5a;
+a0;	-- LDY #$a5
+a5;
+8d;	-- STA $3004
+04;
+30;
+8e;	-- STX $3004
+04;
+30;
+8c;	-- STY $3004
+04;
+30;
+a9;	-- LDA #$00
+00;
+6d;	-- ADC $3004
+04;
+30;
+ed;	-- SBC $3004
+04;
+30;
+0d;	-- ORA $3004
+04;
+30;
+a9;	-- LDA #$ff
+ff;
+2d;	-- AND $3004
+04;
+30;
+4d;	-- EOR $3004
+04;
+30;
+ad;	-- LDA $3004
+04;
+30;
+ae;	-- LDX $3004
+04;
+30;
+ac;	-- LDY $3004
+04;
+30;
+e8;	-- INX
+c8;	-- INY
+ca;	-- DEX
+88;	-- DEY
+a9;	-- LDA #$55
+55;
+69;	-- ADC #$55
+55;
+e9;	-- SBC #$22
+22;
+29;	-- AND #$55
+aa;
+09;	-- ORA #$aa
+55;
+49;	-- EOR #$5a
+33;
+0a;	-- ASL
+4a;	-- LSR
+a9;	-- LDA #$81
+55;
+2a;	-- ROL
+a9;	-- LDA #$81
+55;
+6a;	-- ROR
+4c;	-- JMP #$ff00
+00;
+ff;
+
+	0fa  :   00;	-- NMI vector
+	0fb  :   ff;
+	0fc  :   00;	-- Reset vector
+	0fd  :   ff;
+	0fe  :   00;	-- IRQ vector
+	0ff  :   ff;

@@ -9,7 +9,7 @@ module sequencer (
 	input Addressing mode,
 	
 	// Bus control
-	output logic bus_we,
+	output logic bus_we, dbg,
 	
 	// Program counter
 	pc_addr_oe, pc_inc, pc_load,
@@ -84,6 +84,8 @@ begin
 	p_clr = 'h0;
 	state_next = state;
 	
+	dbg = state == sys.n_reset;
+	
 	execute = 1'b0;
 	case (state)
 	Fetch: begin
@@ -107,17 +109,16 @@ begin
 		end
 		Abs:	begin
 			alu_func = ALUTXB;
-			abus_b.con = 1'b0;
 			abus_b.bus = 1'b1;
 			abus_o.adl = 1'b1;
 			state_next = ReadH;
 		end
+		default:	;
 		endcase
 	end
 	ReadH: begin
 		pc_addr_oe = 1'b1;
 		alu_func = ALUTXB;
-		abus_b.con = 1'b0;
 		abus_b.bus = 1'b1;
 		abus_o.adh = 1'b1;
 		if (opcode == JMP || opcode == JSR) begin
@@ -137,7 +138,6 @@ begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
 		alu_func = ALUTXB;
-		abus_b.con = 1'b0;
 		abus_b.bus = 1'b1;
 		abus_o.adl = 1'b1;
 		state_next = JumpH;
@@ -146,7 +146,6 @@ begin
 		pc_addr_oe = 1'b1;
 		pc_load = 1'b1;
 		alu_func = ALUTXB;
-		abus_b.con = 1'b0;
 		abus_b.bus = 1'b1;
 		abus_o.adh = 1'b1;
 		state_next = Fetch;
@@ -381,6 +380,7 @@ begin
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
 		end
+		default:	;
 		endcase
 end
 

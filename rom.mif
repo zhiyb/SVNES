@@ -1,0 +1,132 @@
+-- Copyright (C) 1991-2016 Altera Corporation. All rights reserved.
+-- Your use of Altera Corporation's design tools, logic functions 
+-- and other software and tools, and its AMPP partner logic 
+-- functions, and any output files from any of the foregoing 
+-- (including device programming or simulation files), and any 
+-- associated documentation or information are expressly subject 
+-- to the terms and conditions of the Altera Program License 
+-- Subscription Agreement, the Altera Quartus Prime License Agreement,
+-- the Altera MegaCore Function License Agreement, or other 
+-- applicable license agreement, including, without limitation, 
+-- that your use is for the sole purpose of programming logic 
+-- devices manufactured by Altera and sold by Altera or its 
+-- authorized distributors.  Please refer to the applicable 
+-- agreement for further details.
+
+-- Quartus Prime generated Memory Initialization File (.mif)
+
+WIDTH=8;
+DEPTH=256;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+	000  :   a9;	-- LDA #$ff
+	001  :   ff;
+	002  :   8d;	-- STA $3004	-- GPIO1_DIR
+	003  :   04;
+	004  :   30;
+	005  :   ad;	-- LDA $3002	-- GPIO0_IN
+	006  :   02;
+	007  :   30;
+	008  :   8d;	-- STA $0256
+	009  :   56;
+	00a  :   02;
+	00b  :   a9;	-- LDA #$ff
+	00c  :   ff;
+	00d  :   ad;	-- LDA $0256
+	00e  :   56;
+	00f  :   02;
+	010  :   49;	-- EOR #$ff
+	011  :   ff;
+	012  :   8d;	-- STA $3005	-- GPIO1_OUT
+	013  :   05;
+	014  :   30;
+	015  :   4c;	-- JMP #$ff00
+	016  :   00;
+	017  :   ff;
+	018  :   a9;	-- LDA #$55
+	019  :   55;
+	01a  :   aa;	-- TAX
+	01b  :   a8;	-- TAY
+	01c  :   ba;	-- TSX
+	01d  :   8a;	-- TXA
+	01e  :   98;	-- TYA
+	01f  :   aa;	-- TAX
+	020  :   9a;	-- TXS
+	021  :   a2;	-- LDX #$5a
+	022  :   5a;
+	023  :   a0;	-- LDY #$a5
+	024  :   a5;
+	025  :   8d;	-- STA $3004
+	026  :   04;
+	027  :   30;
+	028  :   8e;	-- STX $3004
+	029  :   04;
+	02a  :   30;
+	02b  :   8c;	-- STY $3004
+	02c  :   04;
+	02d  :   30;
+	02e  :   a9;	-- LDA #$00
+	02f  :   00;
+	030  :   6d;	-- ADC $3004
+	031  :   04;
+	032  :   30;
+	033  :   ed;	-- SBC $3004
+	034  :   04;
+	035  :   30;
+	036  :   0d;	-- ORA $3004
+	037  :   04;
+	038  :   30;
+	039  :   a9;	-- LDA #$ff
+	03a  :   ff;
+	03b  :   2d;	-- AND $3004
+	03c  :   04;
+	03d  :   30;
+	03e  :   4d;	-- EOR $3004
+	03f  :   04;
+	040  :   30;
+	041  :   ad;	-- LDA $3004
+	042  :   04;
+	043  :   30;
+	044  :   ae;	-- LDX $3004
+	045  :   04;
+	046  :   30;
+	047  :   ac;	-- LDY $3004
+	048  :   04;
+	049  :   30;
+	04a  :   e8;	-- INX
+	04b  :   c8;	-- INY
+	04c  :   ca;	-- DEX
+	04d  :   88;	-- DEY
+	04e  :   a9;	-- LDA #$55
+	04f  :   55;
+	050  :   69;	-- ADC #$55
+	051  :   55;
+	052  :   e9;	-- SBC #$22
+	053  :   22;
+	054  :   29;	-- AND #$55
+	055  :   aa;
+	056  :   09;	-- ORA #$aa
+	057  :   55;
+	058  :   49;	-- EOR #$5a
+	059  :   33;
+	05a  :   0a;	-- ASL
+	05b  :   4a;	-- LSR
+	05c  :   a9;	-- LDA #$81
+	05d  :   55;
+	05e  :   2a;	-- ROL
+	05f  :   a9;	-- LDA #$81
+	060  :   55;
+	061  :   6a;	-- ROR
+	062  :   4c;	-- JMP #$ff00
+	063  :   00;
+	064  :   ff;
+	0fa  :   00;	-- NMI vector
+	0fb  :   ff;
+	0fc  :   00;	-- Reset vector
+	0fd  :   ff;
+	0fe  :   00;	-- IRQ vector
+	0ff  :   ff;
+END;

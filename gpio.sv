@@ -1,11 +1,13 @@
 `include "config.h"
+import typepkg::*;
 
 module gpio (
 	sys_if sys,
 	input logic sel,
 	periphbus_if pbus,
 	// IO ports
-	inout wire [`DATA_N - 1 : 0] io
+	inout wire [`DATA_N - 1 : 0] io,
+	output dataLogic iodir
 );
 
 /*** Internal registers ***/
@@ -45,11 +47,12 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 /*** Control logic ***/
 
 assign reg_in = io;
+assign iodir = reg_dir;
 
 genvar i;
 generate
-for (i = 0; i != `DATA_N; i++) begin: gen_io
-	assign io[i] = reg_dir[i] ? reg_out[i] : 1'bz;
+	for (i = 0; i != `DATA_N; i++) begin: gen_io
+		assign io[i] = reg_dir[i] ? reg_out[i] : 1'bz;
 end
 endgenerate
 

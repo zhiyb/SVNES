@@ -14,8 +14,9 @@ module sequencer (
 	// Program counter
 	pc_addr_oe, pc_inc, pc_load,
 	
-	// Address register
-	dl_addr_oe, dlh_clr,
+	// Data latch registers
+	input logic dll_sign,
+	output logic dl_addr_oe, dlh_clr,
 	
 	// Stack register
 	sp_addr_oe,
@@ -40,7 +41,7 @@ module sequencer (
 	output dataLogic p_mask, p_set, p_clr
 );
 
-enum int unsigned {JumpL, JumpH, Fetch, Decode, ReadH, Absolute, Push, Pull} state, state_next;
+enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, Execute, Push, Pull} state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -48,7 +49,7 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	else
 		state <= state_next;
 
-logic execute;
+logic execute, branch;
 always_comb
 begin
 	bus_we = 1'b0;
@@ -74,6 +75,7 @@ begin
 	
 	abus_b.bus = 1'b1;
 	abus_b.con = 1'b0;
+	abus_b.dll = 1'b0;
 	
 	abus_o.bus = 1'b0;
 	abus_o.acc = 1'b0;
@@ -96,25 +98,40 @@ begin
 	
 	dbg = state == Fetch;
 	
+	case (opcode)
+	// Branching operations
+	BCC:	branch = ~p[`STATUS_C];
+	BCS:	branch = p[`STATUS_C];
+	BNE:	branch = ~p[`STATUS_Z];
+	BEQ:	branch = p[`STATUS_Z];
+	BPL:	branch = ~p[`STATUS_N];
+	BMI:	branch = p[`STATUS_N];
+	BVC:	branch = ~p[`STATUS_V];
+	BVS:	branch = p[`STATUS_V];
+	default:	branch = 1'b0;
+	endcase
+	
 	execute = 1'b0;
 	case (state)
-	Fetch: begin
+	Fetch:	begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
 		ins_we = 1'b1;
 		state_next = Decode;
 	end
-	Decode: begin
+	Decode:	begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
 		case (mode)
 		Imp:	begin
 			pc_inc = 1'b0;
-			execute = 1'b1;
-			if (opcode == PHA || opcode == PHP) begin
+			case (opcode)
+			PHA, PHP:	begin
+				execute = 1'b1;
 				pc_addr_oe = 1'b0;
 				state_next = Push;
-			end else if (opcode == PLA || opcode == PLP) begin
+			end
+			PLA, PLP:	begin
 				alu_func = ALUSUB;
 				alu_cinclr = 1'b1;
 				abus_a.bus = 1'b0;
@@ -122,10 +139,13 @@ begin
 				abus_b.bus = 1'b0;
 				abus_b.con = 1'b1;
 				abus_o.sp = 1'b1;
-				execute = 1'b0;
 				state_next = Pull;
-			end else
+			end
+			default:	begin
+				execute = 1'b1;
 				state_next = Fetch;
+			end
+			endcase
 		end
 		Imm:	begin
 			state_next = Fetch;
@@ -137,7 +157,7 @@ begin
 			abus_o.dll = 1'b1;
 			dlh_clr = 1'b1;
 			abus_o.dlh = 1'b1;
-			state_next = Absolute;
+			state_next = Execute;
 		end
 		Abs:	begin
 			alu_func = ALUTXB;
@@ -146,11 +166,43 @@ begin
 			state_next = ReadH;
 		end
 		Rel: begin
+			if (branch) begin
+				alu_func = ALUTXB;
+				abus_b.bus = 1'b1;
+				abus_o.dll = 1'b1;
+				state_next = Branch;
+			end else
+				state_next = Fetch;
 		end
 		default:	;
 		endcase
 	end
-	ReadH: begin
+	Branch:	begin
+		pc_addr_oe = 1'b1;
+		alu_func = ALUADD;
+		alu_cinclr = 1'b1;
+		abus_a.bus = 1'b0;
+		abus_a.pcl = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.dll = 1'b1;
+		abus_o.pcl = 1'b1;
+		if (alu_cout ^ dll_sign)
+			state_next = BranchOVF;
+		else
+			state_next = Fetch;
+	end
+	BranchOVF:	begin
+		pc_addr_oe = 1'b1;
+		alu_func = dll_sign ? ALUSUB : ALUADD;
+		alu_cinclr = 1'b1;
+		abus_a.bus = 1'b0;
+		abus_a.pch = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.pch = 1'b1;
+		state_next = Fetch;
+	end
+	ReadH:	begin
 		pc_addr_oe = 1'b1;
 		alu_func = ALUTXB;
 		abus_b.bus = 1'b1;
@@ -160,15 +212,15 @@ begin
 			state_next = Fetch;
 		end else begin
 			pc_inc = 1'b1;
-			state_next = Absolute;
+			state_next = Execute;
 		end
 	end
-	Absolute: begin
+	Execute:	begin
 		dl_addr_oe = 1'b1;
 		state_next = Fetch;
 		execute = 1'b1;
 	end
-	JumpL: begin
+	JumpL:	begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
 		alu_func = ALUTXB;
@@ -176,7 +228,7 @@ begin
 		abus_o.dll = 1'b1;
 		state_next = JumpH;
 	end
-	JumpH: begin
+	JumpH:	begin
 		pc_addr_oe = 1'b1;
 		pc_load = 1'b1;
 		alu_func = ALUTXB;

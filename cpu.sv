@@ -20,7 +20,8 @@ register ins0 (.regbus(ins0bus), .*);
 wire [`DATA_N - 1:0] alu_in_a, alu_in_b;
 dataLogic alu_out;
 ALUFunc alu_func;
-logic alu_cin, alu_cinclr, alu_cout, alu_sign, alu_zero, alu_ovf;
+logic alu_cin, alu_cinclr;
+logic alu_cout, alu_sign, alu_zero, alu_ovf;
 alu alu0 (.*);
 
 alu_bus_a_t abus_a;
@@ -65,10 +66,13 @@ regbus_if sp0bus (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), 
 register sp0 (.regbus(sp0bus), .*);
 assign sysbus.addr = sp_addr_oe ? {{`ADDR_N - `DATA_N - 1{1'b0}}, 1'b1, sp} : {`ADDR_N{1'bz}};
 
-// Data latching registers
+// Data latch registers
 dataLogic dll, dlh;
-logic dl_addr_oe, dlh_clr;
-regbus_if dll0bus (.we(abus_o.dll), .oe(abus_a.dll), .in(alu_out), .out(alu_in_a), .data(dll));
+logic dl_addr_oe, dll_sign, dlh_clr;
+assign dll_sign = dll[`DATA_N - 1];
+assign alu_in_a = abus_a.dll ? dll : {`DATA_N{1'bz}};
+assign alu_in_b = abus_b.dll ? dll : {`DATA_N{1'bz}};
+regbus_if dll0bus (.we(abus_o.dll), .oe(1'b0), .in(alu_out), .out(), .data(dll));
 register dll0 (.regbus(dll0bus), .*);
 wire [`DATA_N - 1:0] dlh_in;
 assign dlh_in = dlh_clr ? {`DATA_N{1'b0}} : alu_out;

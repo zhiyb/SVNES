@@ -16,7 +16,7 @@ typedef enum logic [6:0] {
 	// Testing operations
 	BIT, CMP, CPX, CPY,
 	// Branching operations
-	BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS,
+	BCC, BCS, BNE, BEQ, BPL, BMI, BVC, BVS,
 	// Jumping operations
 	JMP, JSR, RTI, RTS,
 	// Status register operations
@@ -57,6 +57,7 @@ typedef struct {
 // ALU input B output enables
 typedef struct {
 	logic bus, con;
+	logic dll;
 } alu_bus_b_t;
 
 // ALU output write enables

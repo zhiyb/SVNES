@@ -1,3 +1,27 @@
+a9;	-- LDA #$00
+00;
+d0;	-- BNE $fe
+fe;
+a9;	-- LDA #$7f
+7f;
+f0;	-- BEQ $f0
+f0;
+
+69;	-- ADC #$01
+01;
+50;	-- BVC $fe
+fe;
+70;	-- BVS $01
+01;
+b8;	-- CLV
+
+38;	-- SEC
+90;	-- BCC $fe
+fe;
+b0;	-- BCS $01
+01;
+18;	-- CLC
+
 a9;	-- LDA #$ee
 ee;
 48;	-- PHA

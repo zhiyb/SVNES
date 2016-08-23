@@ -128,13 +128,13 @@ always_ff @(posedge sys.clk, negedge enabled)
 		reg_stat <= `SPI_STAT_TXE;
 	end else begin
 		if (n_sh_reset && sh_done_s)
-			reg_stat[`SPI_STAT_RXNE_] <= 1'b1;
+			reg_stat <= reg_stat | `SPI_STAT_RXNE;
 		else if (oe && pbus.addr == `SPI_DATA)
-			reg_stat[`SPI_STAT_RXNE_] <= 1'b0;
+			reg_stat <= reg_stat & ~`SPI_STAT_RXNE;
 		if (we && pbus.addr == `SPI_DATA)
-			reg_stat[`SPI_STAT_TXE_] <= 1'b0;
+			reg_stat <= reg_stat & ~`SPI_STAT_TXE;
 		else if (sh_loaded_s)
-			reg_stat[`SPI_STAT_TXE_] <= 1'b1;
+			reg_stat <= reg_stat | `SPI_STAT_TXE;
 	end
 
 /*** IO logic ***/

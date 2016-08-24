@@ -41,7 +41,7 @@ module sequencer (
 	output dataLogic p_mask, p_set, p_clr
 );
 
-enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, Execute, Store, Push, Pull} state, state_next;
+enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, Execute, WriteBack, Push, Pull} state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -161,6 +161,15 @@ begin
 			state_next = Execute;
 		end
 		ZpX:	begin
+			alu_func = ALUADD;	// X + BUS => DLL
+			alu_cinclr = 1'b1;
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_b.bus = 1'b1;
+			abus_o.dll = 1'b1;
+			dlh_clr = 1'b1;		// 0 => DLH
+			abus_o.dlh = 1'b1;
+			state_next = Execute;
 		end
 		Abs:	begin
 			alu_func = ALUTXB;	// BUS => DLL
@@ -224,11 +233,11 @@ begin
 		case (opcode)
 		ASL, LSR,
 		ROL, ROR,
-		INC, DEC:	state_next = Store;
+		INC, DEC:	state_next = WriteBack;
 		default:		state_next = Fetch;
 		endcase
 	end
-	Store:	begin
+	WriteBack:	begin
 		dl_addr_oe = 1'b1;
 		bus_we = 1'b1;
 		alu_func = ALUTXB;	// DL => BUS

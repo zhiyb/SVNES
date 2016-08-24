@@ -17,7 +17,7 @@ module sequencer (
 	
 	// Data latch registers
 	input logic dl_sign,
-	output logic dl_addr_oe, dlh_clr,
+	output logic dl_addr_oe, dlh_addr_oe, dlh_clr,
 	
 	// Stack register
 	sp_addr_oe,
@@ -50,7 +50,7 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	else
 		alu_cout_prev <= alu_cout;
 
-enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, ReadHP, Execute, WriteBack, Push, Pull} state, state_next;
+enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, ReadHP, IzXL, IzXLtoH, IzXH, Execute, WriteBack, Push, Pull} state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -64,6 +64,7 @@ begin
 	bus_we = 1'b0;
 	pc_addr_oe = 1'b0;
 	dl_addr_oe = 1'b0;
+	dlh_addr_oe = 1'b0;
 	sp_addr_oe = 1'b0;
 	pc_inc = 1'b0;
 	pc_load = 1'b0;
@@ -191,6 +192,15 @@ begin
 			abus_o.dlh = 1'b1;
 			state_next = Execute;
 		end
+		IzX:	begin
+			alu_func = ALUADD;	// X + BUS => DLH
+			alu_cinclr = 1'b1;
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_b.bus = 1'b1;
+			abus_o.dlh = 1'b1;
+			state_next = IzXL;
+		end
 		Abs:	begin
 			alu_func = ALUTXB;	// BUS => DLL
 			abus_b.bus = 1'b1;
@@ -281,6 +291,31 @@ begin
 		abus_a.dlh = 1'b1;
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
+		abus_o.dlh = 1'b1;
+		state_next = Execute;
+	end
+	IzXL:	begin
+		dlh_addr_oe = 1'b1;
+		alu_func = ALUTXB;	// BUS => DLL
+		abus_b.bus = 1'b1;
+		abus_o.dll = 1'b1;
+		state_next = IzXLtoH;
+	end
+	IzXLtoH:	begin
+		dlh_addr_oe = 1'b1;
+		alu_func = ALUADD;	// DLH + 1 => DLH
+		alu_cinclr = 1'b1;
+		abus_a.bus = 1'b0;
+		abus_a.dlh = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.dlh = 1'b1;
+		state_next = IzXH;
+	end
+	IzXH:	begin
+		dlh_addr_oe = 1'b1;
+		alu_func = ALUTXB;	// BUS => DLH
+		abus_b.bus = 1'b1;
 		abus_o.dlh = 1'b1;
 		state_next = Execute;
 	end

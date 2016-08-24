@@ -69,7 +69,7 @@ assign sysbus.addr = sp_addr_oe ? {{`ADDR_N - `DATA_N - 1{1'b0}}, 1'b1, sp} : {`
 
 // Data latch registers
 dataLogic dl, dll, dlh;
-logic dl_addr_oe, dl_sign, dlh_clr;
+logic dlh_addr_oe, dl_addr_oe, dl_sign, dlh_clr;
 assign dl_sign = dl[`DATA_N - 1];
 regbus_if dl0bus (.we(abus_o.dl), .oe(abus_b.dl), .in(alu_out), .out(alu_in_b), .data(dl));
 register dl0 (.regbus(dl0bus), .*);
@@ -81,6 +81,7 @@ regbus_if dlh0bus (.we(abus_o.dlh), .oe(abus_a.dlh), .in(dlh_in), .out(alu_in_a)
 register dlh0 (.regbus(dlh0bus), .*);
 //assign adh = sysbus.data;
 assign sysbus.addr = dl_addr_oe ? {dlh, dll} : {`ADDR_N{1'bz}};
+assign sysbus.addr = dlh_addr_oe ? {{`ADDR_N - `DATA_N{1'b0}}, dlh} : {`ADDR_N{1'bz}};
 
 // Program counter
 logic pc_addr_oe;

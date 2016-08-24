@@ -1,73 +1,31 @@
-a9;	-- LDA #$aa
-aa;
-a2;	-- LDX #$0f
-0f;
-9d;	-- STA $00f0, X
-f0;
-00;
-a2;	-- LDX #$10
+a2;	-- LDX #$03
+03;
+a9;	-- LDA #$ac
+ac;
+95;	-- STA $10, X
 10;
-9d;	-- STA $00f0, X
-f0;
-00;
-a0;	-- LDY #$0f
-0f;
-18;	-- CLC
-79;	-- ADC $00f0, Y
-f0;
-00;
-a0;	-- LDY #$10
-10;
-18;	-- CLC
-fd;	-- SBC $00f0, Y
-f0;
-00;
-fe;	-- INC $00f0, X
-f0;
-00;
+a9;	-- LDA #$06
+06;
+85;	-- STA $14
+14;
 
-a2;	-- LDX #$ff
-ff;
-9a;	-- TXS
 a9;	-- LDA #$aa
 aa;
-85;	-- STA $04
-04;
-a9;	-- LDA #$55
-55;
-24;	-- BIT $04
-04;
-48;	-- PHA
-08;	-- PHP
-c9;	-- CMP #$5a
-5a;
-c5;	-- CMP $04
-04;
-cd;	-- CMP $3004
-04;
-30;
-68;	-- PLA
-68;	-- PLA
-28;	-- PLP
-68;	-- PLA
-a2;	-- LDX #$5a
-5a;
-e0;	-- CPX #$a5
-a5;
-e4;	-- CPX $04
-04;
-ec;	-- CPX $3004
-04;
-30;
-a0;	-- LDY #$a5
-a5;
-c0;	-- CPY #$aa
-aa;
-c4;	-- CPY $04
-04;
-cc;	-- CPY $3004
-04;
-30;
+8d;	-- STA $06ac
+ac;
+06;
+18;	-- CRC
+61;	-- ADC ($10, X)
+10;
+81;	-- STA ($10, X)
+10;
+
+18;	-- CRC
+90;	-- BCC
+02;
+
+ac;	-- (UNUSED) DATA SEGMENT
+06;
 
 a9;	-- LDA #$ff
 ff;
@@ -90,84 +48,6 @@ ff;
 8d;	-- STA $3005	-- GPIO1_OUT
 05;
 30;
-4c;	-- JMP #$ff00
-00;
-ff;
-
-a9;	-- LDA #$55
-55;
-aa;	-- TAX
-a8;	-- TAY
-ba;	-- TSX
-8a;	-- TXA
-98;	-- TYA
-aa;	-- TAX
-9a;	-- TXS
-a2;	-- LDX #$5a
-5a;
-a0;	-- LDY #$a5
-a5;
-8d;	-- STA $3004
-04;
-30;
-8e;	-- STX $3004
-04;
-30;
-8c;	-- STY $3004
-04;
-30;
-a9;	-- LDA #$00
-00;
-6d;	-- ADC $3004
-04;
-30;
-ed;	-- SBC $3004
-04;
-30;
-0d;	-- ORA $3004
-04;
-30;
-a9;	-- LDA #$ff
-ff;
-2d;	-- AND $3004
-04;
-30;
-4d;	-- EOR $3004
-04;
-30;
-ad;	-- LDA $3004
-04;
-30;
-ae;	-- LDX $3004
-04;
-30;
-ac;	-- LDY $3004
-04;
-30;
-e8;	-- INX
-c8;	-- INY
-ca;	-- DEX
-88;	-- DEY
-a9;	-- LDA #$55
-55;
-69;	-- ADC #$55
-55;
-e9;	-- SBC #$22
-22;
-29;	-- AND #$55
-aa;
-09;	-- ORA #$aa
-55;
-49;	-- EOR #$5a
-33;
-0a;	-- ASL
-4a;	-- LSR
-a9;	-- LDA #$81
-55;
-2a;	-- ROL
-a9;	-- LDA #$81
-55;
-6a;	-- ROR
 4c;	-- JMP #$ff00
 00;
 ff;

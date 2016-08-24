@@ -171,6 +171,17 @@ begin
 			abus_o.dlh = 1'b1;
 			state_next = Execute;
 		end
+		ZpY:	begin
+			alu_func = ALUADD;	// Y + BUS => DLL
+			alu_cinclr = 1'b1;
+			abus_a.bus = 1'b0;
+			abus_a.y = 1'b1;
+			abus_b.bus = 1'b1;
+			abus_o.dll = 1'b1;
+			dlh_clr = 1'b1;		// 0 => DLH
+			abus_o.dlh = 1'b1;
+			state_next = Execute;
+		end
 		Abs:	begin
 			alu_func = ALUTXB;	// BUS => DLL
 			abus_b.bus = 1'b1;

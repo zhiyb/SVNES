@@ -3,6 +3,7 @@ import typepkg::*;
 
 module cpu (
 	sys_if sys,
+	input wire rdy,
 	output logic we, dbg,
 	output wire [`ADDR_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data
@@ -96,6 +97,6 @@ Addressing mode;
 idec idec0 (.pc_bytes(), .*);
 
 // Control sequencer
-sequencer seq0 (.bus_we(we), .*);
+sequencer seq0 (.bus_rdy(rdy), .bus_we(we), .*);
 
 endmodule

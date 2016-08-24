@@ -9,6 +9,7 @@ module sequencer (
 	input Addressing mode,
 	
 	// Bus control
+	input logic bus_rdy,
 	output logic bus_we, dbg,
 	
 	// Program counter
@@ -46,7 +47,7 @@ enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, Execut
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		state <= JumpL;
-	else
+	else if (bus_rdy)
 		state <= state_next;
 
 logic execute, branch;
@@ -188,7 +189,9 @@ begin
 			abus_o.dll = 1'b1;
 			state_next = ReadH;
 		end
-		Rel: begin
+		AbsX:	begin
+		end
+		Rel:	begin
 			if (branch) begin
 				alu_func = ALUTXB;	// BUS => DL
 				abus_b.bus = 1'b1;

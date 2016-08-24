@@ -12,10 +12,14 @@ module peripherals (
 	output logic mosi, sck
 );
 
+logic periphs_sel;
+assign periphs_sel = (sysbus.addr & ~`PERIPH_MASK) == `PERIPH_BASE;
+assign sysbus.rdy = periphs_sel ? 1'b1 : 1'bz;
+
 logic [2 ** `PERIPH_MAP_N - 1:0] periph_sel;
 demux #(.N(`PERIPH_MAP_N)) demux0 (
 	.sel(sysbus.addr[`PERIPHS_N - 1:`PERIPH_N]),
-	.oe((sysbus.addr & ~`PERIPH_MASK) == `PERIPH_BASE),
+	.oe(periphs_sel),
 	.q(periph_sel)
 );
 

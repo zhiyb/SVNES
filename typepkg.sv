@@ -57,14 +57,14 @@ typedef struct {
 // ALU input B output enables
 typedef struct {
 	logic bus, con;
-	logic dll;
+	logic dl;
 } alu_bus_b_t;
 
 // ALU output write enables
 typedef struct {
 	logic bus;
 	logic acc, x, y, p, sp;
-	logic dlh, dll, pch, pcl;
+	logic dl, dlh, dll, pch, pcl;
 } alu_bus_o_t;
 
 endpackage

@@ -1,3 +1,31 @@
+a9;	-- LDA #$aa
+aa;
+a2;	-- LDX #$0f
+0f;
+9d;	-- STA $00f0, X
+f0;
+00;
+a2;	-- LDX #$10
+10;
+9d;	-- STA $00f0, X
+f0;
+00;
+a0;	-- LDY #$0f
+0f;
+18;	-- CLC
+79;	-- ADC $00f0, Y
+f0;
+00;
+a0;	-- LDY #$10
+10;
+18;	-- CLC
+fd;	-- SBC $00f0, Y
+f0;
+00;
+fe;	-- INC $00f0, X
+f0;
+00;
+
 a2;	-- LDX #$ff
 ff;
 9a;	-- TXS

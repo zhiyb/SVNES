@@ -42,7 +42,15 @@ module sequencer (
 	output dataLogic p_mask, p_set, p_clr
 );
 
-enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, Execute, WriteBack, Push, Pull} state, state_next;
+logic alu_cout_prev;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		alu_cout_prev <= 1'b0;
+	else
+		alu_cout_prev <= alu_cout;
+
+enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, ReadHP, Execute, WriteBack, Push, Pull} state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -190,11 +198,20 @@ begin
 			state_next = ReadH;
 		end
 		AbX:	begin
-			alu_func = ALUADD;	// X + BUS => DL, DLL
+			alu_func = ALUADD;	// X + BUS => DLL
+			alu_cinclr = 1'b1;
 			abus_a.bus = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b1;
-			abus_o.dl = 1'b1;
+			abus_o.dll = 1'b1;
+			state_next = ReadH;
+		end
+		AbY:	begin
+			alu_func = ALUADD;	// Y + BUS => DLL
+			alu_cinclr = 1'b1;
+			abus_a.bus = 1'b0;
+			abus_a.y = 1'b1;
+			abus_b.bus = 1'b1;
 			abus_o.dll = 1'b1;
 			state_next = ReadH;
 		end
@@ -245,8 +262,27 @@ begin
 			state_next = Fetch;
 		end else begin
 			pc_inc = 1'b1;
-			state_next = Execute;
+			case (mode)
+			AbX, AbY:	begin
+				if (alu_cout_prev)
+					state_next = ReadHP;
+				else
+					state_next = Execute;
+			end
+			default:		state_next = Execute;
+			endcase
 		end
+	end
+	ReadHP:	begin
+		dl_addr_oe = 1'b1;
+		alu_func = ALUADD;	// DLH + 1 => DLH
+		alu_cinclr = 1'b1;
+		abus_a.bus = 1'b0;
+		abus_a.dlh = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.dlh = 1'b1;
+		state_next = Execute;
 	end
 	Execute:	begin
 		dl_addr_oe = 1'b1;
@@ -455,6 +491,7 @@ begin
 		// Increment & decrement operations
 		INC:	begin
 			alu_func = ALUADD;	// BUS + 1 => DL
+			alu_cinclr = 1'b1;
 			abus_a.bus = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
@@ -486,6 +523,7 @@ begin
 		end
 		DEC:	begin
 			alu_func = ALUSUB;	// BUS - 1 => DL
+			alu_cinclr = 1'b1;
 			abus_a.bus = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;

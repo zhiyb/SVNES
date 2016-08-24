@@ -134,7 +134,7 @@ begin
 				state_next = Push;
 			end
 			PLA, PLP:	begin
-				alu_func = ALUSUB;	// SP - 1 => SP
+				alu_func = ALUADD;	// SP + 1 => SP
 				alu_cinclr = 1'b1;
 				abus_a.bus = 1'b0;
 				abus_a.sp = 1'b1;
@@ -189,7 +189,14 @@ begin
 			abus_o.dll = 1'b1;
 			state_next = ReadH;
 		end
-		AbsX:	begin
+		AbX:	begin
+			alu_func = ALUADD;	// X + BUS => DL, DLL
+			abus_a.bus = 1'b0;
+			abus_a.x = 1'b1;
+			abus_b.bus = 1'b1;
+			abus_o.dl = 1'b1;
+			abus_o.dll = 1'b1;
+			state_next = ReadH;
 		end
 		Rel:	begin
 			if (branch) begin
@@ -278,7 +285,7 @@ begin
 	end
 	Push:	begin
 		pc_addr_oe = 1'b1;
-		alu_func = ALUADD;	// SP + 1 => SP
+		alu_func = ALUSUB;	// SP - 1 => SP
 		alu_cinclr = 1'b1;
 		abus_a.bus = 1'b0;
 		abus_a.sp = 1'b1;

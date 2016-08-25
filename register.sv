@@ -3,18 +3,18 @@ import typepkg::*;
 
 module register (
 	sys_if sys,
-	regbus_if regbus
+	input logic we, oe,
+	output dataLogic data,
+	input dataLogic in,
+	output wire [`DATA_N - 1:0] out
 );
 
-dataLogic data;
-
-assign regbus.data = data;
-assign regbus.out = regbus.oe ? data : {`DATA_N{1'bz}};
+assign out = oe ? data : {`DATA_N{1'bz}};
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		data <= 'h0;
-	else if (regbus.we)
-		data <= regbus.in;
+	else if (we)
+		data <= in;
 
 endmodule

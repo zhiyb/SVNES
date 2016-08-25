@@ -14,14 +14,6 @@ interface sysbus_if (
 );
 endinterface
 
-interface regbus_if (
-	input logic we, oe,
-	output dataLogic data,
-	input dataLogic in,
-	output wire [`DATA_N - 1:0] out
-);
-endinterface
-
 interface periphbus_if (
 	input logic we,
 	input logic [`PERIPH_N - 1:0] addr,

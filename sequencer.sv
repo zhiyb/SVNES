@@ -9,7 +9,7 @@ module sequencer (
 	input Addressing mode,
 	
 	// Bus control
-	input logic bus_rdy,
+	inout wire bus_rdy,
 	output logic bus_we, dbg,
 	
 	// Program counter
@@ -17,7 +17,7 @@ module sequencer (
 	
 	// Data latch registers
 	input logic dl_sign,
-	output logic dl_addr_oe, dlh_addr_oe, dlh_clr,
+	output logic ad_addr_oe, adh_bus,
 	
 	// Stack register
 	sp_addr_oe,
@@ -50,7 +50,13 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	else
 		alu_cout_prev <= alu_cout;
 
-enum int unsigned {JumpL, JumpH, Branch, BranchOVF, Fetch, Decode, ReadH, ReadHP, IzXL, IzXLtoH, IzXH, Execute, WriteBack, Push, Pull} state, state_next;
+enum int unsigned {
+	Fetch, Decode, Execute, WriteBack,
+	JumpL, JumpH, Branch, BranchOVF,
+	ReadH, ReadHP, Push, Pull,
+	IzXL, IzXH,
+	IzYL, IzYH, IzYHP
+} state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -63,23 +69,22 @@ always_comb
 begin
 	bus_we = 1'b0;
 	pc_addr_oe = 1'b0;
-	dl_addr_oe = 1'b0;
-	dlh_addr_oe = 1'b0;
+	ad_addr_oe = 1'b0;
 	sp_addr_oe = 1'b0;
 	pc_inc = 1'b0;
 	pc_load = 1'b0;
 	ins_we = 1'b0;
-	dlh_clr = 1'b0;
+	adh_bus = 1'b0;
 	
-	abus_a.bus = 1'b1;
-	abus_a.con = 1'b0;
+	abus_a.con = 1'b1;
 	abus_a.acc = 1'b0;
 	abus_a.x = 1'b0;
 	abus_a.y = 1'b0;
 	abus_a.p = 1'b0;
 	abus_a.sp = 1'b0;
-	abus_a.dll = 1'b0;
-	abus_a.dlh = 1'b0;
+	abus_a.dl = 1'b0;
+	abus_a.adl = 1'b0;
+	abus_a.adh = 1'b0;
 	abus_a.pcl = 1'b0;
 	abus_a.pch = 1'b0;
 	
@@ -93,9 +98,8 @@ begin
 	abus_o.y = 1'b0;
 	abus_o.p = 1'b0;
 	abus_o.sp = 1'b0;
-	abus_o.dl = 1'b0;
-	abus_o.dll = 1'b0;
-	abus_o.dlh = 1'b0;
+	abus_o.adl = 1'b0;
+	abus_o.adh = 1'b0;
 	abus_o.pcl = 1'b0;
 	abus_o.pch = 1'b0;
 	
@@ -128,6 +132,9 @@ begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
 		ins_we = 1'b1;
+		alu_func = ALUTXA;	// 0 => ADH
+		abus_a.con = 1'b1;
+		abus_o.adh = 1'b1;
 		state_next = Decode;
 	end
 	Decode:	begin
@@ -145,7 +152,7 @@ begin
 			PLA, PLP:	begin
 				alu_func = ALUADD;	// SP + 1 => SP
 				alu_cinclr = 1'b1;
-				abus_a.bus = 1'b0;
+				abus_a.con = 1'b0;
 				abus_a.sp = 1'b1;
 				abus_b.bus = 1'b0;
 				abus_b.con = 1'b1;
@@ -163,74 +170,78 @@ begin
 			execute = 1'b1;
 		end
 		Zp:	begin
-			alu_func = ALUTXB;	// BUS => DLL
+			alu_func = ALUTXB;	// BUS => ADL
 			abus_b.bus = 1'b1;
-			abus_o.dll = 1'b1;
-			dlh_clr = 1'b1;		// 0 => DLH
-			abus_o.dlh = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = Execute;
 		end
 		ZpX:	begin
-			alu_func = ALUADD;	// X + BUS => DLL
+			alu_func = ALUADD;	// X + BUS => ADL
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b1;
-			abus_o.dll = 1'b1;
-			dlh_clr = 1'b1;		// 0 => DLH
-			abus_o.dlh = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = Execute;
 		end
 		ZpY:	begin
-			alu_func = ALUADD;	// Y + BUS => DLL
+			alu_func = ALUADD;	// Y + BUS => ADL
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b1;
-			abus_o.dll = 1'b1;
-			dlh_clr = 1'b1;		// 0 => DLH
-			abus_o.dlh = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = Execute;
 		end
 		IzX:	begin
-			alu_func = ALUADD;	// X + BUS => DLH
+			alu_func = ALUADD;	// X + BUS => ADL
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b1;
-			abus_o.dlh = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = IzXL;
 		end
-		Abs:	begin
-			alu_func = ALUTXB;	// BUS => DLL
+		IzY:	begin
+			alu_func = ALUTXB;	// BUS => ADL
 			abus_b.bus = 1'b1;
-			abus_o.dll = 1'b1;
+			abus_o.adl = 1'b1;
+			state_next = IzYL;
+		end
+		Abs:	begin
+			alu_func = ALUTXB;	// BUS => ADL
+			abus_b.bus = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = ReadH;
 		end
 		AbX:	begin
-			alu_func = ALUADD;	// X + BUS => DLL
+			alu_func = ALUADD;	// X + BUS => ADL
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b1;
-			abus_o.dll = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = ReadH;
 		end
 		AbY:	begin
-			alu_func = ALUADD;	// Y + BUS => DLL
+			alu_func = ALUADD;	// Y + BUS => ADL
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b1;
-			abus_o.dll = 1'b1;
+			abus_o.adl = 1'b1;
 			state_next = ReadH;
 		end
 		Rel:	begin
 			if (branch) begin
-				alu_func = ALUTXB;	// BUS => DL
+				pc_inc = 1'b0;
+				alu_func = ALUADD;	// PCL + BUS => PCL
+				alu_cinclr = 1'b1;
+				abus_a.con = 1'b0;
+				abus_a.pcl = 1'b1;
 				abus_b.bus = 1'b1;
-				abus_o.dl = 1'b1;
-				state_next = Branch;
+				abus_o.pcl = 1'b1;
+				state_next = Branch;	// BUS => DL
 			end else
 				state_next = Fetch;
 		end
@@ -239,34 +250,30 @@ begin
 	end
 	Branch:	begin
 		pc_addr_oe = 1'b1;
-		alu_func = ALUADD;	// PCL + DL => PCL
+		alu_func = dl_sign ? ALUSUB : ALUADD;	// PCH +/- 1 ?=> PCH
 		alu_cinclr = 1'b1;
-		abus_a.bus = 1'b0;
-		abus_a.pcl = 1'b1;
-		abus_b.bus = 1'b0;
-		abus_b.dl = 1'b1;
-		abus_o.pcl = 1'b1;
-		if (alu_cout ^ dl_sign)
-			state_next = BranchOVF;
-		else
-			state_next = Fetch;
-	end
-	BranchOVF:	begin
-		pc_addr_oe = 1'b1;
-		alu_func = dl_sign ? ALUSUB : ALUADD;	// PCH +/- 1 => PCH
-		alu_cinclr = 1'b1;
-		abus_a.bus = 1'b0;
+		abus_a.con = 1'b0;
 		abus_a.pch = 1'b1;
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
-		abus_o.pch = 1'b1;
+		if (alu_cout_prev ^ dl_sign) begin
+			abus_o.pch = 1'b1;
+			state_next = BranchOVF;
+		end else begin
+			pc_inc = 1'b1;
+			state_next = Fetch;
+		end
+	end
+	BranchOVF:	begin
+		pc_inc = 1'b1;
+		pc_addr_oe = 1'b1;
 		state_next = Fetch;
 	end
 	ReadH:	begin
 		pc_addr_oe = 1'b1;
-		alu_func = ALUTXB;	// BUS => DLH
+		alu_func = ALUTXB;	// BUS => ADH
 		abus_b.bus = 1'b1;
-		abus_o.dlh = 1'b1;
+		abus_o.adh = 1'b1;
 		if (opcode == JMP || opcode == JSR) begin
 			pc_load = 1'b1;
 			state_next = Fetch;
@@ -284,81 +291,115 @@ begin
 		end
 	end
 	ReadHP:	begin
-		dl_addr_oe = 1'b1;
-		alu_func = ALUADD;	// DLH + 1 => DLH
+		ad_addr_oe = 1'b1;
+		alu_func = ALUADD;	// ADH + 1 => ADH
 		alu_cinclr = 1'b1;
-		abus_a.bus = 1'b0;
-		abus_a.dlh = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.adh = 1'b1;
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
-		abus_o.dlh = 1'b1;
+		abus_o.adh = 1'b1;
 		state_next = Execute;
 	end
 	IzXL:	begin
-		dlh_addr_oe = 1'b1;
-		alu_func = ALUTXB;	// BUS => DLL
-		abus_b.bus = 1'b1;
-		abus_o.dll = 1'b1;
-		state_next = IzXLtoH;
-	end
-	IzXLtoH:	begin
-		dlh_addr_oe = 1'b1;
-		alu_func = ALUADD;	// DLH + 1 => DLH
+		ad_addr_oe = 1'b1;
+		alu_func = ALUADD;	// ADL + 1 => ADL
 		alu_cinclr = 1'b1;
-		abus_a.bus = 1'b0;
-		abus_a.dlh = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.adl = 1'b1;
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
-		abus_o.dlh = 1'b1;
+		abus_o.adl = 1'b1;
 		state_next = IzXH;
 	end
 	IzXH:	begin
-		dlh_addr_oe = 1'b1;
-		alu_func = ALUTXB;	// BUS => DLH
-		abus_b.bus = 1'b1;
-		abus_o.dlh = 1'b1;
+		ad_addr_oe = 1'b1;
+		alu_func = ALUTXA;	// DL => ADL
+		abus_a.con = 1'b0;
+		abus_a.dl = 1'b1;
+		abus_o.adl = 1'b1;
+		adh_bus = 1'b1;		// BUS => ADH
+		abus_o.adh = 1'b1;
+		state_next = Execute;
+	end
+	IzYL:	begin
+		ad_addr_oe = 1'b1;
+		alu_func = ALUADD;	// ADL + 1 => ADL
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.adl = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.adl = 1'b1;
+		state_next = IzYH;
+	end
+	IzYH:	begin
+		ad_addr_oe = 1'b1;
+		alu_func = ALUADD;	// Y + DL => ADL
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.y = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.dl = 1'b1;
+		abus_o.adl = 1'b1;
+		adh_bus = 1'b1;		// BUS => ADH
+		abus_o.adh = 1'b1;
+		if (alu_cout)
+			state_next = IzYHP;
+		else
+			state_next = Execute;
+	end
+	IzYHP:	begin
+		ad_addr_oe = 1'b1;
+		alu_func = ALUADD;	// ADH + 1 => ADH
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.adh = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.adh = 1'b1;
 		state_next = Execute;
 	end
 	Execute:	begin
-		dl_addr_oe = 1'b1;
+		ad_addr_oe = 1'b1;
 		execute = 1'b1;
 		case (opcode)
 		ASL, LSR,
 		ROL, ROR,
-		INC, DEC:	state_next = WriteBack;
+		INC, DEC:	begin
+			execute = 1'b0;
+			state_next = WriteBack;
+		end
 		default:		state_next = Fetch;
 		endcase
 	end
 	WriteBack:	begin
-		dl_addr_oe = 1'b1;
+		ad_addr_oe = 1'b1;
+		execute = 1'b1;
 		bus_we = 1'b1;
-		alu_func = ALUTXB;	// DL => BUS
-		abus_b.bus = 1'b0;
-		abus_b.dl = 1'b1;
-		abus_o.bus = 1'b1;
 		state_next = Fetch;
 	end
 	JumpL:	begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
-		alu_func = ALUTXB;	// BUS => DLL
+		alu_func = ALUTXB;	// BUS => ADL
 		abus_b.bus = 1'b1;
-		abus_o.dll = 1'b1;
+		abus_o.adl = 1'b1;
 		state_next = JumpH;
 	end
 	JumpH:	begin
 		pc_addr_oe = 1'b1;
 		pc_load = 1'b1;
-		alu_func = ALUTXB;	// BUS => DLH
+		alu_func = ALUTXB;	// BUS => ADH
 		abus_b.bus = 1'b1;
-		abus_o.dlh = 1'b1;
+		abus_o.adh = 1'b1;
 		state_next = Fetch;
 	end
 	Push:	begin
 		pc_addr_oe = 1'b1;
 		alu_func = ALUSUB;	// SP - 1 => SP
 		alu_cinclr = 1'b1;
-		abus_a.bus = 1'b0;
+		abus_a.con = 1'b0;
 		abus_a.sp = 1'b1;
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
@@ -376,7 +417,7 @@ begin
 		// Arithmetic operations
 		ADC:	begin
 			alu_func = ALUADD;	// ACC + BUS + C => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			abus_o.acc = 1'b1;
@@ -387,7 +428,7 @@ begin
 		end
 		SBC:	begin
 			alu_func = ALUSUB;	// ACC - BUS - C => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			abus_o.acc = 1'b1;
@@ -399,7 +440,7 @@ begin
 		// Compare operations
 		BIT:	begin
 			alu_func = ALUBIT;	// ACC BIT BUS => P
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -409,7 +450,7 @@ begin
 		CMP:	begin
 			alu_func = ALUSUB;	// ACC - BUS => P
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -419,7 +460,7 @@ begin
 		CPX:	begin
 			alu_func = ALUSUB;	// X - BUS => P
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -429,7 +470,7 @@ begin
 		CPY:	begin
 			alu_func = ALUSUB;	// Y - BUS => P
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -439,7 +480,7 @@ begin
 		// Logical operations
 		AND:	begin
 			alu_func = ALUAND;	// ACC AND BUS => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			abus_o.acc = 1'b1;
@@ -448,7 +489,7 @@ begin
 		end
 		ORA:	begin
 			alu_func = ALUORA;	// ACC ORA BUS => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			abus_o.acc = 1'b1;
@@ -457,7 +498,7 @@ begin
 		end
 		EOR:	begin
 			alu_func = ALUEOR;	// ACC EOR BUS => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_b.bus = 1'b1;
 			abus_o.acc = 1'b1;
@@ -468,13 +509,13 @@ begin
 		ASL:	begin
 			alu_func = ALUROL;
 			alu_cinclr = 1'b1;
+			abus_a.con = 1'b0;
 			if (mode == Imp) begin	// ASL ACC => ACC
-				abus_a.bus = 1'b0;
 				abus_a.acc = 1'b1;
 				abus_o.acc = 1'b1;
-			end else begin				// ASL BUS => DL
-				abus_a.bus = 1'b1;
-				abus_o.dl = 1'b1;
+			end else begin				// ASL DL => BUS
+				abus_a.dl = 1'b1;
+				abus_o.bus = 1'b1;
 			end
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -483,13 +524,13 @@ begin
 		LSR:	begin
 			alu_func = ALUROR;
 			alu_cinclr = 1'b1;
+			abus_a.con = 1'b0;
 			if (mode == Imp) begin	// LSR ACC => ACC
-				abus_a.bus = 1'b0;
 				abus_a.acc = 1'b1;
 				abus_o.acc = 1'b1;
-			end else begin				// LSR BUS => DL
-				abus_a.bus = 1'b1;
-				abus_o.dl = 1'b1;
+			end else begin				// LSR DL => BUS
+				abus_a.dl = 1'b1;
+				abus_o.bus = 1'b1;
 			end
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -497,13 +538,13 @@ begin
 		end
 		ROL:	begin
 			alu_func = ALUROL;
+			abus_a.con = 1'b0;
 			if (mode == Imp) begin	// ROL ACC => ACC
-				abus_a.bus = 1'b0;
 				abus_a.acc = 1'b1;
 				abus_o.acc = 1'b1;
-			end else begin				// ROL BUS => DL
-				abus_a.bus = 1'b1;
-				abus_o.dl = 1'b1;
+			end else begin				// ROL DL => BUS
+				abus_a.dl = 1'b1;
+				abus_o.bus = 1'b1;
 			end
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -511,13 +552,13 @@ begin
 		end
 		ROR:	begin
 			alu_func = ALUROR;
+			abus_a.con = 1'b0;
 			if (mode == Imp) begin	// ROR ACC => ACC
-				abus_a.bus = 1'b0;
 				abus_a.acc = 1'b1;
 				abus_o.acc = 1'b1;
-			end else begin				// ROR BUS => DL
-				abus_a.bus = 1'b1;
-				abus_o.dl = 1'b1;
+			end else begin				// ROR DL => BUS
+				abus_a.dl = 1'b1;
+				abus_o.bus = 1'b1;
 			end
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
@@ -525,19 +566,20 @@ begin
 		end
 		// Increment & decrement operations
 		INC:	begin
-			alu_func = ALUADD;	// BUS + 1 => DL
+			alu_func = ALUADD;	// DL + 1 => BUS
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b1;
+			abus_a.con = 1'b0;
+			abus_a.dl = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
-			abus_o.dl = 1'b1;
+			abus_o.bus = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
 		end
 		INX:	begin
 			alu_func = ALUADD;	// X + 1 => X
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
@@ -548,7 +590,7 @@ begin
 		INY:	begin
 			alu_func = ALUADD;	// Y + 1 => Y
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
@@ -557,19 +599,20 @@ begin
 			p_mask[`STATUS_Z] = 1'b1;
 		end
 		DEC:	begin
-			alu_func = ALUSUB;	// BUS - 1 => DL
+			alu_func = ALUSUB;	// DL - 1 => BUS
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b1;
+			abus_a.con = 1'b0;
+			abus_a.dl = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
-			abus_o.dl = 1'b1;
+			abus_o.bus = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
 			p_mask[`STATUS_Z] = 1'b1;
 		end
 		DEX:	begin
 			alu_func = ALUSUB;	// X - 1 => X
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
@@ -580,7 +623,7 @@ begin
 		DEY:	begin
 			alu_func = ALUSUB;	// Y - 1 => Y
 			alu_cinclr = 1'b1;
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_b.bus = 1'b0;
 			abus_b.con = 1'b1;
@@ -613,21 +656,21 @@ begin
 		// Memory store
 		STA:	begin
 			alu_func = ALUTXA;	// ACC => BUS
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_o.bus = 1'b1;
 			bus_we = 1'b1;
 		end
 		STX:	begin
 			alu_func = ALUTXA;	// X => BUS
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_o.bus = 1'b1;
 			bus_we = 1'b1;
 		end
 		STY:	begin
 			alu_func = ALUTXA;	// Y => BUS
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_o.bus = 1'b1;
 			bus_we = 1'b1;
@@ -643,7 +686,7 @@ begin
 		// Register transfer operations
 		TAX:	begin
 			alu_func = ALUTXA;	// ACC => X
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_o.x = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -651,7 +694,7 @@ begin
 		end
 		TAY:	begin
 			alu_func = ALUTXA;	// ACC => Y
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_o.y = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -659,7 +702,7 @@ begin
 		end
 		TSX:	begin
 			alu_func = ALUTXA;	// SP => X
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.sp = 1'b1;
 			abus_o.x = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -667,7 +710,7 @@ begin
 		end
 		TXA:	begin
 			alu_func = ALUTXA;	// A => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_o.acc = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -675,7 +718,7 @@ begin
 		end
 		TXS:	begin
 			alu_func = ALUTXA;	// X => SP
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.x = 1'b1;
 			abus_o.sp = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -683,7 +726,7 @@ begin
 		end
 		TYA:	begin
 			alu_func = ALUTXA;	// Y => ACC
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.y = 1'b1;
 			abus_o.acc = 1'b1;
 			p_mask[`STATUS_N] = 1'b1;
@@ -692,7 +735,7 @@ begin
 		// Stack operations
 		PHA:	begin
 			alu_func = ALUTXA;	// ACC => BUS
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_o.bus = 1'b1;
 			sp_addr_oe = 1'b1;
@@ -700,7 +743,7 @@ begin
 		end
 		PHP:	begin
 			alu_func = ALUTXA;	// P => BUS
-			abus_a.bus = 1'b0;
+			abus_a.con = 1'b0;
 			abus_a.p = 1'b1;
 			abus_o.bus = 1'b1;
 			sp_addr_oe = 1'b1;

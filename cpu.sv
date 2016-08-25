@@ -3,7 +3,7 @@ import typepkg::*;
 
 module cpu (
 	sys_if sys,
-	input wire rdy,
+	inout wire rdy,
 	output logic we, dbg,
 	output wire [`ADDR_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data
@@ -26,8 +26,7 @@ logic alu_cout, alu_sign, alu_zero, alu_ovf;
 alu alu0 (.*);
 
 alu_bus_a_t abus_a;
-assign alu_in_a = abus_a.bus ? sysbus.data : {`DATA_N{1'bz}};
-assign alu_in_a = abus_a.con ? {{`DATA_N - 1{1'b0}}, 1'b1} : {`DATA_N{1'bz}};
+assign alu_in_a = abus_a.con ? {`DATA_N{1'b0}} : {`DATA_N{1'bz}};
 
 alu_bus_b_t abus_b;
 assign alu_in_b = abus_b.bus ? sysbus.data : {`DATA_N{1'bz}};
@@ -68,20 +67,24 @@ register sp0 (.regbus(sp0bus), .*);
 assign sysbus.addr = sp_addr_oe ? {{`ADDR_N - `DATA_N - 1{1'b0}}, 1'b1, sp} : {`ADDR_N{1'bz}};
 
 // Data latch registers
-dataLogic dl, dll, dlh;
-logic dlh_addr_oe, dl_addr_oe, dl_sign, dlh_clr;
-assign dl_sign = dl[`DATA_N - 1];
-regbus_if dl0bus (.we(abus_o.dl), .oe(abus_b.dl), .in(alu_out), .out(alu_in_b), .data(dl));
+dataLogic dl;
+regbus_if dl0bus (.we(1'b1), .oe(abus_a.dl), .in(sysbus.data), .out(alu_in_a), .data(dl));
 register dl0 (.regbus(dl0bus), .*);
-regbus_if dll0bus (.we(abus_o.dll), .oe(abus_a.dll), .in(alu_out), .out(alu_in_a), .data(dll));
-register dll0 (.regbus(dll0bus), .*);
-wire [`DATA_N - 1:0] dlh_in;
-assign dlh_in = dlh_clr ? {`DATA_N{1'b0}} : alu_out;
-regbus_if dlh0bus (.we(abus_o.dlh), .oe(abus_a.dlh), .in(dlh_in), .out(alu_in_a), .data(dlh));
-register dlh0 (.regbus(dlh0bus), .*);
-//assign adh = sysbus.data;
-assign sysbus.addr = dl_addr_oe ? {dlh, dll} : {`ADDR_N{1'bz}};
-assign sysbus.addr = dlh_addr_oe ? {{`ADDR_N - `DATA_N{1'b0}}, dlh} : {`ADDR_N{1'bz}};
+assign alu_in_b = abus_b.dl ? dl : {`DATA_N{1'bz}};
+logic dl_sign;
+assign dl_sign = dl[`DATA_N - 1];
+
+dataLogic adl;
+regbus_if adl0bus (.we(abus_o.adl), .oe(abus_a.adl), .in(alu_out), .out(alu_in_a), .data(adl));
+register adl0 (.regbus(adl0bus), .*);
+
+dataLogic adh, adh_in;
+logic adh_bus;
+assign adh_in = adh_bus ? sysbus.data : alu_out;
+regbus_if adh0bus (.we(abus_o.adh), .oe(abus_a.adh), .in(adh_in), .out(alu_in_a), .data(adh));
+register adh0 (.regbus(adh0bus), .*);
+logic ad_addr_oe;
+assign sysbus.addr = ad_addr_oe ? {adh, adl} : {`ADDR_N{1'bz}};
 
 // Program counter
 logic pc_addr_oe;
@@ -90,7 +93,7 @@ pc pc0 (
 	.oel(abus_a.pcl), .oeh(abus_a.pch),
 	.wel(abus_o.pcl), .weh(abus_o.pch),
 	.in(alu_out), .out(alu_in_a),
-	.load({sysbus.data, dll}), .*);
+	.load({sysbus.data, adl}), .*);
 
 // Instruction decoder
 Opcode opcode;

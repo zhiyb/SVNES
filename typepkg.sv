@@ -49,9 +49,9 @@ typedef enum logic [3:0] {
 
 // ALU input A output enables
 typedef struct {
-	logic bus, con;
+	logic con;
 	logic acc, x, y, p, sp;
-	logic dlh, dll, pch, pcl;
+	logic dl, adl, adh, pch, pcl;
 } alu_bus_a_t;
 
 // ALU input B output enables
@@ -64,7 +64,7 @@ typedef struct {
 typedef struct {
 	logic bus;
 	logic acc, x, y, p, sp;
-	logic dl, dlh, dll, pch, pcl;
+	logic adl, adh, pch, pcl;
 } alu_bus_o_t;
 
 endpackage

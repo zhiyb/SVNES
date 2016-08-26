@@ -66,6 +66,9 @@ assign LED[7] = n_reset_in;
 logic cs, miso;
 logic mosi, sck;
 
+logic irq, nmi;
+assign irq = 1'b1, nmi = 1'b1;
+
 system sys0 (.clk(clk1M), .*);
 
 endmodule

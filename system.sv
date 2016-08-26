@@ -5,6 +5,8 @@ module system (
 	// Clock and reset
 	input logic clk, n_reset_in,
 	output logic n_reset, dbg,
+	// Interrupt lines
+	input logic irq, nmi,
 	// GPIO
 	inout wire [`DATA_N - 1:0] io[2],
 	output dataLogic iodir[2],

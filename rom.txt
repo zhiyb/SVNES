@@ -7,6 +7,7 @@ ff;
 
 a9;	-- LDA #$ff
 ff;
+00;	-- BRK
 8d;	-- STA $3004	-- GPIO1_DIR
 04;
 30;

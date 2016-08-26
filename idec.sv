@@ -8,8 +8,7 @@ module idec (
 	output logic [1:0] pc_bytes
 );
 
-Opcode LUT_op[256];
-assign LUT_op = '{
+parameter Opcode LUT_op[256] = '{
 //	+00	+01	+02	+03	+04	+05	+06	+07	+08	+09	+0a	+0b	+0c	+0d	+0e	+0f
 	BRK,	ORA,	KIL,	SLO,	NOP,	ORA,	ASL,	SLO,	PHP,	ORA,	ASL,	ANC,	NOP,	ORA,	ASL,	SLO,	// 00
 	BPL,	ORA,	KIL,	SLO,	NOP,	ORA,	ASL,	SLO,	CLC,	ORA,	NOP,	SLO,	NOP,	ORA,	ASL,	SLO,	// 10
@@ -30,8 +29,7 @@ assign LUT_op = '{
 };
 assign opcode = LUT_op[ins];
 
-Addressing LUT_addr[256];
-assign LUT_addr = '{
+parameter Addressing LUT_addr[256] = '{
 //	+00	+01	+02	+03	+04	+05	+06	+07	+08	+09	+0a	+0b	+0c	+0d	+0e	+0f
 	Imp,	IzX,	Imp,	IzX,	Zp,	Zp,	Zp,	Zp,	Imp,	Imm,	Imp,	Imm,	Abs,	Abs,	Abs,	Abs,	// 00
 	Rel,	IzY,	Imp,	IzY,	ZpX,	ZpX,	ZpX,	ZpX,	Imp,	AbY,	Imp,	AbY,	AbX,	AbX,	AbX,	AbX,	// 10

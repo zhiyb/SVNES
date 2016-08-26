@@ -13,8 +13,13 @@ module sequencer (
 	output logic bus_we, dbg,
 	
 	// Program counter
-	pc_addr_oe, pc_inc, pc_load,
+	pc_addr_oe, pc_inc, pc_load, pc_int,
+	pcl_oe, pch_oe,
 	
+	// Interrupt logic
+	output logic int_handled,
+	input logic int_evnt,
+
 	// Data latch registers
 	input logic dl_sign,
 	output logic ad_addr_oe, adh_bus,
@@ -38,6 +43,7 @@ module sequencer (
 	output ALUFunc alu_func,
 	
 	// Status register
+	output logic p_oe,
 	input dataLogic p,
 	output dataLogic p_mask, p_set, p_clr
 );
@@ -57,12 +63,13 @@ enum int unsigned {
 	IzXL, IzXH,
 	IzYL, IzYH, IzYHP,
 	PushPCH, PushPCHtoL, PushPCL,
-	PullPCL, PullPCLtoH, PullPCH, PullPCInc
+	PullPCL, PullPCLtoH, PullPCH, PullPCInc,
+	IntPushH, IntPushL, IntPushP
 } state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
-		state <= JumpL;
+		state <= Fetch;
 	else if (bus_rdy)
 		state <= state_next;
 
@@ -75,6 +82,11 @@ begin
 	sp_addr_oe = 1'b0;
 	pc_inc = 1'b0;
 	pc_load = 1'b0;
+	pc_int = 1'b0;
+	pcl_oe = 1'b0;
+	pch_oe = 1'b0;
+	p_oe = 1'b0;
+	int_handled = 1'b0;
 	ins_we = 1'b0;
 	adh_bus = 1'b0;
 	
@@ -132,7 +144,7 @@ begin
 	case (state)
 	Fetch:	begin
 		pc_addr_oe = 1'b1;
-		pc_inc = 1'b1;
+		pc_inc = ~int_evnt;
 		ins_we = 1'b1;
 		alu_func = ALUTXA;	// 0 => ADH
 		abus_a.con = 1'b1;
@@ -170,6 +182,10 @@ begin
 				abus_b.con = 1'b1;
 				abus_o.sp = 1'b1;
 				state_next = Pull;
+			end
+			BRK:	begin
+				pc_inc = ~int_evnt;
+				state_next = IntPushH;
 			end
 			default:	begin
 				execute = 1'b1;
@@ -264,6 +280,50 @@ begin
 		default:	;
 		endcase
 	end
+	IntPushH:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUSUB;	// SP - 1 => SP
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.sp = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.sp = 1'b1;
+		pch_oe = 1'b1;			// PCH => BUS
+		bus_we = 1'b1;
+		state_next = IntPushL;
+	end
+	IntPushL:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUSUB;	// SP - 1 => SP
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.sp = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.sp = 1'b1;
+		pcl_oe = 1'b1;			// PCL => BUS
+		bus_we = 1'b1;
+		// Interrupt handle
+		int_handled = 1'b1;
+		pc_int = 1'b1;			// INT => PC
+		p_set[`STATUS_B] = ~int_evnt;
+		state_next = IntPushP;
+	end
+	IntPushP:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUSUB;	// SP - 1 => SP
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.sp = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.sp = 1'b1;
+		p_oe = 1'b1;			// P => BUS
+		bus_we = 1'b1;
+		p_set[`STATUS_I] = 1'b1;
+		state_next = JumpL;
+	end
 	Branch:	begin
 		pc_addr_oe = 1'b1;
 		alu_func = dl_sign ? ALUSUB : ALUADD;	// PCH +/- 1 ?=> PCH
@@ -338,7 +398,6 @@ begin
 		abus_a.dl = 1'b1;
 		abus_o.adl = 1'b1;
 		adh_bus = 1'b1;		// BUS => ADH
-		abus_o.adh = 1'b1;
 		state_next = Execute;
 	end
 	IzYL:	begin
@@ -362,7 +421,6 @@ begin
 		abus_b.dl = 1'b1;
 		abus_o.adl = 1'b1;
 		adh_bus = 1'b1;		// BUS => ADH
-		abus_o.adh = 1'b1;
 		if (alu_cout)
 			state_next = IzYHP;
 		else

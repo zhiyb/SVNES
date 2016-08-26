@@ -56,7 +56,8 @@ enum int unsigned {
 	ReadH, ReadHP, Push, Pull,
 	IzXL, IzXH,
 	IzYL, IzYH, IzYHP,
-	PushPCH, PushPCHtoL, PushPCL
+	PushPCH, PushPCHtoL, PushPCL,
+	PullPCL, PullPCLtoH, PullPCH, PullPCInc
 } state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
@@ -149,6 +150,16 @@ begin
 				execute = 1'b1;
 				pc_addr_oe = 1'b0;
 				state_next = Push;
+			end
+			RTS:	begin
+				alu_func = ALUADD;	// SP + 1 => SP
+				alu_cinclr = 1'b1;
+				abus_a.con = 1'b0;
+				abus_a.sp = 1'b1;
+				abus_b.bus = 1'b0;
+				abus_b.con = 1'b1;
+				abus_o.sp = 1'b1;
+				state_next = PullPCL;
 			end
 			PLA, PLP:	begin
 				alu_func = ALUADD;	// SP + 1 => SP
@@ -448,6 +459,36 @@ begin
 		abus_o.bus = 1'b1;
 		bus_we = 1'b1;
 		state_next = Push;
+	end
+	PullPCL:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUTXB;	// BUS => PCL
+		abus_b.bus = 1'b1;
+		abus_o.pcl = 1'b1;
+		state_next = PullPCLtoH;
+	end
+	PullPCLtoH:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUADD;	// SP + 1 => SP
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.sp = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.sp = 1'b1;
+		state_next = PullPCH;
+	end
+	PullPCH:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUTXB;	// BUS => PCH
+		abus_b.bus = 1'b1;
+		abus_o.pch = 1'b1;
+		state_next = PullPCInc;
+	end
+	PullPCInc:	begin
+		pc_addr_oe = 1'b1;
+		pc_inc = 1'b1;
+		state_next = Fetch;
 	end
 	endcase
 	

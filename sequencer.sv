@@ -208,6 +208,7 @@ begin
 			abus_o.adl = 1'b1;
 			state_next = IzYL;
 		end
+		Ind,
 		Abs:	begin
 			alu_func = ALUTXB;	// BUS => ADL
 			abus_b.bus = 1'b1;
@@ -276,7 +277,10 @@ begin
 		abus_o.adh = 1'b1;
 		if (opcode == JMP || opcode == JSR) begin
 			pc_load = 1'b1;
-			state_next = Fetch;
+			if (mode == Ind)
+				state_next = JumpL;
+			else
+				state_next = Fetch;
 		end else begin
 			pc_inc = 1'b1;
 			case (mode)

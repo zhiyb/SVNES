@@ -1,43 +1,3 @@
-a2;	-- LDX #$03
-03;
-a9;	-- LDA #$ac
-ac;
-95;	-- STA $10, X
-10;
-a9;	-- LDA #$06
-06;
-85;	-- STA $14
-14;
-
-a9;	-- LDA #$aa
-aa;
-8d;	-- STA $06ac
-ac;
-06;
-18;	-- CRC
-61;	-- ADC ($10, X)
-10;
-81;	-- STA ($10, X)
-10;
-
-a9;	-- LDA #$00
-00;
-85;	-- STA $13
-13;
-a0;	-- LDY $#ac
-ac;
-f1;	-- SBC ($13), Y
-13;
-91;	-- STA ($13), Y
-13;
-
-18;	-- CRC
-90;	-- BCC
-02;
-
-ac;	-- (UNUSED) DATA SEGMENT
-06;
-
 a9;	-- LDA #$ff
 ff;
 8d;	-- STA $3004	-- GPIO1_DIR
@@ -46,22 +6,25 @@ ff;
 ad;	-- LDA $3002	-- GPIO0_IN
 02;
 30;
-8d;	-- STA $0256
-56;
-02;
-a9;	-- LDA #$ff
-ff;
-ad;	-- LDA $0256
-56;
-02;
 49;	-- EOR #$ff
 ff;
 8d;	-- STA $3005	-- GPIO1_OUT
 05;
 30;
-4c;	-- JMP #$ff00
+
+a9;	-- LDA #$00
 00;
+8d;	-- STA $0666
+66;
+06;
+a9;	-- LDA #$ff
 ff;
+8d;	-- STA $0667
+67;
+06;
+6c;	-- JMP ($0666)
+66;
+06;
 
 	0fa  :   00;	-- NMI vector
 	0fb  :   ff;

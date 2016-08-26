@@ -1,7 +1,7 @@
 `include "config.h"
 import typepkg::*;
 
-module register (
+module register #(parameter reset = 8'h00) (
 	sys_if sys,
 	input logic we, oe,
 	output dataLogic data,
@@ -13,7 +13,7 @@ assign out = oe ? data : {`DATA_N{1'bz}};
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
-		data <= 'h0;
+		data <= reset;
 	else if (we)
 		data <= in;
 

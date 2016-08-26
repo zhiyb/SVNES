@@ -60,7 +60,7 @@ register p0 (
 // Stack pointer
 dataLogic sp;
 logic sp_addr_oe;
-register sp0 (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp), .*);
+register #(.reset(8'hff)) sp0 (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp), .*);
 assign sysbus.addr = sp_addr_oe ? {{`ADDR_N - `DATA_N - 1{1'b0}}, 1'b1, sp} : {`ADDR_N{1'bz}};
 
 // Data latch registers

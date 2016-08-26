@@ -55,7 +55,8 @@ enum int unsigned {
 	JumpL, JumpH, Branch, BranchOVF,
 	ReadH, ReadHP, Push, Pull,
 	IzXL, IzXH,
-	IzYL, IzYH, IzYHP
+	IzYL, IzYH, IzYHP,
+	PushPCH, PushPCHtoL, PushPCL
 } state, state_next;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
@@ -213,7 +214,10 @@ begin
 			alu_func = ALUTXB;	// BUS => ADL
 			abus_b.bus = 1'b1;
 			abus_o.adl = 1'b1;
-			state_next = ReadH;
+			if (opcode == JSR)
+				state_next = PushPCH;
+			else
+				state_next = ReadH;
 		end
 		AbX:	begin
 			alu_func = ALUADD;	// X + BUS => ADL
@@ -275,7 +279,7 @@ begin
 		alu_func = ALUTXB;	// BUS => ADH
 		abus_b.bus = 1'b1;
 		abus_o.adh = 1'b1;
-		if (opcode == JMP || opcode == JSR) begin
+		if (opcode == JMP) begin
 			pc_load = 1'b1;
 			if (mode == Ind)
 				state_next = JumpL;
@@ -408,11 +412,42 @@ begin
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
 		abus_o.sp = 1'b1;
+		if (opcode == JSR)
+			pc_load = 1'b1;
 		state_next = Fetch;
 	end
 	Pull:	begin
 		execute = 1'b1;
 		state_next = Fetch;
+	end
+	PushPCH:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUTXA;	// PCH => BUS
+		abus_a.con = 1'b0;
+		abus_a.pch = 1'b1;
+		abus_o.bus = 1'b1;
+		bus_we = 1'b1;
+		state_next = PushPCHtoL;
+	end
+	PushPCHtoL:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUSUB;	// SP - 1 => SP
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.sp = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.sp = 1'b1;
+		state_next = PushPCL;
+	end
+	PushPCL:	begin
+		sp_addr_oe = 1'b1;
+		alu_func = ALUTXA;	// PCL => BUS
+		abus_a.con = 1'b0;
+		abus_a.pcl = 1'b1;
+		abus_o.bus = 1'b1;
+		bus_we = 1'b1;
+		state_next = Push;
 	end
 	endcase
 	

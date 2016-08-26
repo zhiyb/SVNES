@@ -1,3 +1,10 @@
+20;	-- JSR $ff06
+06;
+ff;
+4c;	-- JMP $ff00
+00;
+ff;
+
 a9;	-- LDA #$ff
 ff;
 8d;	-- STA $3004	-- GPIO1_DIR
@@ -11,20 +18,7 @@ ff;
 8d;	-- STA $3005	-- GPIO1_OUT
 05;
 30;
-
-a9;	-- LDA #$00
-00;
-8d;	-- STA $0666
-66;
-06;
-a9;	-- LDA #$ff
-ff;
-8d;	-- STA $0667
-67;
-06;
-6c;	-- JMP ($0666)
-66;
-06;
+60;	-- RTS
 
 	0fa  :   00;	-- NMI vector
 	0fb  :   ff;

@@ -12,7 +12,9 @@ module system (
 	output dataLogic iodir[2],
 	// SPI
 	input logic cs, miso,
-	output logic mosi, sck
+	output logic mosi, sck,
+	// Audio
+	output logic audio
 );
 
 // Reset signal reformation
@@ -44,7 +46,7 @@ rom rom0 (
 	.address(sysbus.addr[7:0]), .q(rom0q));
 
 logic ram0sel;
-assign ram0sel = sysbus.addr < `RAM0_TOP;
+assign ram0sel = sysbus.addr < `RAM0_SIZE;
 dataLogic ram0q;
 assign sysbus.rdy = ram0sel ? 1'b1 : 1'bz;
 assign sysbus.data = (~sysbus.we & ram0sel) ? ram0q : {`DATA_N{1'bz}};
@@ -52,5 +54,7 @@ ram2k ram0 (
 	.clock(~sys.clk), .aclr(~sys.n_reset),
 	.address(sysbus.addr[10:0]), .data(sysbus.data),
 	.wren(sysbus.we & ram0sel), .q(ram0q));
+
+apu apu0 (.out(audio), .*);
 
 endmodule

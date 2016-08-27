@@ -27,7 +27,10 @@
 
 /*** Base addresses ***/
 `define BOOTROM_BASE	16'hff00
-`define RAM0_TOP		16'h2000
+`define RAM0_BASE		16'h0000
+`define RAM0_SIZE		16'h2000
+`define APU_BASE		16'h4000
+`define APU_SIZE		16'h0020
 `define PERIPH_BASE	16'h3000
 `define PERIPH_MASK	16'h00ff
 

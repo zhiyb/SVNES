@@ -14,6 +14,8 @@ dataLogic iodir[2];
 // SPI
 logic cs, miso;
 logic mosi, sck;
+// Audio
+logic audio;
 
 system sys0 (.*);
 

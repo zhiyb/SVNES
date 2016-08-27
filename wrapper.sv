@@ -69,6 +69,10 @@ logic mosi, sck;
 logic irq, nmi;
 assign irq = 1'b1, nmi = 1'b1;
 
+// Audio
+logic audio;
+assign GPIO_0[25] = audio;
+
 system sys0 (.clk(clk1M), .*);
 
 endmodule

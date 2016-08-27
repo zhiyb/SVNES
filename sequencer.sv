@@ -63,7 +63,7 @@ enum int unsigned {
 	IzXL, IzXH,
 	IzYL, IzYH, IzYHP,
 	PushPCH, PushPCHtoL, PushPCL,
-	PullPCL, PullPCLtoH, PullPCH, PullPCInc,
+	PullPCtoL, PullPCL, PullPCH, PullPCInc,
 	IntPushH, IntPushL, IntPushP
 } state, state_next;
 
@@ -159,8 +159,9 @@ begin
 			pc_inc = 1'b0;
 			case (opcode)
 			PHA, PHP:	begin
-				execute = 1'b1;
 				pc_addr_oe = 1'b0;
+				sp_addr_oe = 1'b1;
+				execute = 1'b1;
 				state_next = Push;
 			end
 			RTS:	begin
@@ -173,7 +174,7 @@ begin
 				abus_o.sp = 1'b1;
 				state_next = PullPCL;
 			end
-			PLA, PLP:	begin
+			PLA, PLP, RTI:	begin
 				alu_func = ALUADD;	// SP + 1 => SP
 				alu_cinclr = 1'b1;
 				abus_a.con = 1'b0;
@@ -184,7 +185,7 @@ begin
 				state_next = Pull;
 			end
 			BRK:	begin
-				pc_inc = ~int_evnt;
+				pc_inc = 1'b0;
 				state_next = IntPushH;
 			end
 			default:	begin
@@ -459,17 +460,11 @@ begin
 	JumpL:	begin
 		pc_addr_oe = 1'b1;
 		pc_inc = 1'b1;
-		alu_func = ALUTXB;	// BUS => ADL
-		abus_b.bus = 1'b1;
-		abus_o.adl = 1'b1;
 		state_next = JumpH;
 	end
 	JumpH:	begin
 		pc_addr_oe = 1'b1;
 		pc_load = 1'b1;
-		alu_func = ALUTXB;	// BUS => ADH
-		abus_b.bus = 1'b1;
-		abus_o.adh = 1'b1;
 		state_next = Fetch;
 	end
 	Push:	begin
@@ -481,24 +476,17 @@ begin
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
 		abus_o.sp = 1'b1;
-		if (opcode == JSR)
-			pc_load = 1'b1;
 		state_next = Fetch;
 	end
 	Pull:	begin
+		sp_addr_oe = 1'b1;
 		execute = 1'b1;
-		state_next = Fetch;
+		if (opcode == RTI)
+			state_next = PullPCtoL;
+		else
+			state_next = Fetch;
 	end
 	PushPCH:	begin
-		sp_addr_oe = 1'b1;
-		alu_func = ALUTXA;	// PCH => BUS
-		abus_a.con = 1'b0;
-		abus_a.pch = 1'b1;
-		abus_o.bus = 1'b1;
-		bus_we = 1'b1;
-		state_next = PushPCHtoL;
-	end
-	PushPCHtoL:	begin
 		sp_addr_oe = 1'b1;
 		alu_func = ALUSUB;	// SP - 1 => SP
 		alu_cinclr = 1'b1;
@@ -507,25 +495,39 @@ begin
 		abus_b.bus = 1'b0;
 		abus_b.con = 1'b1;
 		abus_o.sp = 1'b1;
+		pch_oe = 1'b1;			// PCH => BUS
+		bus_we = 1'b1;
+		state_next = PushPCHtoL;
+	end
+	PushPCHtoL:	begin
+		pc_addr_oe = 1'b1;
+		alu_func = ALUTXB;	// BUS => PCH
+		abus_b.bus = 1'b1;
+		abus_o.pch = 1'b1;
 		state_next = PushPCL;
 	end
 	PushPCL:	begin
 		sp_addr_oe = 1'b1;
-		alu_func = ALUTXA;	// PCL => BUS
+		alu_func = ALUTXA;	// ADL => PCL
 		abus_a.con = 1'b0;
-		abus_a.pcl = 1'b1;
-		abus_o.bus = 1'b1;
+		abus_a.adl = 1'b1;
+		abus_o.pcl = 1'b1;
+		pcl_oe = 1'b1;			// PCL => BUS
 		bus_we = 1'b1;
 		state_next = Push;
 	end
-	PullPCL:	begin
+	PullPCtoL:	begin
 		sp_addr_oe = 1'b1;
-		alu_func = ALUTXB;	// BUS => PCL
-		abus_b.bus = 1'b1;
-		abus_o.pcl = 1'b1;
-		state_next = PullPCLtoH;
+		alu_func = ALUADD;	// SP + 1 => SP
+		alu_cinclr = 1'b1;
+		abus_a.con = 1'b0;
+		abus_a.sp = 1'b1;
+		abus_b.bus = 1'b0;
+		abus_b.con = 1'b1;
+		abus_o.sp = 1'b1;
+		state_next = PullPCL;
 	end
-	PullPCLtoH:	begin
+	PullPCL:	begin
 		sp_addr_oe = 1'b1;
 		alu_func = ALUADD;	// SP + 1 => SP
 		alu_cinclr = 1'b1;
@@ -538,13 +540,14 @@ begin
 	end
 	PullPCH:	begin
 		sp_addr_oe = 1'b1;
-		alu_func = ALUTXB;	// BUS => PCH
-		abus_b.bus = 1'b1;
-		abus_o.pch = 1'b1;
-		state_next = PullPCInc;
+		pc_load = 1'b1;		// {BUS, DL} => PC
+		if (opcode == RTI)
+			state_next = Fetch;
+		else
+			state_next = PullPCInc;
 	end
 	PullPCInc:	begin
-		pc_addr_oe = 1'b1;
+		sp_addr_oe = 1'b1;
 		pc_inc = 1'b1;
 		state_next = Fetch;
 	end
@@ -876,7 +879,6 @@ begin
 			abus_a.con = 1'b0;
 			abus_a.acc = 1'b1;
 			abus_o.bus = 1'b1;
-			sp_addr_oe = 1'b1;
 			bus_we = 1'b1;
 		end
 		PHP:	begin
@@ -884,20 +886,17 @@ begin
 			abus_a.con = 1'b0;
 			abus_a.p = 1'b1;
 			abus_o.bus = 1'b1;
-			sp_addr_oe = 1'b1;
 			bus_we = 1'b1;
 		end
 		PLA:	begin
 			alu_func = ALUTXB;	// BUS => ACC
 			abus_b.bus = 1'b1;
 			abus_o.acc = 1'b1;
-			sp_addr_oe = 1'b1;
 		end
-		PLP:	begin
+		PLP, RTI:	begin
 			alu_func = ALUTXB;	// BUS => P
 			abus_b.bus = 1'b1;
 			abus_o.p = 1'b1;
-			sp_addr_oe = 1'b1;
 		end
 		default:	;
 		endcase

@@ -103,7 +103,7 @@ pc pc0 (
 	.oel(abus_a.pcl), .oeh(abus_a.pch),
 	.wel(abus_o.pcl), .weh(abus_o.pch),
 	.in(alu_out), .out(alu_in_a),
-	.load({sysbus.data, adl}), .data(pc), .*);
+	.load({sysbus.data, dl}), .data(pc), .*);
 
 logic pcl_oe, pch_oe;
 assign sysbus.data = pcl_oe ? pc[`DATA_N - 1:0] : {`DATA_N{1'bz}};

@@ -6,8 +6,8 @@ module demux #(parameter N) (
 
 always_comb
 begin
-	q <= {2 ** N{1'b0}};
-	q[sel] <= oe;
+	q = {2 ** N{1'b0}};
+	q[sel] = oe;
 end
 
 endmodule

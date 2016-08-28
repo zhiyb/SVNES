@@ -65,13 +65,15 @@ assign LED[7] = n_reset_in;
 // SPI
 logic cs, miso;
 logic mosi, sck;
+assign cs = 1'b1, miso = 1'b1;
 
 logic irq, nmi;
 assign irq = 1'b1, nmi = 1'b1;
 
 // Audio
-logic audio;
-assign GPIO_0[25] = audio;
+logic [7:0] audio, aout;
+assign GPIO_0[25] = aout;
+apu_pwm #(.N(8)) pwm0 (.clk(clk50M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 system sys0 (.clk(clk1M), .*);
 

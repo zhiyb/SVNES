@@ -15,7 +15,7 @@ dataLogic iodir[2];
 logic cs, miso;
 logic mosi, sck;
 // Audio
-logic audio;
+logic [7:0] audio;
 
 system sys0 (.*);
 

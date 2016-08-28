@@ -84,9 +84,8 @@ register adl0 (
 
 dataLogic adh;
 logic adh_bus;
-wire [`DATA_N - 1:0] adh_in;
-assign adh_in = abus_o.adh ? alu_out : {`DATA_N{1'bz}};
-assign adh_in = adh_bus ? sysbus.data : {`DATA_N{1'bz}};
+dataLogic adh_in;
+assign adh_in = abus_o.adh ? alu_out : sysbus.data;
 register adh0 (
 	.we(abus_o.adh | adh_bus), .oe(abus_a.adh),
 	.in(adh_in), .out(alu_in_a), .data(adh), .*);

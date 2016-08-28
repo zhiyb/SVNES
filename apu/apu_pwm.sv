@@ -8,9 +8,12 @@ module apu_pwm #(parameter N = 8) (
 logic [N - 1:0] cnt, compare;
 
 always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset || ~en) begin
+	if (~n_reset) begin
 		cnt <= {N{1'b0}};
 		compare <= {N{1'b0}};
+		q <= 1'b0;
+	end else if (~en) begin
+		cnt <= {N{1'b0}};
 		q <= 1'b0;
 	end else begin
 		if (cnt == {N{1'b0}}) begin

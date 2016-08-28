@@ -14,7 +14,7 @@ module system (
 	input logic cs, miso,
 	output logic mosi, sck,
 	// Audio
-	output logic audio
+	output logic [7:0] audio
 );
 
 // Reset signal reformation

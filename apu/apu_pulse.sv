@@ -5,7 +5,7 @@ module apu_pulse (
 	sys_if sys,
 	sysbus_if sysbus,
 	input logic sel,
-	output logic out
+	output logic [3:0] out
 );
 
 logic we, oe;
@@ -22,5 +22,7 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	end else if (we) begin
 		regs[sysbus.addr[1:0]] <= sysbus.data;
 	end
+
+assign out = 4'b0;
 
 endmodule

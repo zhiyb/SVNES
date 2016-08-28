@@ -8,7 +8,7 @@ assign q = d & ~p;
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
-		p <= d;
+		p <= 1'b0;
 	else
 		p <= d;
 

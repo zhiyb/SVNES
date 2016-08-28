@@ -1,4 +1,5 @@
 `include "config.h"
+import typepkg::*;
 
 module spi (
 	sys_if sys,
@@ -123,19 +124,26 @@ always_ff @(posedge sys.clk, negedge enabled)
 
 /*** Status report ***/
 
+dataLogic reg_stat_in;
+
+always_comb
+begin
+	reg_stat_in = reg_stat;
+	if (n_sh_reset && sh_done_s)
+		reg_stat_in |= `SPI_STAT_RXNE;
+	else if (oe && pbus.addr == `SPI_DATA)
+		reg_stat_in &= ~`SPI_STAT_RXNE;
+	if (we && pbus.addr == `SPI_DATA)
+		reg_stat_in &= ~`SPI_STAT_TXE;
+	else if (sh_loaded_s)
+		reg_stat_in |= `SPI_STAT_TXE;
+end
+
 always_ff @(posedge sys.clk, negedge enabled)
-	if (~enabled) begin
+	if (~enabled)
 		reg_stat <= `SPI_STAT_TXE;
-	end else begin
-		if (n_sh_reset && sh_done_s)
-			reg_stat <= reg_stat | `SPI_STAT_RXNE;
-		else if (oe && pbus.addr == `SPI_DATA)
-			reg_stat <= reg_stat & ~`SPI_STAT_RXNE;
-		if (we && pbus.addr == `SPI_DATA)
-			reg_stat <= reg_stat & ~`SPI_STAT_TXE;
-		else if (sh_loaded_s)
-			reg_stat <= reg_stat | `SPI_STAT_TXE;
-	end
+	else
+		reg_stat = reg_stat_in;
 
 /*** IO logic ***/
 

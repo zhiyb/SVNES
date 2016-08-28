@@ -29,14 +29,13 @@ module wrapper (
 	input logic [2:0] GPIO_2_IN
 );
 
-logic n_reset_in, n_reset, clk1, clk1M, clk1k25, clk50M, dbg;
+logic n_reset_in, n_reset, dbg;
+logic clk1M, clk10M, clk20M, clk50M, clk100M;
 
 assign n_reset_in = KEY[1];
 assign clk50M = CLOCK_50;
 
-pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clk1M), .c4(clk1k25));
-
-counter #(.n($clog2(1250 - 1))) p1 (.top(1250 - 1), .clk(clk1k25), .n_reset(n_reset_in), .out(clk1));
+pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clk100M), .c1(clk20M), .c2(clk10M), .c3(clk1M));
 
 // GPIO
 wire [`DATA_N - 1 : 0] io[2];
@@ -52,16 +51,6 @@ generate
 	end
 endgenerate
 
-//assign LED[6:0] = io[1][6:0];
-assign LED[0] = clk50M;
-assign LED[1] = clk1M;
-assign LED[2] = clk1;
-assign LED[3] = io[1][0];
-assign LED[4] = io[1][1];
-assign LED[5] = dbg;
-assign LED[6] = n_reset;
-assign LED[7] = n_reset_in;
-
 // SPI
 logic cs, miso;
 logic mosi, sck;
@@ -73,8 +62,18 @@ assign irq = 1'b1, nmi = 1'b1;
 // Audio
 logic [7:0] audio, aout;
 assign GPIO_0[25] = aout;
-apu_pwm #(.N(8)) pwm0 (.clk(clk50M), .cmp(audio), .q(aout), .en(1'b1), .*);
+apu_pwm #(.N(8)) pwm0 (.clk(clk20M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 system sys0 (.clk(clk1M), .*);
+
+//assign LED[6:0] = io[1][6:0];
+assign LED[0] = io[1][0];
+assign LED[1] = io[1][1];
+assign LED[2] = io[1][2];
+assign LED[3] = io[1][3];
+assign LED[4] = dbg;
+assign LED[5] = aout;
+assign LED[6] = n_reset;
+assign LED[7] = n_reset_in;
 
 endmodule

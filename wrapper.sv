@@ -30,12 +30,28 @@ module wrapper (
 );
 
 logic n_reset_in, n_reset, dbg;
-logic clk1M, clk10M, clk20M, clk50M, clk100M;
-
 assign n_reset_in = KEY[1];
-assign clk50M = CLOCK_50;
 
+logic clk1M, clk10M, clk20M, clk50M, clk100M;
+assign clk50M = CLOCK_50;
 pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clk100M), .c1(clk20M), .c2(clk10M), .c3(clk1M));
+
+`define NTSC	0
+`define PAL		1
+`define DENDY	2
+
+logic clkMaster[3], clkPPU[3], clkCPU[3];
+//assign clkMaster[`DENDY] = clkMaster[`PAL];
+//assign clkPPU[`DENDY] = clkPPU[`PAL];
+pll_ntsc pll1 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clkMaster[`NTSC]), .c1(clkPPU[`NTSC]), .c2(clkCPU[`NTSC]));
+//pll_pal pll2 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clkPPU[`PAL]), .c1(clkCPU[`DENDY]));
+
+parameter clksel = `NTSC;
+
+logic clk_Master, clk_PPU, clk_CPU;
+assign clk_Master = clkMaster[clksel];
+assign clk_PPU = clkPPU[clksel];
+assign clk_CPU = clkCPU[clksel];
 
 // GPIO
 wire [`DATA_N - 1 : 0] io[2];
@@ -64,7 +80,7 @@ logic [7:0] audio, aout;
 assign GPIO_0[25] = aout;
 apu_pwm #(.N(8)) pwm0 (.clk(clk20M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
-system sys0 (.clk(clk1M), .*);
+system sys0 (.*);
 
 //assign LED[6:0] = io[1][6:0];
 assign LED[0] = io[1][0];

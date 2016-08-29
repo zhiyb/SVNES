@@ -2,7 +2,7 @@
 import typepkg::*;
 
 interface sys_if (
-	input logic clk, n_reset
+	input logic clk, nclk, n_reset
 );
 endinterface
 

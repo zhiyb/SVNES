@@ -7,8 +7,17 @@ module apu (
 	output logic [7:0] out
 );
 
+logic apuclk, qframe, hframe;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		apuclk <= 1'b0;
+	else
+		apuclk <= ~apuclk;
+
 logic en;
 assign en = (sysbus.addr & ~(`APU_SIZE - 1)) == `APU_BASE;
+assign sysbus.rdy = en ? 1'b1 : 1'bz;
 
 logic [7:0] sel;
 demux #(.N(3)) d0 (.oe(en), .sel(sysbus.addr[4:2]), .q(sel));
@@ -42,6 +51,17 @@ assign out = mix;
 
 logic frame_int;
 assign frame_int = 1'b0;
+
+logic frame_mode, frame_int_inhibit;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset) begin
+		frame_mode <= 1'b0;
+		frame_int_inhibit <= 1'b0;
+	end
+
+logic frame_quarter, frame_half;
+assign qframe = frame_mode ^ frame_quarter, hframe = frame_mode ^ frame_half;
 
 // Status register
 

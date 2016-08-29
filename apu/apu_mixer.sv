@@ -13,7 +13,7 @@ apu_rom_pulse romp (.aclr(~sys.n_reset), .clock(~sys.clk),
 logic [7:0] tnd_out;
 
 apu_rom_tnd romt (.aclr(~sys.n_reset), .clock(~sys.clk),
-	.address(3 * triangle + 2 * noise + dmc), .q(tnd_out));
+	.address(8'd3 * triangle + 8'd2 * noise + dmc), .q(tnd_out));
 
 assign out = pulse_out + tnd_out;
 

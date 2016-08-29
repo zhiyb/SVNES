@@ -54,14 +54,102 @@ assign frame_int = 1'b0;
 
 logic frame_mode, frame_int_inhibit;
 
+logic frame_write;
+assign frame_write = sysbus.we && sel[5] && sysbus.addr[1:0] == 2'h3;
+
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
 		frame_mode <= 1'b0;
 		frame_int_inhibit <= 1'b0;
+	end else if (frame_write) begin
+		frame_mode <= sysbus.data[7];
+		frame_int_inhibit <= sysbus.data[6];
 	end
+
+logic frame_write_sys, frame_write_apu;
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		frame_write_sys <= 1'b0;
+	else if (frame_write)
+		frame_write_sys <= 1'b1;
+	else if (frame_write_apu)
+		frame_write_sys <= 1'b0;
+
+always_ff @(posedge apuclk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		frame_write_apu <= 1'b0;
+	else
+		frame_write_apu <= frame_write_sys;
 
 logic frame_quarter, frame_half;
 assign qframe = frame_mode ^ frame_quarter, hframe = frame_mode ^ frame_half;
+
+parameter logic [11:0] frame_load[5] = '{
+	//12'h3727, 12'h3727, 12'h3728, 12'h3728, 12'h3725
+	12'h6, 12'h5, 12'h4, 12'h3, 12'h2
+};
+
+enum int unsigned {S0, S1, S2, S3, S4} state;
+
+logic [11:0] frame_cnt;
+
+always_ff @(negedge apuclk, negedge sys.n_reset)
+	if (~sys.n_reset) begin
+		frame_quarter <= 1'b0;
+		frame_half <= 1'b0;
+		frame_cnt <= 12'b0;
+		state <= S0;
+	end else if (frame_write_apu) begin
+		frame_quarter <= 1'b0;
+		frame_half <= 1'b0;
+		frame_cnt <= frame_load[0];
+		state <= S1;
+	end else if (frame_cnt <= 12'b0)
+		case (state)
+		S0:	begin	// 0
+			frame_cnt <= frame_load[0];
+			state <= S1;
+			frame_quarter <= 1'b1;
+		end
+		S1:	begin	// 3728
+			frame_cnt <= frame_load[1];
+			state <= S2;
+			frame_quarter <= 1'b1;
+			frame_half <= 1'b1;
+		end
+		S2:	begin	// 7456
+			frame_cnt <= frame_load[2];
+			state <= S3;
+			frame_quarter <= 1'b1;
+		end
+		S3:	begin	// 11185
+			frame_cnt <= frame_load[3];
+			if (frame_mode)
+				state <= S4;
+			else begin
+				state <= S0;
+				frame_quarter <= 1'b1;
+				frame_half <= 1'b1;
+			end
+		end
+		S4:	begin	// 14914
+			frame_cnt <= frame_load[4];
+			state <= S0;
+			frame_quarter <= 1'b1;
+			frame_half <= 1'b1;
+		end
+		default: begin
+			frame_quarter <= 1'b0;
+			frame_half <= 1'b0;
+			frame_cnt <= 12'b0;
+			state <= S0;
+		end
+		endcase
+	else begin
+		frame_cnt <= frame_cnt - 12'b1;
+		frame_quarter <= 1'b0;
+		frame_half <= 1'b0;
+	end
 
 // Status register
 
@@ -70,7 +158,7 @@ assign stat_out = {dmc_int, frame_int, 1'b0,
 	dmc_act, noise_act, triangle_act, pulse_act[1], pulse_act[0]};
 
 logic stat_read;
-assign stat_read = ~sysbus.we && sel[5] && sysbus.addr[1] == 2'h1;
+assign stat_read = ~sysbus.we && sel[5] && sysbus.addr[1:0] == 2'h1;
 assign sysbus.data = stat_read ? stat_out : {`DATA_N{1'bz}};
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)

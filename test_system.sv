@@ -4,7 +4,8 @@ import typepkg::*;
 
 module test_system;
 
-logic clk, n_reset_in, n_reset, dbg;
+logic n_reset_in, n_reset, dbg;
+logic clk_CPU, clk_PPU;
 
 logic irq, nmi;
 
@@ -41,8 +42,14 @@ end
 
 initial
 begin
-	clk = 1'b0;
-	forever #500ns clk = ~clk;
+	clk_CPU = 1'b0;
+	forever #500ns clk_CPU = ~clk_CPU;
+end
+
+initial
+begin
+	clk_PPU = 1'b0;
+	forever #125ns clk_PPU = ~clk_PPU;
 end
 
 endmodule

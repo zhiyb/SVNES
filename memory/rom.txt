@@ -1,37 +1,38 @@
-20;	-- JSR $ff06
-06;
+a9;	--		LDA	#$ff
 ff;
-4c;	-- JMP $ff00
-00;
-ff;
-
-a9;	-- LDA #$ff
-ff;
-8d;	-- STA $3004	-- GPIO1_DIR
+aa;	--		TAX
+9a;	--		TXS
+8d;	--		STA	$3004	// GPIO1_DIR
 04;
 30;
-ad;	-- LDA $3002	-- GPIO0_IN
-02;
-30;
-00;	-- BRK
-49;	-- EOR #$ff
-ff;
-8d;	-- STA $3005	-- GPIO1_OUT
+a9;	--		LDA	#$00
+00;
+a8;	--		TAY
+8d;	--		STA	$3005	// GPIO1_OUT
 05;
 30;
-60;	-- RTS
+a2;	--	reload:	LDX	#$59
+59;
+58;	--	loop:	CLI
+8a;	--		TXA
+d0;	--		BNE	loop
+fc;	-- -4
+c8;	--		INY
+98;	--		TYA
+8d;	--		STA	$3005	// GPIO1_OUT
+05;
+30;
+b8;	--		CLV
+50;	--		BVC	reload
+f2;	-- -14
 
-	0a0  :   a2;	-- LDX #$aa
-	0a1  :   aa;
-	0a2  :   38;	-- SEC
-	0a3  :   40;	-- RTI
+	0b0  :   ca;	--	IRQ:	DEX
+	0b1  :   ad;	--		LDA	$4015
+	0b2  :   15;
+	0b3  :   40;
+	0b4  :   40;	--		RTI
 
-	0b0  :   a0;	-- LDY #$55
-	0b1  :   55;
-	0b2  :   38;	-- SEC
-	0b3  :   40;	-- RTI
-
-	0fa  :   a0;	-- NMI vector
+	0fa  :   00;	-- NMI vector
 	0fb  :   ff;
 	0fc  :   00;	-- Reset vector
 	0fd  :   ff;

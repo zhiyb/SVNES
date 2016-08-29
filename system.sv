@@ -27,13 +27,12 @@ always_ff @(posedge sys.clk, negedge n_reset_in)
 		n_reset <= 1'b1;
 
 // Interconnections and buses
+logic fetch;
 wire rdy;
 logic we;
 wire [`ADDR_N - 1 : 0] addr;
 wire [`DATA_N - 1 : 0] data;
 sysbus_if sysbus (.*);
-
-cpu cpu0 (.*);
 
 peripherals periph0 (.*);
 
@@ -56,6 +55,9 @@ ram2k ram0 (
 	.address(sysbus.addr[10:0]), .data(sysbus.data),
 	.wren(sysbus.we & ram0sel), .q(ram0q));
 
-apu apu0 (.out(audio), .*);
+logic apu_irq;
+apu apu0 (.irq(apu_irq), .out(audio), .*);
+
+cpu cpu0 (.irq(irq & apu_irq), .*);
 
 endmodule

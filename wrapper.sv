@@ -1,5 +1,4 @@
 `include "config.h"
-import typepkg::*;
 
 module wrapper (
 	input logic CLOCK_50,
@@ -34,7 +33,11 @@ assign n_reset_in = KEY[1];
 
 logic clk1M, clk10M, clk20M, clk50M, clk100M;
 assign clk50M = CLOCK_50;
-pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clk100M), .c1(clk20M), .c2(clk10M), .c3(clk1M));
+logic pll0_locked;
+pll pll0 (
+	.areset(~n_reset_in), .inclk0(clk50M),
+	.c0(clk100M), .c1(clk20M), .c2(clk10M), .c3(clk1M),
+	.locked(pll0_locked));
 
 `define NTSC	0
 `define PAL		1
@@ -43,7 +46,11 @@ pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clk100M), .c1(clk20M), .c2(
 logic clkMaster[3], clkPPU[3], clkCPU[3];
 //assign clkMaster[`DENDY] = clkMaster[`PAL];
 //assign clkPPU[`DENDY] = clkPPU[`PAL];
-pll_ntsc pll1 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clkMaster[`NTSC]), .c1(clkPPU[`NTSC]), .c2(clkCPU[`NTSC]));
+logic pll1_locked;
+pll_ntsc pll1 (
+	.areset(~n_reset_in), .inclk0(clk50M),
+	.c0(clkMaster[`NTSC]), .c1(clkPPU[`NTSC]), .c2(clkCPU[`NTSC]),
+	.locked(pll1_locked));
 //pll_pal pll2 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clkPPU[`PAL]), .c1(clkCPU[`DENDY]));
 
 parameter clksel = `NTSC;
@@ -55,9 +62,9 @@ assign clk_CPU = clkCPU[clksel];
 
 // GPIO
 wire [`DATA_N - 1 : 0] io[2];
-dataLogic iodir[2];
+logic [`DATA_N - 1 : 0] iodir[2];
 
-dataLogic ioin;
+logic [`DATA_N - 1 : 0] ioin;
 assign ioin = {GPIO_1_IN, GPIO_0_IN, SW};
 
 genvar i;
@@ -87,9 +94,9 @@ assign LED[0] = io[1][0];
 assign LED[1] = io[1][1];
 assign LED[2] = io[1][2];
 assign LED[3] = io[1][3];
-assign LED[4] = dbg;
-assign LED[5] = aout;
-assign LED[6] = n_reset;
-assign LED[7] = n_reset_in;
+assign LED[4] = pll0_locked;
+assign LED[5] = pll1_locked;
+assign LED[6] = dbg;
+assign LED[7] = n_reset;
 
 endmodule

@@ -10,7 +10,7 @@ module sequencer (
 	
 	// Bus control
 	inout wire bus_rdy,
-	output logic bus_we, dbg,
+	output logic bus_we, fetch,
 	
 	// Program counter
 	pc_addr_oe, pc_inc, pc_load, pc_int,
@@ -125,7 +125,7 @@ begin
 	p_clr = 'h0;
 	state_next = state;
 	
-	dbg = state == Fetch;
+	fetch = state == Fetch;
 	
 	case (opcode)
 	// Branching operations

@@ -4,6 +4,7 @@ import typepkg::*;
 module apu (
 	sys_if sys,
 	sysbus_if sysbus,
+	output logic irq, dbg,
 	output logic [7:0] out
 );
 
@@ -14,6 +15,8 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 		apuclk <= 1'b0;
 	else
 		apuclk <= ~apuclk;
+
+counter #(.n($clog2(894886) - 1)) c0 (.clk(apuclk), .n_reset(sys.n_reset), .top(894886), .out(dbg));
 
 logic en;
 assign en = (sysbus.addr & ~(`APU_SIZE - 1)) == `APU_BASE;
@@ -31,16 +34,19 @@ logic [3:0] triangle;
 logic triangle_en, triangle_act;
 assign triangle = 4'b0;
 assign triangle_stat = 1'b0;
+assign triangle_act = 1'b0;
 
 logic [3:0] noise;
 logic noise_en, noise_act;
 assign noise = 4'b0;
 assign noise_stat = 1'b0;
+assign noise_act = 1'b0;
 
 logic [6:0] dmc;
 logic dmc_en, dmc_act, dmc_int;
 assign dmc = 7'b0;
 assign dmc_stat = 1'b0;
+assign dmc_act = 1'b0;
 assign dmc_int = 1'b0;
 
 logic [7:0] mix;
@@ -50,7 +56,7 @@ assign out = mix;
 // Frame counter
 
 logic frame_int;
-assign frame_int = 1'b0;
+assign irq = ~frame_int;
 
 logic frame_mode, frame_int_inhibit;
 
@@ -85,8 +91,8 @@ logic frame_quarter, frame_half;
 assign qframe = frame_mode ^ frame_quarter, hframe = frame_mode ^ frame_half;
 
 parameter logic [11:0] frame_load[5] = '{
-	//12'h3727, 12'h3727, 12'h3728, 12'h3728, 12'h3725
-	12'h6, 12'h5, 12'h4, 12'h3, 12'h2
+	12'h3727, 12'h3727, 12'h3728, 12'h3728, 12'h3725
+	//12'h6, 12'h5, 12'h4, 12'h3, 12'h2
 };
 
 enum int unsigned {S0, S1, S2, S3, S4} state;
@@ -104,7 +110,7 @@ always_ff @(negedge apuclk, negedge sys.n_reset)
 		frame_half <= 1'b0;
 		frame_cnt <= frame_load[0];
 		state <= S1;
-	end else if (frame_cnt <= 12'b0)
+	end else if (frame_cnt == 12'b0)
 		case (state)
 		S0:	begin	// 0
 			frame_cnt <= frame_load[0];
@@ -177,5 +183,21 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 			dmc_en <= sysbus.data[4];
 		end
 	end
+
+// IRQ control
+
+logic int_set;
+assign int_set = ~frame_mode && ~frame_int_inhibit && frame_cnt == 12'b0 && state == S3;
+
+logic int_clr;
+assign int_clr = frame_int_inhibit | stat_read;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		frame_int <= 1'b0;
+	else if (int_set)
+		frame_int <= 1'b1;
+	else if (int_clr)
+		frame_int <= 1'b0;
 
 endmodule

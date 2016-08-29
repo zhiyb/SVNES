@@ -4,7 +4,7 @@ import typepkg::*;
 module cpu (
 	sys_if sys,
 	inout wire rdy,
-	output logic we, dbg,
+	output logic we, fetch,
 	output wire [`ADDR_N - 1:0] addr,
 	inout wire [`DATA_N - 1:0] data,
 	input logic irq, nmi

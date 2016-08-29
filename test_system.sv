@@ -25,7 +25,7 @@ assign io[0] = io[1];
 initial
 begin
 	nmi = 1'b1;
-	#30us nmi = 1'b0;
+	//#30us nmi = 1'b0;
 	#20us nmi = 1'b1;
 end
 

@@ -28,15 +28,15 @@ module wrapper (
 	input logic [2:0] GPIO_2_IN
 );
 
-logic n_reset_in, n_reset, dbg;
+logic n_reset_in, n_reset, fetch;
 assign n_reset_in = KEY[1];
 
-logic clk1M, clk10M, clk20M, clk50M, clk100M;
+logic clk1M, clk10M, clk20M, clk50M;
 assign clk50M = CLOCK_50;
 logic pll0_locked;
 pll pll0 (
 	.areset(~n_reset_in), .inclk0(clk50M),
-	.c0(clk100M), .c1(clk20M), .c2(clk10M), .c3(clk1M),
+	.c0(clk20M), .c1(clk10M), .c2(clk1M),
 	.locked(pll0_locked));
 
 `define NTSC	0
@@ -83,7 +83,8 @@ logic irq, nmi;
 assign irq = 1'b1, nmi = 1'b1;
 
 // Audio
-logic [7:0] audio, aout;
+logic [7:0] audio;
+logic aout;
 assign GPIO_0[25] = aout;
 apu_pwm #(.N(8)) pwm0 (.clk(clk20M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
@@ -94,9 +95,9 @@ assign LED[0] = io[1][0];
 assign LED[1] = io[1][1];
 assign LED[2] = io[1][2];
 assign LED[3] = io[1][3];
-assign LED[4] = pll0_locked;
-assign LED[5] = pll1_locked;
-assign LED[6] = dbg;
+assign LED[4] = irq;
+assign LED[5] = nmi;
+assign LED[6] = aout;
 assign LED[7] = n_reset;
 
 endmodule

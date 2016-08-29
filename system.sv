@@ -4,7 +4,7 @@ import typepkg::*;
 module system (
 	// Clock and reset
 	input logic clk_CPU, clk_PPU, n_reset_in,
-	output logic n_reset, dbg,
+	output logic n_reset, fetch,
 	// Interrupt lines
 	input logic irq, nmi,
 	// GPIO
@@ -27,7 +27,6 @@ always_ff @(posedge sys.clk, negedge n_reset_in)
 		n_reset <= 1'b1;
 
 // Interconnections and buses
-logic fetch;
 wire rdy;
 logic we;
 wire [`ADDR_N - 1 : 0] addr;

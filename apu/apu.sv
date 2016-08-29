@@ -4,7 +4,7 @@ import typepkg::*;
 module apu (
 	sys_if sys,
 	sysbus_if sysbus,
-	output logic irq, dbg,
+	output logic irq,
 	output logic [7:0] out
 );
 
@@ -15,8 +15,6 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 		apuclk <= 1'b0;
 	else
 		apuclk <= ~apuclk;
-
-counter #(.n($clog2(894886) - 1)) c0 (.clk(apuclk), .n_reset(sys.n_reset), .top(894886), .out(dbg));
 
 logic en;
 assign en = (sysbus.addr & ~(`APU_SIZE - 1)) == `APU_BASE;
@@ -33,19 +31,16 @@ apu_pulse p1 (.sel(sel[1]), .en(pulse_en[1]), .act(pulse_act[1]), .out(pulse[1])
 logic [3:0] triangle;
 logic triangle_en, triangle_act;
 assign triangle = 4'b0;
-assign triangle_stat = 1'b0;
 assign triangle_act = 1'b0;
 
 logic [3:0] noise;
 logic noise_en, noise_act;
 assign noise = 4'b0;
-assign noise_stat = 1'b0;
 assign noise_act = 1'b0;
 
 logic [6:0] dmc;
 logic dmc_en, dmc_act, dmc_int;
 assign dmc = 7'b0;
-assign dmc_stat = 1'b0;
 assign dmc_act = 1'b0;
 assign dmc_int = 1'b0;
 
@@ -91,8 +86,8 @@ logic frame_quarter, frame_half;
 assign qframe = frame_mode ^ frame_quarter, hframe = frame_mode ^ frame_half;
 
 parameter logic [11:0] frame_load[5] = '{
-	12'h3727, 12'h3727, 12'h3728, 12'h3728, 12'h3725
-	//12'h6, 12'h5, 12'h4, 12'h3, 12'h2
+	12'd3727, 12'd3727, 12'd3728, 12'd3728, 12'd3725
+	//12'd6, 12'd5, 12'd4, 12'd3, 12'd2
 };
 
 enum int unsigned {S0, S1, S2, S3, S4} state;

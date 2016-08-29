@@ -6,20 +6,17 @@ module counter #(parameter n = 3) (
 );
 
 always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset)
-	begin
-		counter <= 'b0;
-		out <= 'b0;
-	end
-	else
-	begin
+	if (~n_reset) begin
+		counter <= {n{1'b0}};
+		out <= 1'b0;
+	end else begin
 		if (counter == top) begin
-			counter <= 'b0;
-			out <= 'b0;
+			counter <= {n{1'b0}};
+			out <= 1'b0;
 		end else begin
-			counter <= counter + 1'b1;
+			counter <= counter + {{n - 1{1'b0}}, 1'b1};
 			if (counter == (top >> 1))
-				out <= 'b1;
+				out <= 1'b1;
 		end
 	end
 

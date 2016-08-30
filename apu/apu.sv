@@ -23,6 +23,8 @@ assign sysbus.rdy = en ? 1'b1 : 1'bz;
 logic [7:0] sel;
 demux #(.N(3)) d0 (.oe(en), .sel(sysbus.addr[4:2]), .q(sel));
 
+// Audio channels
+
 logic [3:0] pulse[2];
 logic pulse_en[2], pulse_act[2];
 apu_pulse p0 (.sel(sel[0]), .en(pulse_en[0]), .act(pulse_act[0]), .out(pulse[0]), .*);
@@ -87,7 +89,6 @@ assign qframe = frame_mode ^ frame_quarter, hframe = frame_mode ^ frame_half;
 
 parameter logic [11:0] frame_load[5] = '{
 	12'd3727, 12'd3727, 12'd3728, 12'd3728, 12'd3725
-	//12'd6, 12'd5, 12'd4, 12'd3, 12'd2
 };
 
 enum int unsigned {S0, S1, S2, S3, S4} state;
@@ -190,7 +191,7 @@ assign int_set = ~frame_mode && ~frame_int_inhibit && int_irq;
 logic int_clr;
 assign int_clr = frame_int_inhibit | stat_read;
 
-counter #(.n($clog2(60 - 1))) c0 (.top(60 - 1), .clk(frame_int), .n_reset(sys.n_reset), .out(dbg));
+counter #(.n($clog2(240 - 1))) c0 (.top(240 - 1), .clk(frame_quarter), .n_reset(sys.n_reset), .out(dbg));
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)

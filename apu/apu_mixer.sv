@@ -8,7 +8,7 @@ module apu_mixer (
 logic [6:0] pulse_out;
 
 apu_rom_pulse romp (.aclr(~sys.n_reset), .clock(~sys.clk),
-	.address(pulse[0] + pulse[1]), .q(pulse_out));
+	.address({1'b0, pulse[0]} + {1'b0, pulse[1]}), .q(pulse_out));
 
 logic [7:0] tnd_out;
 

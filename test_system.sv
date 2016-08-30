@@ -4,7 +4,7 @@ import typepkg::*;
 
 module test_system;
 
-logic n_reset_in, n_reset, fetch;
+logic n_reset_in, n_reset, fetch, dbg;
 logic clk_CPU, clk_PPU;
 
 logic irq, nmi;

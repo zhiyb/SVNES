@@ -2,6 +2,7 @@
 IFS=""
 ls -1 *.mif | while read mif; do
 	txt="${mif%.*}.txt"
+	[ -e "$txt" ] || continue
 	echo "Processing: $txt -> $mif"
 	sed '/CONTENT BEGIN/,$ d' "$mif" > "$mif.tmp"
 	echo "CONTENT BEGIN" >> "$mif.tmp"

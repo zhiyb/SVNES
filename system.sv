@@ -4,7 +4,7 @@ import typepkg::*;
 module system (
 	// Clock and reset
 	input logic clk_CPU, clk_PPU, n_reset_in,
-	output logic n_reset, fetch,
+	output logic n_reset, fetch, dbg,
 	// Interrupt lines
 	input logic irq, nmi,
 	// GPIO

@@ -28,7 +28,7 @@ module wrapper (
 	input logic [2:0] GPIO_2_IN
 );
 
-logic n_reset_in, n_reset, fetch;
+logic n_reset_in, n_reset, fetch, dbg;
 assign n_reset_in = KEY[1];
 
 logic clk1M, clk10M, clk20M, clk50M;
@@ -95,9 +95,9 @@ assign LED[0] = io[1][0];
 assign LED[1] = io[1][1];
 assign LED[2] = io[1][2];
 assign LED[3] = io[1][3];
-assign LED[4] = irq;
-assign LED[5] = nmi;
-assign LED[6] = aout;
+assign LED[4] = ~irq;
+assign LED[5] = ~nmi;
+assign LED[6] = dbg;
 assign LED[7] = n_reset;
 
 endmodule

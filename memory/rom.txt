@@ -11,20 +11,19 @@ a8;	--		TAY
 8d;	--		STA	$3005	// GPIO1_OUT
 05;
 30;
-a2;	--	reload:	LDX	#$59
-59;
-58;	--	loop:	CLI
-8a;	--		TXA
+58;	--		CLI
+a2;	--	reload:	LDX	#$3c	// 60
+3c;
+8a;	--	loop:	TXA
 d0;	--		BNE	loop
-fc;	-- -4
+fd;	-- -3
 c8;	--		INY
-98;	--		TYA
-8d;	--		STA	$3005	// GPIO1_OUT
+8c;	--		STY	$3005	// GPIO1_OUT
 05;
 30;
 b8;	--		CLV
 50;	--		BVC	reload
-f2;	-- -14
+f4;	-- -12
 
 	0b0  :   ca;	--	IRQ:	DEX
 	0b1  :   ad;	--		LDA	$4015

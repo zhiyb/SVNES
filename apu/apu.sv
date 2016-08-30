@@ -4,7 +4,7 @@ import typepkg::*;
 module apu (
 	sys_if sys,
 	sysbus_if sysbus,
-	output logic irq,
+	output logic irq, dbg,
 	output logic [7:0] out
 );
 
@@ -147,7 +147,7 @@ always_ff @(negedge apuclk, negedge sys.n_reset)
 		end
 		endcase
 	else begin
-		frame_cnt <= frame_cnt - 12'b1;
+		frame_cnt <= frame_cnt - 12'd1;
 		frame_quarter <= 1'b0;
 		frame_half <= 1'b0;
 	end
@@ -181,11 +181,16 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 
 // IRQ control
 
+logic int_irq;
+assign int_irq = frame_cnt == 12'b0 && state == S3;
+
 logic int_set;
-assign int_set = ~frame_mode && ~frame_int_inhibit && frame_cnt == 12'b0 && state == S3;
+assign int_set = ~frame_mode && ~frame_int_inhibit && int_irq;
 
 logic int_clr;
 assign int_clr = frame_int_inhibit | stat_read;
+
+counter #(.n($clog2(60 - 1))) c0 (.top(60 - 1), .clk(frame_int), .n_reset(sys.n_reset), .out(dbg));
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)

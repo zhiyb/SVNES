@@ -1,12 +1,11 @@
 `include "config.h"
-import typepkg::*;
 
 module peripherals (
 	sys_if sys,
 	sysbus_if sysbus,
 	// GPIO
-	inout wire [`DATA_N - 1:0] io[2],
-	output dataLogic iodir[2],
+	inout wire [7:0] io[2],
+	output logic [7:0] iodir[2],
 	// SPI
 	input logic cs, miso,
 	output logic mosi, sck

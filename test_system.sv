@@ -1,6 +1,4 @@
 `timescale 1 ps / 1 ps
-`include "config.h"
-import typepkg::*;
 
 module test_system;
 
@@ -10,8 +8,8 @@ logic clk_CPU, clk_PPU;
 logic irq, nmi;
 
 // GPIO
-wire [`DATA_N - 1:0] io[2];
-dataLogic iodir[2];
+wire [7:0] io[2];
+logic [7:0] iodir[2];
 // SPI
 logic cs, miso;
 logic mosi, sck;

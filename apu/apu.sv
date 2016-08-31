@@ -1,5 +1,4 @@
 `include "config.h"
-import typepkg::*;
 
 module apu (
 	sys_if sys,
@@ -155,13 +154,13 @@ always_ff @(negedge apuclk, negedge sys.n_reset)
 
 // Status register
 
-dataLogic stat_out;
+logic [7:0] stat_out;
 assign stat_out = {dmc_int, frame_int, 1'b0,
 	dmc_act, noise_act, triangle_act, pulse_act[1], pulse_act[0]};
 
 logic stat_read;
 assign stat_read = ~sysbus.we && sel[5] && sysbus.addr[1:0] == 2'h1;
-assign sysbus.data = stat_read ? stat_out : {`DATA_N{1'bz}};
+assign sysbus.data = stat_read ? stat_out : 8'bz;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin

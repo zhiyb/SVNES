@@ -5,52 +5,52 @@ module cpu (
 	sys_if sys,
 	inout wire rdy,
 	output logic we, fetch,
-	output wire [`ADDR_N - 1:0] addr,
-	inout wire [`DATA_N - 1:0] data,
+	output wire [15:0] addr,
+	inout wire [7:0] data,
 	input logic irq, nmi
 );
 
 sysbus_if sysbus (.*);
 
 // Instruction register
-dataLogic ins;
+logic [7:0] ins;
 logic ins_we;
 logic int_evnt;
 register ins0 (
 	.we(ins_we), .oe(1'b0),
-	.in(int_evnt ? {`DATA_N{1'b0}} : sysbus.data), .out(), .data(ins), .*);
+	.in(int_evnt ? 8'h0 : sysbus.data), .out(), .data(ins), .*);
 
 // ALU
-wire [`DATA_N - 1:0] alu_in_a, alu_in_b;
-dataLogic alu_out;
+wire [7:0] alu_in_a, alu_in_b;
+logic [7:0] alu_out;
 ALUFunc alu_func;
 logic alu_cin, alu_cinclr;
 logic alu_cout, alu_sign, alu_zero, alu_ovf;
 alu alu0 (.*);
 
 alu_bus_a_t abus_a;
-assign alu_in_a = abus_a.con ? {`DATA_N{1'b0}} : {`DATA_N{1'bz}};
+assign alu_in_a = abus_a.con ? 8'h0 : 8'bz;
 
 alu_bus_b_t abus_b;
-assign alu_in_b = abus_b.bus ? sysbus.data : {`DATA_N{1'bz}};
-assign alu_in_b = abus_b.con ? {{`DATA_N - 1{1'b0}}, 1'b1} : {`DATA_N{1'bz}};
+assign alu_in_b = abus_b.bus ? sysbus.data : 8'bz;
+assign alu_in_b = abus_b.con ? 8'h1 : 8'bz;
 
 alu_bus_o_t abus_o;
-assign sysbus.data = abus_o.bus ? alu_out : {`DATA_N{1'bz}};
+assign sysbus.data = abus_o.bus ? alu_out : 8'bz;
 
 // Registers
-dataLogic acc;
+logic [7:0] acc;
 register acc0 (.we(abus_o.acc), .oe(abus_a.acc), .in(alu_out), .out(alu_in_a), .data(acc), .*);
 
-dataLogic x;
+logic [7:0] x;
 register x0 (.we(abus_o.x), .oe(abus_a.x), .in(alu_out), .out(alu_in_a), .data(x), .*);
 
-dataLogic y;
+logic [7:0] y;
 register y0 (.we(abus_o.y), .oe(abus_a.y), .in(alu_out), .out(alu_in_a), .data(y), .*);
 
 // Status register
-dataLogic p, p_in, p_din;
-dataLogic p_mask, p_set, p_clr;
+logic [7:0] p, p_in, p_din;
+logic [7:0] p_mask, p_set, p_clr;
 logic p_brk, p_int;
 assign p_brk = 1'b0, p_int = 1'b0;
 assign p_in = {alu_sign, alu_ovf, 1'b1, p_brk, 1'b0, p_int, alu_zero, alu_cout};
@@ -62,42 +62,42 @@ register #(.reset((8'h01 << `STATUS_R) | (8'h01 << `STATUS_I))) p0 (
 	.out(alu_in_a), .data(p), .*);
 
 logic p_oe;
-assign sysbus.data = p_oe ? p : {`DATA_N{1'bz}};
+assign sysbus.data = p_oe ? p : 8'bz;
 
 // Stack pointer
-dataLogic sp;
+logic [7:0] sp;
 logic sp_addr_oe;
 register #(.reset(8'hff)) sp0 (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp), .*);
-assign sysbus.addr = sp_addr_oe ? {{`ADDR_N - `DATA_N - 1{1'b0}}, 1'b1, sp} : {`ADDR_N{1'bz}};
+assign sysbus.addr = sp_addr_oe ? {8'h1, sp} : 16'bz;
 
 // Data latch registers
-dataLogic dl;
+logic [7:0] dl;
 register dl0 (.we(1'b1), .oe(abus_a.dl), .in(sysbus.data), .out(alu_in_a), .data(dl), .*);
-assign alu_in_b = abus_b.dl ? dl : {`DATA_N{1'bz}};
+assign alu_in_b = abus_b.dl ? dl : 8'bz;
 logic dl_sign;
-assign dl_sign = dl[`DATA_N - 1];
+assign dl_sign = dl[7];
 
-dataLogic adl;
+logic [7:0] adl;
 register adl0 (
 	.we(abus_o.adl), .oe(abus_a.adl),
 	.in(alu_out), .out(alu_in_a), .data(adl), .*);
 
-dataLogic adh;
+logic [7:0] adh;
 logic adh_bus;
-dataLogic adh_in;
+logic [7:0] adh_in;
 assign adh_in = abus_o.adh ? alu_out : sysbus.data;
 register adh0 (
 	.we(abus_o.adh | adh_bus), .oe(abus_a.adh),
 	.in(adh_in), .out(alu_in_a), .data(adh), .*);
 
 logic ad_addr_oe;
-assign sysbus.addr = ad_addr_oe ? {adh, adl} : {`ADDR_N{1'bz}};
+assign sysbus.addr = ad_addr_oe ? {adh, adl} : 16'bz;
 
 // Program counter
-logic [`ADDR_N - 1:0] pc;
+logic [15:0] pc;
 logic pc_addr_oe;
 logic pc_inc, pc_load, pc_int;
-logic [`ADDR_N - 1:0] int_addr;
+logic [15:0] int_addr;
 pc pc0 (
 	.oel(abus_a.pcl), .oeh(abus_a.pch),
 	.wel(abus_o.pcl), .weh(abus_o.pch),
@@ -105,8 +105,8 @@ pc pc0 (
 	.load({sysbus.data, dl}), .data(pc), .*);
 
 logic pcl_oe, pch_oe;
-assign sysbus.data = pcl_oe ? pc[`DATA_N - 1:0] : {`DATA_N{1'bz}};
-assign sysbus.data = pch_oe ? pc[`ADDR_N - 1:`ADDR_N - `DATA_N] : {`DATA_N{1'bz}};
+assign sysbus.data = pcl_oe ? pc[7:0] : 8'bz;
+assign sysbus.data = pch_oe ? pc[15:8] : 8'bz;
 
 // Interrupt logic
 logic int_handled;

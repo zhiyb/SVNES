@@ -1,8 +1,7 @@
-`include "config.h"
 import typepkg::*;
 
 module idec (
-	input dataLogic ins,
+	input logic [7:0] ins,
 	output Opcode opcode,
 	output Addressing mode,
 	output logic [1:0] pc_bytes

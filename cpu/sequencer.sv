@@ -44,8 +44,8 @@ module sequencer (
 	
 	// Status register
 	output logic p_oe,
-	input dataLogic p,
-	output dataLogic p_mask, p_set, p_clr
+	input logic [7:0] p,
+	output logic [7:0] p_mask, p_set, p_clr
 );
 
 logic alu_cout_prev;
@@ -119,10 +119,10 @@ begin
 	
 	alu_func = ALUTXB;
 	alu_cinclr = 1'b0;
-	p_mask = 'h0;
+	p_mask = 8'h0;
 	p_mask[`STATUS_R] = 1'b1;
-	p_set = 'h0;
-	p_clr = 'h0;
+	p_set = 8'h0;
+	p_clr = 8'h0;
 	state_next = state;
 	
 	fetch = state == Fetch;

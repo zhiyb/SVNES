@@ -1,18 +1,17 @@
 `include "config.h"
-import typepkg::*;
 
 module gpio (
 	sys_if sys,
 	input logic sel,
 	periphbus_if pbus,
 	// IO ports
-	inout wire [`DATA_N - 1 : 0] io,
-	output dataLogic iodir
+	inout wire [7:0] io,
+	output logic [7:0] iodir
 );
 
 /*** Internal registers ***/
 
-logic [`DATA_N - 1 : 0] reg_dir, reg_in, reg_out;
+logic [7:0] reg_dir, reg_in, reg_out;
 
 /*** Register read & write ***/
 
@@ -20,8 +19,8 @@ logic we, oe;
 assign we = sel & pbus.we;
 assign oe = sel & ~pbus.we;
 
-logic [`DATA_N - 1 : 0] periph_data;
-assign pbus.data = oe ? periph_data : {`DATA_N{1'bz}};
+logic [7:0] periph_data;
+assign pbus.data = oe ? periph_data : 8'bz;
 
 always_comb
 begin
@@ -29,7 +28,7 @@ begin
 	`GPIO_DIR:	periph_data = reg_dir;
 	`GPIO_OUT:	periph_data = reg_out;
 	`GPIO_IN:	periph_data = reg_in;
-	default:		periph_data = {`DATA_N{1'b0}};
+	default:		periph_data = 8'h0;
 	endcase
 end
 
@@ -51,7 +50,7 @@ assign iodir = reg_dir;
 
 genvar i;
 generate
-	for (i = 0; i != `DATA_N; i++) begin: gen_io
+	for (i = 0; i != 8; i++) begin: gen_io
 		assign io[i] = reg_dir[i] ? reg_out[i] : 1'bz;
 end
 endgenerate

@@ -8,12 +8,10 @@
 /*** Architecture configuration ***/
 `define BOOTROM_N		8
 `define BOOTROM_SIZE	(2 ** `BOOTROM_N)
-`define ADDR_N			16
 `define PERIPHS_N		8
-`define ADDR_MAP_N	(`ADDR_N - `PERIPHS_N)
+`define ADDR_MAP_N	(16 - `PERIPHS_N)
 `define PERIPH_N		2
 `define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
-`define DATA_N			8
 
 /*** Status register ***/
 `define STATUS_N	7

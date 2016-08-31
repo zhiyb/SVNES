@@ -1,5 +1,4 @@
 `include "config.h"
-import typepkg::*;
 
 module system (
 	// Clock and reset
@@ -8,8 +7,8 @@ module system (
 	// Interrupt lines
 	input logic irq, nmi,
 	// GPIO
-	inout wire [`DATA_N - 1:0] io[2],
-	output dataLogic iodir[2],
+	inout wire [7:0] io[2],
+	output logic [7:0] iodir[2],
 	// SPI
 	input logic cs, miso,
 	output logic mosi, sck,
@@ -29,26 +28,26 @@ always_ff @(posedge sys.clk, negedge n_reset_in)
 // Interconnections and buses
 wire rdy;
 logic we;
-wire [`ADDR_N - 1 : 0] addr;
-wire [`DATA_N - 1 : 0] data;
+wire [15:0] addr;
+wire [7:0] data;
 sysbus_if sysbus (.*);
 
 peripherals periph0 (.*);
 
 logic rom0sel;
 assign rom0sel = sysbus.addr >= `BOOTROM_BASE;
-dataLogic rom0q;
+logic [7:0] rom0q;
 assign sysbus.rdy = rom0sel ? 1'b1 : 1'bz;
-assign sysbus.data = (~sysbus.we & rom0sel) ? rom0q : {`DATA_N{1'bz}};
+assign sysbus.data = (~sysbus.we & rom0sel) ? rom0q : 8'bz;
 rom rom0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),
 	.address(sysbus.addr[7:0]), .q(rom0q));
 
 logic ram0sel;
 assign ram0sel = sysbus.addr < `RAM0_SIZE;
-dataLogic ram0q;
+logic [7:0] ram0q;
 assign sysbus.rdy = ram0sel ? 1'b1 : 1'bz;
-assign sysbus.data = (~sysbus.we & ram0sel) ? ram0q : {`DATA_N{1'bz}};
+assign sysbus.data = (~sysbus.we & ram0sel) ? ram0q : 8'bz;
 ram2k ram0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),
 	.address(sysbus.addr[10:0]), .data(sysbus.data),

@@ -1,5 +1,4 @@
 `include "config.h"
-import typepkg::*;
 
 module spi (
 	sys_if sys,
@@ -14,7 +13,7 @@ module spi (
 
 /*** Internal registers ***/
 
-logic [`DATA_N - 1 : 0] reg_ctrl, reg_stat, reg_data[2];
+logic [7:0] reg_ctrl, reg_stat, reg_data[2];
 
 /*** Register read & write ***/
 
@@ -22,8 +21,8 @@ logic we, oe;
 assign we = sel & pbus.we;
 assign oe = sel & ~pbus.we;
 
-logic [`DATA_N - 1 : 0] periph_data;
-assign pbus.data = oe ? periph_data : {`DATA_N{1'bz}};
+logic [7:0] periph_data;
+assign pbus.data = oe ? periph_data : 8'bz;
 
 always_comb
 begin
@@ -31,14 +30,14 @@ begin
 	`SPI_CTRL:	periph_data = reg_ctrl & `SPI_CTRL_MASK;
 	`SPI_STAT:	periph_data = reg_stat & `SPI_STAT_MASK;
 	`SPI_DATA:	periph_data = reg_data[`RX];
-	default:		periph_data = {`DATA_N{1'b0}};
+	default:		periph_data = 8'h0;
 	endcase
 end
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
-		reg_ctrl <= `DATA_N'b0;
-		reg_data[`TX] <= `DATA_N'b0;
+		reg_ctrl <= 8'h0;
+		reg_data[`TX] <= 8'h0;
 	end else if (we) begin
 		case (pbus.addr)
 		`SPI_CTRL:	reg_ctrl <= pbus.data;
@@ -60,7 +59,7 @@ assign pr_sel = reg_ctrl[2:0];
 
 parameter PR_N = 8;
 logic n_sh_reset;
-logic [PR_N : 0] pr_clk;
+logic [PR_N:0] pr_clk;
 prescaler #(.n(PR_N)) p0 (.n_reset(sys.n_reset && n_sh_reset), .clk(sys.clk), .counter(pr_clk));
 
 logic sclk, spiclk;
@@ -70,12 +69,12 @@ assign spiclk = sclk ^ cpha;
 /*** Shift register ***/
 
 logic sh_loaded, sh_done, sh_din, sh_dout;
-logic [$clog2(`DATA_N + 2) - 1 : 0] sh_cnt;
-logic [`DATA_N - 1 : 0] sh_data;
+logic [3:0] sh_cnt;
+logic [7:0] sh_data;
 
-assign sh_dout = sh_data[`DATA_N - 1];
+assign sh_dout = sh_data[7];
 assign sh_loaded = !sh_done && sh_cnt != 0;
-assign sh_done = sh_cnt == `DATA_N + 1;
+assign sh_done = sh_cnt == 4'd9;
 
 always_ff @(negedge spiclk, negedge n_sh_reset)
 	if (~n_sh_reset) begin
@@ -86,7 +85,7 @@ always_ff @(negedge spiclk, negedge n_sh_reset)
 			sh_data <= reg_data[`TX];
 			sh_cnt <= sh_cnt + 4'h1;
 		end else if (~sh_done) begin
-			sh_data <= {sh_data[`DATA_N - 2 : 0], sh_din};
+			sh_data <= {sh_data[6:0], sh_din};
 			sh_cnt <= sh_cnt + 4'h1;
 		end else if (!reg_stat[`SPI_STAT_TXE_]) begin
 			sh_data <= reg_data[`TX];
@@ -110,21 +109,21 @@ assign sh_din = cap_din;
 
 always_ff @(posedge sys.clk, negedge enabled)
 	if (~enabled) begin
-		n_sh_reset <= 'b0;
-		reg_data[`RX] <= `DATA_N'b0;
+		n_sh_reset <= 1'b0;
+		reg_data[`RX] <= 8'b0;
 	end else begin
 		if (we && pbus.addr == `SPI_DATA) begin
-			n_sh_reset <= 'b1;
+			n_sh_reset <= 1'b1;
 		end else if (sh_done_s) begin
 			if (reg_stat[`SPI_STAT_TXE_])
-				n_sh_reset <= 'b0;
+				n_sh_reset <= 1'b0;
 			reg_data[`RX] <= sh_data;
 		end
 	end
 
 /*** Status report ***/
 
-dataLogic reg_stat_in;
+logic [7:0] reg_stat_in;
 
 always_comb
 begin

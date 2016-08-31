@@ -1,8 +1,4 @@
-`include "config.h"
-
 package typepkg;
-
-typedef logic [`DATA_N - 1:0] dataLogic;
 
 // Opcodes
 typedef enum logic [6:0] {

@@ -1,19 +1,16 @@
-`include "config.h"
-import typepkg::*;
-
 module interrupts (
 	sys_if sys,
 	input logic i, irq, nmi,
 	input logic int_handled,
 	output logic int_evnt,
-	output logic [`ADDR_N - 1:0] int_addr
+	output logic [15:0] int_addr
 );
 
 `define NMI	0
 `define RST	1
 `define IRQ 2
 
-parameter logic [`ADDR_N - 1:0] addr[3] = '{16'hfffa, 16'hfffc, 16'hfffe};
+parameter logic [15:0] addr[3] = '{16'hfffa, 16'hfffc, 16'hfffe};
 
 logic int_nmi, int_rst, int_irq;
 assign int_evnt = int_nmi | int_rst | (~i & int_irq);

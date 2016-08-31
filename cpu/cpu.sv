@@ -67,7 +67,7 @@ assign sysbus.data = p_oe ? p : 8'bz;
 // Stack pointer
 logic [7:0] sp;
 logic sp_addr_oe;
-register #(.reset(8'hff)) sp0 (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp), .*);
+register sp0 (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp), .*);
 assign sysbus.addr = sp_addr_oe ? {8'h1, sp} : 16'bz;
 
 // Data latch registers

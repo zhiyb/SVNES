@@ -1,5 +1,3 @@
-`include "config.h"
-
 module wrapper (
 	input logic CLOCK_50,
 	input logic [1:0] KEY,
@@ -61,15 +59,13 @@ assign clk_PPU = clkPPU[clksel];
 assign clk_CPU = clkCPU[clksel];
 
 // GPIO
-wire [`DATA_N - 1 : 0] io[2];
-logic [`DATA_N - 1 : 0] iodir[2];
-
-logic [`DATA_N - 1 : 0] ioin;
+wire [7:0] io[2];
+logic [7:0] iodir[2], ioin;
 assign ioin = {GPIO_1_IN, GPIO_0_IN, SW};
 
 genvar i;
 generate
-	for (i = 0; i != `DATA_N; i++) begin: gen_io0
+	for (i = 0; i != 8; i++) begin: gen_io0
 		assign io[0][i] = iodir[0][i] ? 1'bz : ioin[i];
 	end
 endgenerate
@@ -90,7 +86,7 @@ apu_pwm #(.N(8)) pwm0 (.clk(clk20M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 system sys0 (.*);
 
-assign LED[6:0] = audio;
+assign LED[7:0] = audio;
 /*assign LED[0] = io[1][0];
 assign LED[1] = io[1][1];
 assign LED[2] = io[1][2];

@@ -14,5 +14,6 @@ output_files
 ~$*
 *.ver
 .*
+*~
 *.do
 *.nb

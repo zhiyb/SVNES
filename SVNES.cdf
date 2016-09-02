@@ -4,7 +4,7 @@ JedecChain;
 	DefaultMfr(6E);
 
 	P ActionCode(Cfg)
-		Device PartName(EP4CE22F17) Path("C:/Users/zhiyb/Documents/Design/FPGA/CPU_demo/output_files/") File("SVCPU.sof") MfrSpec(OpMask(1));
+		Device PartName(EP4CE22F17) Path("/home/zhiyb/Documents/SVNES/output_files/") File("SVCPU.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

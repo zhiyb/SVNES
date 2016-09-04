@@ -12,7 +12,7 @@ a8;	--		TAY
 05;
 30;
 
-a9;	--		LDA	#$1f
+a9;	--		LDA	#$1f	// Enable all channels
 1f;
 8d;	--		STA	$4015	// APU_STATUS
 15;
@@ -36,12 +36,53 @@ a9;	--		LDA	#$08
 03;
 40;
 
-58;	--		CLI
-a2;	--	reload:	LDX	#$3c	// 60
+a9;	--		LDA	#$30	// Duty: 0
+30;
+8d;	--		STA	$4000	// APU_PULSE1_CTRL
+00;
+40;
+
+a2;	--		LDX	#$1e	// Delay 500ms
+1e;
+20;	--		JSR	$ffa0	// Function call
+e0;
+ff;
+
+a9;	--		LDA	#$70	// Duty: 1
+70;
+8d;	--		STA	$4000	// APU_PULSE1_CTRL
+00;
+40;
+
+a2;	--		LDX	#$1e	// Delay 500ms
+1e;
+20;	--		JSR	$ffe0	// Function call
+e0;
+ff;
+
+a9;	--		LDA	#$b0	// Duty: 2
+b0;
+8d;	--		STA	$4000	// APU_PULSE1_CTRL
+00;
+40;
+
+a2;	--		LDX	#$1e	// Delay 500ms
+1e;
+20;	--		JSR	$ffe0	// Function call
+e0;
+ff;
+
+a9;	--		LDA	#$c0	// Duty: 3
+c0;
+8d;	--		STA	$4000	// APU_PULSE1_CTRL
+00;
+40;
+
+a2;	--	reload:	LDX	#$3c	// Delay 1s
 3c;
-8a;	--	loop:	TXA
-d0;	--		BNE	loop
-fd;	-- -3
+20;	--		JSR	$ffe0	// Function call
+e0;
+ff;
 a9;	--		LDA	#$10
 10;
 8d;	--		STA	$4007	// APU_PULSE2_LC
@@ -55,16 +96,29 @@ b8;	--		CLV
 50;	--		BVC	reload
 ef;	-- -17
 
-	0b0  :   ca;	--	IRQ:	DEX
-	0b1  :   ad;	--		LDA	$4015
-	0b2  :   15;
-	0b3  :   40;
-	0b4  :   40;	--		RTI
+	0e0  :   48;	--		PHA		// Push A
+	0e1  :   8a;	--		TXA
+	0e2  :   48;	--		PHA		// Push X
+	0e5  :   58;	--		CLI		// Waiting for 60Hz APU IRQ
+	0e6  :   8a;	--	loop:	TXA
+	0e7  :   d0;	--		BNE	loop
+	0e8  :   fd;	-- -3
+	0e9  :   78;	--		SEI
+	0ea  :   68;	--		PLA		// Pull X
+	0eb  :   aa;	--		TAX
+	0ec  :   68;	--		PLA		// Pull A
+	0ed  :   60;	--		RTS		// Return
+
+	0f0  :   ca;	--	IRQ:	DEX
+	0f1  :   ad;	--		LDA	$4015
+	0f2  :   15;
+	0f3  :   40;
+	0f4  :   40;	--		RTI
 
 	0fa  :   00;	-- NMI vector
 	0fb  :   ff;
 	0fc  :   00;	-- Reset vector
 	0fd  :   ff;
-	0fe  :   b0;	-- IRQ vector
+	0fe  :   f0;	-- IRQ vector
 	0ff  :   ff;
 

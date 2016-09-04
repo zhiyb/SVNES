@@ -102,11 +102,11 @@ always_ff @(posedge timer_tick, negedge sys.n_reset)
 logic gate_seq;
 
 always_comb
-	case (seq_step)
-	0:	gate_seq = seq_step == 3'b111;
-	1: gate_seq = seq_step[2:1] == 2'b11;
-	2: gate_seq = seq_step[2] == 1'b1;
-	3: gate_seq = seq_step[2:1] != 2'b11;
+	case (duty)
+	0:	gate_seq = seq_step == 3'b111 ? 1'b1 : 1'b0;
+	1: gate_seq = seq_step[2:1] == 2'b11 ? 1'b1 : 1'b0;
+	2: gate_seq = seq_step[2] == 1'b1 ? 1'b1 : 1'b0;
+	3: gate_seq = seq_step[2:1] != 2'b11 ? 1'b1 : 1'b0;
 	default:	gate_seq = 1'b0;
 	endcase
 

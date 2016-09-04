@@ -53,11 +53,62 @@ assign swp_neg = regs[1][3];
 logic [2:0] swp_shift;
 assign swp_shift = regs[1][2:0];
 
-logic [10:0] timer;
-assign timer = {regs[3][2:0], regs[2]};
+logic [10:0] timer_load_reg;
+assign timer_load_reg = {regs[3][2:0], regs[2]};
 
 logic [4:0] lc_load;
 assign lc_load = regs[3][7:3];
+
+// Timer
+
+logic gate_timer;
+logic [10:0] timer_load, timer_cnt;
+logic timer_tick;
+assign timer_load = timer_load_reg;
+
+always_ff @(posedge apuclk, negedge sys.n_reset)
+	if (~sys.n_reset) begin
+		timer_cnt <= 11'h0;
+		timer_tick <= 1'b0;
+		gate_timer <= 1'b0;
+	end else if (~en) begin
+		timer_cnt <= 11'h0;
+		timer_tick <= 1'b0;
+		gate_timer <= 1'b0;
+	end else if (timer_cnt == 11'h0) begin
+		timer_cnt <= timer_load;
+		timer_tick <= 1'b1;
+		if (timer_load[10:3] == 8'h0)
+			gate_timer <= 1'b0;
+		else
+			gate_timer <= 1'b1;
+	end else begin
+		timer_cnt <= timer_cnt - 11'h1;
+		timer_tick <= 1'b0;
+	end
+
+// Waveform sequqncer
+
+logic [2:0] seq_step;
+
+always_ff @(posedge timer_tick, negedge sys.n_reset)
+	if (~sys.n_reset) begin
+		seq_step <= 3'h0;
+	end else if (~en) begin
+		seq_step <= 3'h0;
+	end else
+		seq_step <= seq_step - 3'h1;
+
+logic gate_seq;
+
+always_comb
+	case (seq_step)
+	0:	gate_seq = seq_step == 3'b111;
+	1: gate_seq = seq_step[2:1] == 2'b11;
+	2: gate_seq = seq_step[2] == 1'b1;
+	3: gate_seq = seq_step[2:1] != 2'b11;
+	default:	gate_seq = 1'b0;
+	endcase
 
 // Length counter
 
@@ -98,10 +149,11 @@ always_ff @(posedge hframe, negedge sys.n_reset)
 // Output generation
 
 logic gate;
-assign gate = en && gate_lc;
+assign gate = en & gate_lc & gate_timer & gate_seq;
 
 logic aout;
-counter #(.n($clog2(2033 - 1))) c0 (.top(2033 - 1), .clk(apuclk), .n_reset(sys.n_reset), .out(aout));
+assign aout = 1'b1;
+//counter #(.n($clog2(2033 - 1))) c0 (.top(2033 - 1), .clk(apuclk), .n_reset(sys.n_reset), .out(aout));
 
 assign audio = gate ? {4{aout}} : 4'b0;
 

@@ -217,6 +217,7 @@ set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
 set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
+set_global_assignment -name TEXT_FILE memory/rom.txt
 set_global_assignment -name CDF_FILE SVNES.cdf
 set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_mixer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/spi.sv

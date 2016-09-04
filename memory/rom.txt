@@ -18,6 +18,18 @@ a9;	--		LDA	#$1f
 15;
 40;
 
+a9;	--		LDA	#$ce
+ce;
+8d;	--		STA	$4002	// APU_PULSE1_TMRL
+02;
+40;
+
+a9;	--		LDA	#$88
+88;
+8d;	--		STA	$4006	// APU_PULSE2_TMRL
+06;
+40;
+
 a9;	--		LDA	#$08
 08;
 8d;	--		STA	$4003	// APU_PULSE1_LC
@@ -30,8 +42,8 @@ a2;	--	reload:	LDX	#$3c	// 60
 8a;	--	loop:	TXA
 d0;	--		BNE	loop
 fd;	-- -3
-a9;	--		LDA	#$16
-16;
+a9;	--		LDA	#$10
+10;
 8d;	--		STA	$4007	// APU_PULSE2_LC
 07;
 40;
@@ -55,3 +67,4 @@ ef;	-- -17
 	0fd  :   ff;
 	0fe  :   b0;	-- IRQ vector
 	0ff  :   ff;
+

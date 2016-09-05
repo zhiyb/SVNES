@@ -15,6 +15,6 @@ logic [7:0] tnd_out;
 apu_rom_tnd romt (.aclr(~sys.n_reset), .clock(~sys.clk),
 	.address(8'd3 * triangle + 8'd2 * noise + dmc), .q(tnd_out));
 
-assign out = pulse_out + tnd_out;
+assign out = {1'b0, pulse_out} + tnd_out;
 
 endmodule

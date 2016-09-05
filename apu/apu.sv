@@ -26,7 +26,7 @@ demux #(.N(3)) d0 (.oe(en), .sel(sysbus.addr[4:2]), .q(sel));
 
 logic [3:0] pulse[2];
 logic pulse_en[2], pulse_act[2];
-apu_pulse p0 (.sel(sel[0]), .en(pulse_en[0]), .act(pulse_act[0]), .out(pulse[0]), .*);
+apu_pulse #(.defect(1'b1)) p0 (.sel(sel[0]), .en(pulse_en[0]), .act(pulse_act[0]), .out(pulse[0]), .*);
 apu_pulse p1 (.sel(sel[1]), .en(pulse_en[1]), .act(pulse_act[1]), .out(pulse[1]), .*);
 
 logic [3:0] triangle;

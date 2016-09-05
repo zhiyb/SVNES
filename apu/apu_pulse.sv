@@ -1,4 +1,4 @@
-module apu_pulse (
+module apu_pulse #(parameter logic defect = 1'b0) (
 	sys_if sys,
 	sysbus_if sysbus,
 	input logic apuclk, qframe, hframe,
@@ -103,10 +103,24 @@ assign env_out = vol_con ? env_vol : env_cnt;
 
 // Timer
 
+logic timer_reload;
+assign timer_reload = we && sysbus.addr[1:0] == 2'd3;
+
+logic [10:0] timer_load;
+logic [10:0] swp_out;
+logic swp_apply_cpu;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		timer_load <= 11'h0;
+	else if (timer_reload)
+		timer_load <= timer_load_reg;
+	else if (swp_apply_cpu)
+		timer_load <= swp_out;
+
 logic gate_timer;
-logic [10:0] timer_load, timer_cnt;
+logic [10:0] timer_cnt;
 logic timer_tick;
-assign timer_load = timer_load_reg;
 
 always_ff @(posedge apuclk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
@@ -127,6 +141,54 @@ always_ff @(posedge apuclk, negedge sys.n_reset)
 	end else begin
 		timer_cnt <= timer_cnt - 11'h1;
 		timer_tick <= 1'b0;
+	end
+
+// Sweep
+
+logic swp_reload, swp_reload_clr;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		swp_reload <= 1'b0;
+	else if (~en || swp_reload_clr)
+		swp_reload <= 1'b0;
+	else if (we && sysbus.addr[1:0] == 2'd1)
+		swp_reload <= 1'b1;
+
+always_ff @(posedge hframe, negedge sys.n_reset)
+	if (~sys.n_reset)
+		swp_reload_clr <= 1'b0;
+	else
+		swp_reload_clr <= swp_reload;
+
+logic gate_swp, swp_ovf, swp_ovf_add, swp_apply, swp_apply_delayed;
+assign {swp_ovf_add, swp_out} = timer_load + ((timer_load >> swp_shift) ^ {11{swp_neg}}) + {10'h0, ~defect & swp_neg};
+assign swp_ovf = swp_neg ^ swp_ovf_add;
+assign gate_swp = swp_neg | ~swp_ovf_add;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		swp_apply_delayed <= 1'b0;
+	else
+		swp_apply_delayed <= swp_apply;
+
+assign swp_apply_cpu = swp_apply & ~swp_apply_delayed;
+
+logic [2:0] swp_div_cnt;
+
+assign swp_apply = swp_en && swp_div_cnt == 3'h0 && swp_shift != 3'h0 && ~swp_ovf;
+
+always_ff @(posedge hframe, negedge sys.n_reset)
+	if (~sys.n_reset)
+		swp_div_cnt <= 3'h0;
+	else begin
+		if (swp_reload)
+			swp_div_cnt <= swp_period;
+		else if (swp_div_cnt == 3'h0) begin
+			if (swp_en)
+				swp_div_cnt <= swp_period;
+		end else
+			swp_div_cnt <= swp_div_cnt - 3'h1;
 	end
 
 // Waveform sequencer
@@ -191,7 +253,7 @@ always_ff @(posedge hframe, negedge sys.n_reset)
 // Output control
 
 logic gate;
-assign gate = en & gate_lc & gate_timer & gate_seq;
+assign gate = en & gate_lc & gate_timer & gate_seq & gate_swp;
 
 assign audio = gate ? env_out : 4'b0;
 

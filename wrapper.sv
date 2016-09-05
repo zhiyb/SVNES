@@ -82,18 +82,10 @@ assign irq = 1'b1, nmi = 1'b1;
 logic [7:0] audio;
 logic aout;
 assign GPIO_0[25] = aout;
-apu_pwm #(.N(8)) pwm0 (.clk(clk20M), .cmp(audio), .q(aout), .en(1'b1), .*);
+apu_pwm #(.N(8)) pwm0 (.clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 system sys0 (.*);
 
 assign LED[7:0] = audio;
-/*assign LED[0] = io[1][0];
-assign LED[1] = io[1][1];
-assign LED[2] = io[1][2];
-assign LED[3] = io[1][3];
-assign LED[4] = ~irq;
-assign LED[5] = ~nmi;
-assign LED[6] = dbg;
-assign LED[7] = n_reset;*/
 
 endmodule

@@ -1,7 +1,7 @@
 module apu_pulse (
 	sys_if sys,
 	sysbus_if sysbus,
-	input logic apuclk, hframe,
+	input logic apuclk, qframe, hframe,
 	input logic sel, en,
 	output logic act,
 	output logic [3:0] out
@@ -23,6 +23,9 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
 		for (int i = 0; i != 4; i++)
 			regs[i] <= 8'b0;
+	end else if (~en) begin
+		for (int i = 0; i != 4; i++)
+			regs[i] <= 8'b0;
 	end else if (we) begin
 		regs[sysbus.addr[1:0]] <= sysbus.data;
 	end
@@ -32,14 +35,14 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 logic [1:0] duty;
 assign duty = regs[0][7:6];
 
-logic lc_halt;
-assign lc_halt = regs[0][5];
+logic lc_halt, env_loop;
+assign lc_halt = regs[0][5], env_loop = lc_halt;
 
 logic vol_con;
 assign vol_con = regs[0][4];
 
-logic [3:0] env_period;
-assign env_period = regs[0][3:0];
+logic [3:0] env_vol, env_period;
+assign env_vol = regs[0][3:0], env_period = env_vol;
 
 logic swp_en;
 assign swp_en = regs[1][7];
@@ -58,6 +61,45 @@ assign timer_load_reg = {regs[3][2:0], regs[2]};
 
 logic [4:0] lc_load;
 assign lc_load = regs[3][7:3];
+
+// Envelope generator
+
+logic env_start, env_start_clr;
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		env_start <= 1'b0;
+	else if (~en || env_start_clr)
+		env_start <= 1'b0;
+	else if (we && sysbus.addr[1:0] == 2'd3)
+		env_start <= 1'b1;
+
+always_ff @(posedge qframe, negedge sys.n_reset)
+	if (~sys.n_reset)
+		env_start_clr <= 1'b0;
+	else
+		env_start_clr <= env_start;
+
+// Envelope divider & decay counter
+
+logic [3:0] env_div_cnt, env_cnt;
+
+always_ff @(posedge qframe, negedge sys.n_reset)
+	if (~sys.n_reset) begin
+		env_div_cnt <= 4'h0;
+		env_cnt <= 4'h0;
+	end else if (env_start) begin
+		env_div_cnt <= env_period;
+		env_cnt <= 4'hf;
+	end else if (env_div_cnt == 4'h0) begin
+		env_div_cnt <= env_period;
+		if (env_loop || env_cnt != 4'h0)
+			env_cnt <= env_cnt - 4'h1;
+	end else
+		env_div_cnt <= env_div_cnt - 4'h1;
+
+logic [3:0] env_out;
+assign env_out = vol_con ? env_vol : env_cnt;
 
 // Timer
 
@@ -87,7 +129,7 @@ always_ff @(posedge apuclk, negedge sys.n_reset)
 		timer_tick <= 1'b0;
 	end
 
-// Waveform sequqncer
+// Waveform sequencer
 
 logic [2:0] seq_step;
 
@@ -146,15 +188,11 @@ always_ff @(posedge hframe, negedge sys.n_reset)
 			cnt <= cnt - 8'b1;
 	end
 
-// Output generation
+// Output control
 
 logic gate;
 assign gate = en & gate_lc & gate_timer & gate_seq;
 
-logic aout;
-assign aout = 1'b1;
-//counter #(.n($clog2(2033 - 1))) c0 (.top(2033 - 1), .clk(apuclk), .n_reset(sys.n_reset), .out(aout));
-
-assign audio = gate ? {4{aout}} : 4'b0;
+assign audio = gate ? env_out : 4'b0;
 
 endmodule

@@ -24,20 +24,14 @@ ce;
 02;
 40;
 
-a9;	--		LDA	#$88
-88;
-8d;	--		STA	$4006	// APU_PULSE2_TMRL
-06;
-40;
-
 a9;	--		LDA	#$08
 08;
 8d;	--		STA	$4003	// APU_PULSE1_LC
 03;
 40;
 
-a9;	--		LDA	#$30	// Duty: 0
-30;
+a9;	--		LDA	#$3f	// Duty 0, halt, constant
+3f;
 8d;	--		STA	$4000	// APU_PULSE1_CTRL
 00;
 40;
@@ -48,8 +42,8 @@ a2;	--		LDX	#$1e	// Delay 500ms
 e0;
 ff;
 
-a9;	--		LDA	#$70	// Duty: 1
-70;
+a9;	--		LDA	#$7f	// Duty 1, halt, constant
+7f;
 8d;	--		STA	$4000	// APU_PULSE1_CTRL
 00;
 40;
@@ -60,8 +54,8 @@ a2;	--		LDX	#$1e	// Delay 500ms
 e0;
 ff;
 
-a9;	--		LDA	#$b0	// Duty: 2
-b0;
+a9;	--		LDA	#$bf	// Duty 2, halt, constant
+bf;
 8d;	--		STA	$4000	// APU_PULSE1_CTRL
 00;
 40;
@@ -72,10 +66,28 @@ a2;	--		LDX	#$1e	// Delay 500ms
 e0;
 ff;
 
-a9;	--		LDA	#$c0	// Duty: 3
-c0;
+a9;	--		LDA	#$e7	// Duty 3, loop, envelope
+e7;
 8d;	--		STA	$4000	// APU_PULSE1_CTRL
 00;
+40;
+
+a9;	--		LDA	#$08
+08;
+8d;	--		STA	$4003	// APU_PULSE1_LC
+03;
+40;
+
+a9;	--		LDA	#$9f	// Duty 2, no halt, constant
+9f;
+8d;	--		STA	$4004	// APU_PULSE2_CTRL
+04;
+40;
+
+a9;	--		LDA	#$88
+88;
+8d;	--		STA	$4006	// APU_PULSE2_TMRL
+06;
 40;
 
 a2;	--	reload:	LDX	#$3c	// Delay 1s

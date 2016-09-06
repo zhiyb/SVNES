@@ -30,60 +30,6 @@ a9;	--		LDA	#$08
 03;
 40;
 
-a9;	--		LDA	#$3f	// Duty 0, halt, constant
-3f;
-8d;	--		STA	$4000	// APU_PULSE1_CTRL
-00;
-40;
-
-a2;	--		LDX	#$1e	// Delay 500ms
-1e;
-20;	--		JSR	$ffa0	// Function call
-e0;
-ff;
-
-a9;	--		LDA	#$7f	// Duty 1, halt, constant
-7f;
-8d;	--		STA	$4000	// APU_PULSE1_CTRL
-00;
-40;
-
-a2;	--		LDX	#$1e	// Delay 500ms
-1e;
-20;	--		JSR	$ffe0	// Function call
-e0;
-ff;
-
-a9;	--		LDA	#$bf	// Duty 2, halt, constant
-bf;
-8d;	--		STA	$4000	// APU_PULSE1_CTRL
-00;
-40;
-
-a2;	--		LDX	#$1e	// Delay 500ms
-1e;
-20;	--		JSR	$ffe0	// Function call
-e0;
-ff;
-
-a9;	--		LDA	#$ef	// Duty 3, loop, envelope
-ef;
-8d;	--		STA	$4000	// APU_PULSE1_CTRL
-00;
-40;
-
-a9;	--		LDA	#$08	// Reset envelope
-08;
-8d;	--		STA	$4003	// APU_PULSE1_LC
-03;
-40;
-
-a2;	--		LDX	#$3c	// Delay 1s
-3c;
-20;	--		JSR	$ffe0	// Function call
-e0;
-ff;
-
 a9;	--		LDA	#$ff	// Duty 3, halt, constant
 ff;
 8d;	--		STA	$4000	// APU_PULSE1_CTRL
@@ -102,26 +48,82 @@ f0;
 e0;
 ff;
 
-a9;	--		LDA	#$93	// Sweep, period 1, add, shift 7
-97;
-8d;	--		STA	$4001	// APU_PULSE1_SWEEP
-01;
-40;
-
-a9;	--		LDA	#$af	// Duty 2, loop, envelope
-af;
-8d;	--		STA	$4000	// APU_PULSE1_CTRL
-00;
-40;
-
-a9;	--		LDA	#$80
-80;
-8d;	--		STA	$4002	// APU_PULSE1_TMRL
-02;
+a9;	--		LDA	#$ff	// Halt
+ff;
+8d;	--		STA	$4008	// APU_TRIANGLE_LINEAR
+08;
 40;
 
 a9;	--		LDA	#$00
 00;
+8d;	--	tri:	STA	$400b	// APU_TRIANGLE_LC
+0b;
+40;
+a0;	--		LDY	#$00
+00;
+8c;	--	tri_in:	STY	$400a	// APU_TRIANGLE_TMRL
+0a;
+40;
+a2;	--		LDX	#$03	// Delay 1/20 s
+03;
+20;	--		JSR	$ffe0	// Function call
+e0;
+ff;
+c8;	--		INY
+d0;	--		BNE	tri_in
+f5;	-- -11
+18;	--		CLC
+69;	--		ADC	#$01
+01;
+c9;	--		CMP	#$04
+04;
+d0;	--		BNE	tri
+e9;	-- -23
+
+a9;	--		LDA	#$7f	// No halt
+7f;
+8d;	--		STA	$4008	// APU_TRIANGLE_LINEAR
+08;
+40;
+
+a9;	--		LDA	#$ce
+ce;
+8d;	--		STA	$400a	// APU_TRIANGLE_TMRL
+0a;
+40;
+
+a9;	--		LDA	#$08
+08;
+8d;	--		STA	$400b	// APU_TRIANGLE_LC
+0b;
+40;
+
+a2;	--		LDX	#$3c	// Delay 1s
+3c;
+20;	--		JSR	$ffe0	// Function call
+e0;
+ff;
+
+a9;	--		LDA	#$9f	// Duty 2, no halt, constant
+9f;
+8d;	--		STA	$4000	// APU_PULSE1_CTRL
+00;
+40;
+
+a9;	--		LDA	#$00	// Sweep disabled
+00;
+8d;	--		STA	$4001	// APU_PULSE1_SWEEP
+01;
+40;
+
+a9;	--		LDA	#$9c
+9c;
+8d;	--		STA	$4002	// APU_PULSE1_TMRL
+02;
+40;
+
+a9;	--		LDA	#$09
+09;
 8d;	--		STA	$4003	// APU_PULSE1_LC
 03;
 40;

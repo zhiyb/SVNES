@@ -65,6 +65,9 @@ a9;	--		LDA	#$00
 8d;	--	noise0:	STA	$400e	// APU_NOISE_CFG
 0e;
 40;
+8d;	--		STA	$400f	// APU_NOISE_LC
+0f;
+40;
 a2;	--		LDX	#$1e	// Delay 500ms
 1e;
 20;	--		JSR	$ffe0	// Function call
@@ -76,12 +79,15 @@ ff;
 c9;	--		CMP	#$10
 10;
 d0;	--		BNE	noise0
-f1;	-- -15
+ee;	-- -18
 
 a9;	--		LDA	#$80
 80;
 8d;	--	noise1:	STA	$400e	// APU_NOISE_CFG
 0e;
+40;
+8d;	--		STA	$400f	// APU_NOISE_LC
+0f;
 40;
 a2;	--		LDX	#$1e	// Delay 500ms
 1e;
@@ -94,7 +100,7 @@ ff;
 c9;	--		CMP	#$90
 90;
 d0;	--		BNE	noise1
-f1;	-- -15
+ee;	-- -18
 
 a9;	--		LDA	#$1f	// No halt, constant, volume 15
 1f;

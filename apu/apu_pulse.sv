@@ -7,17 +7,12 @@ module apu_pulse #(parameter logic defect = 1'b0) (
 	output logic [3:0] out
 );
 
-logic [3:0] audio;
-assign out = en ? audio : 4'b0;
-
 // Registers
 
-logic we, oe;
+logic we;
 assign we = sel & sysbus.we;
-assign oe = sel & ~sysbus.we;
 
 logic [7:0] regs[4];
-//assign sysbus.data = oe ? regs[sysbus.addr[1:0]] : {`DATA_N{1'bz}};
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
@@ -30,7 +25,7 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 		regs[sysbus.addr[1:0]] <= sysbus.data;
 	end
 
-// Separation of registers
+// Separation of register fields
 
 logic [1:0] duty;
 assign duty = regs[0][7:6];
@@ -118,6 +113,21 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 	else if (swp_apply_cpu)
 		timer_load <= swp_out;
 
+logic timer_reload_apu, timer_reload_apu_clr;
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		timer_reload_apu <= 1'b0;
+	else if (timer_reload_apu_clr)
+		timer_reload_apu <= 1'b0;
+	else if (timer_reload)
+		timer_reload_apu <= 1'b1;
+
+always_ff @(posedge apuclk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		timer_reload_apu_clr <= 1'b0;
+	else
+		timer_reload_apu_clr <= timer_reload_apu;
+
 logic gate_timer;
 logic [10:0] timer_cnt;
 logic timer_tick;
@@ -131,6 +141,13 @@ always_ff @(posedge apuclk, negedge sys.n_reset)
 		timer_cnt <= 11'h0;
 		timer_tick <= 1'b0;
 		gate_timer <= 1'b0;
+	end else if (timer_reload_apu) begin
+		timer_cnt <= timer_load;
+		timer_tick <= 1'b1;
+		if (timer_load[10:3] == 8'h0)
+			gate_timer <= 1'b0;
+		else
+			gate_timer <= 1'b1;
 	end else if (timer_cnt == 11'h0) begin
 		timer_cnt <= timer_load;
 		timer_tick <= 1'b1;
@@ -193,12 +210,31 @@ always_ff @(posedge hframe, negedge sys.n_reset)
 
 // Waveform sequencer
 
+logic seq_clk;
+assign seq_clk = timer_tick & ~apuclk;
+
+logic seq_reset, seq_reset_clr;
+
+always_ff @(posedge apuclk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		seq_reset <= 1'b0;
+	else if (seq_reset_clr)
+		seq_reset <= 1'b0;
+	else if (timer_reload)
+		seq_reset <= 1'b1;
+
+always_ff @(posedge seq_clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		seq_reset_clr <= 1'b0;
+	else
+		seq_reset_clr <= seq_reset;
+
 logic [2:0] seq_step;
 
-always_ff @(posedge timer_tick, negedge sys.n_reset)
+always_ff @(posedge seq_clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
 		seq_step <= 3'h0;
-	end else if (~en) begin
+	end else if (~en || seq_reset) begin
 		seq_step <= 3'h0;
 	end else
 		seq_step <= seq_step - 3'h1;
@@ -226,9 +262,8 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 		load_lc_cpu <= 1'b0;
 
 logic gate_lc;
-assign act = gate_lc;
-
 logic [7:0] cnt, cnt_load;
+assign act = cnt != 8'h0;
 apu_rom_length rom0 (.address(lc_load), .clock(sys.nclk), .q(cnt_load));
 
 always_ff @(posedge hframe, negedge sys.n_reset)
@@ -255,6 +290,6 @@ always_ff @(posedge hframe, negedge sys.n_reset)
 logic gate;
 assign gate = en & gate_lc & gate_timer & gate_seq & gate_swp;
 
-assign audio = gate ? env_out : 4'b0;
+assign out = gate ? env_out : 4'b0;
 
 endmodule

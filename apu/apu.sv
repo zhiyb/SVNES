@@ -31,8 +31,7 @@ apu_pulse p1 (.sel(sel[1]), .en(pulse_en[1]), .act(pulse_act[1]), .out(pulse[1])
 
 logic [3:0] triangle;
 logic triangle_en, triangle_act;
-assign triangle = 4'b0;
-assign triangle_act = 1'b0;
+apu_triangle t0 (.sel(sel[2]), .en(triangle_en), .act(triangle_act), .out(triangle), .*);
 
 logic [3:0] noise;
 logic noise_en, noise_act;

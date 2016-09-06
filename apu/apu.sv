@@ -20,7 +20,7 @@ assign en = (sysbus.addr & ~(`APU_SIZE - 1)) == `APU_BASE;
 assign sysbus.rdy = en ? 1'b1 : 1'bz;
 
 logic [7:0] sel;
-demux #(.N(3)) d0 (.oe(en), .sel(sysbus.addr[4:2]), .q(sel));
+demux #(.N(3)) demux0 (.oe(en), .sel(sysbus.addr[4:2]), .q(sel));
 
 // Audio channels
 
@@ -38,10 +38,8 @@ logic noise_en, noise_act;
 apu_noise n0 (.sel(sel[3]), .en(noise_en), .act(noise_act), .out(noise), .*);
 
 logic [6:0] dmc;
-logic dmc_en, dmc_act, dmc_int;
-assign dmc = 7'b0;
-assign dmc_act = 1'b0;
-assign dmc_int = 1'b0;
+logic dmc_en, dmc_act, dmc_irq;
+apu_dmc d0 (.sel(sel[4]), .en(dmc_en), .act(dmc_act), .out(dmc), .irq(dmc_irq), .*);
 
 logic [7:0] mix;
 apu_mixer mix0 (.out(mix), .*);
@@ -153,7 +151,7 @@ always_ff @(negedge apuclk, negedge sys.n_reset)
 // Status register
 
 logic [7:0] stat_out;
-assign stat_out = {dmc_int, frame_int, 1'b0,
+assign stat_out = {dmc_irq, frame_int, 1'b0,
 	dmc_act, noise_act, triangle_act, pulse_act[1], pulse_act[0]};
 
 logic stat_read;

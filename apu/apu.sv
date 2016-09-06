@@ -35,8 +35,7 @@ apu_triangle t0 (.sel(sel[2]), .en(triangle_en), .act(triangle_act), .out(triang
 
 logic [3:0] noise;
 logic noise_en, noise_act;
-assign noise = 4'b0;
-assign noise_act = 1'b0;
+apu_noise n0 (.sel(sel[3]), .en(noise_en), .act(noise_act), .out(noise), .*);
 
 logic [6:0] dmc;
 logic dmc_en, dmc_act, dmc_int;

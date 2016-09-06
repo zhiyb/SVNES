@@ -256,7 +256,7 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 logic gate_lc;
 logic [7:0] cnt, cnt_load;
 assign act = cnt != 8'h0;
-apu_rom_length rom0 (.address(lc_load), .clock(sys.nclk), .q(cnt_load));
+apu_rom_length rom0 (.address(lc_load), .aclr(~sys.n_reset), .clock(sys.nclk), .q(cnt_load));
 
 always_ff @(posedge hframe, negedge sys.n_reset)
 	if (~sys.n_reset) begin

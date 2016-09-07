@@ -8,7 +8,7 @@ module apu_registers (
 
 assign we = sel & sysbus.we;
 
-always_ff @(negedge sys.clk, negedge sys.n_reset)
+always_ff @(posedge sys.nclk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
 		for (int i = 0; i != 4; i++)
 			regs[i] <= 8'b0;

@@ -42,30 +42,22 @@ apu_envelope e0 (
 
 // Timer
 
-logic [11:0] timer_period;
-apu_rom_noise_ntsc rom1 (.address(period), .aclr(~sys.n_reset), .clock(sys.nclk), .q(timer_period));
+logic [11:0] timer_load;
+apu_rom_noise_ntsc rom1 (.address(period), .aclr(~sys.n_reset), .clock(sys.nclk), .q(timer_load));
 
-logic timer_tick;
+logic timer_clk;
 logic [11:0] timer_cnt;
 
-always_ff @(posedge apuclk, negedge sys.n_reset)
-	if (~sys.n_reset) begin
-		timer_cnt <= 12'h0;
-		timer_tick <= 1'b0;
-	end else begin
-		if (timer_cnt == 12'h0)
-			timer_cnt <= timer_period;
-		else
-			timer_cnt <= timer_cnt - 12'h1;
-		timer_tick <= timer_cnt == 12'h0;
-	end
+apu_timer #(.N(12)) t0 (
+	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
+	.reload(1'b0), .load(timer_load), .cnt(timer_cnt));
 
 // LFSR
 
 logic lfsr_fb;
 logic [14:0] lfsr;
 
-always_ff @(posedge timer_tick, negedge sys.n_reset)
+always_ff @(posedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		lfsr <= 15'h1;
 	else

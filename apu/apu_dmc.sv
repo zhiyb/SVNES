@@ -45,14 +45,24 @@ assign len_load_reg = {regs[3], 4'h1};
 
 // Timer
 
-logic [8:0] timer_load;
-apu_rom_dmc_ntsc rom0 (.aclr(~sys.n_reset), .clock(sys.nclk), .address(rate_load_reg), .q(timer_load[8:1]));
-assign timer_load[0] = 1'b1;
+logic [7:0] timer_load;
+apu_rom_dmc_ntsc rom0 (.aclr(~sys.n_reset), .clock(sys.nclk), .address(rate_load_reg), .q(timer_load));
+
+logic timer_clk;
+logic [7:0] timer_cnt;
+
+apu_timer #(.N(8)) t0 (
+	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
+	.reload(1'b0), .load(timer_load), .cnt(timer_cnt));
 
 // Shift register
 
 // Output level
 
-assign out = 7'b0;
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		out <= 7'b0;
+	else if (we && sysbus.addr[1:0] == 2'd1)
+		out <= load_reg;
 
 endmodule

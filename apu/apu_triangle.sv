@@ -32,22 +32,13 @@ assign lc_load_reg = regs[3][7:3];
 logic timer_reload;
 assign timer_reload = we && sysbus.addr[1:0] == 2'd3;
 
-logic timer_tick;
+logic timer_clk;
 logic [10:0] timer_cnt;
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset) begin
-		timer_cnt <= 11'h0;
-		timer_tick <= 1'b0;
-	end else begin
-		if (~en)
-			timer_cnt <= 11'h0;
-		else if (timer_reload || timer_cnt == 11'h0)
-			timer_cnt <= timer_load_reg;
-		else
-			timer_cnt <= timer_cnt - 11'h1;
-		timer_tick <= timer_cnt == 11'h0;
-	end
+apu_timer #(.N(11)) t0 (
+	.clk(sys.clk), .n_reset(sys.n_reset), .clkout(timer_clk),
+	.reload(we && sysbus.addr[1:0] == 2'd3),
+	.load(timer_load_reg), .cnt(timer_cnt));
 
 // Linear counter
 
@@ -92,7 +83,7 @@ apu_length_counter lc0 (
 // Waveform sequencer
 
 logic seq_clk;
-assign seq_clk = gate_linear & gate_lc & timer_tick & ~sys.clk;
+assign seq_clk = gate_linear & gate_lc & timer_clk;
 
 logic [4:0] seq_cnt;
 

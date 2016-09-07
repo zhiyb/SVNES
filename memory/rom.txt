@@ -48,6 +48,30 @@ f0;
 e0;
 ff;
 
+a9;	--		LDA	#$7f	// No halt
+7f;
+8d;	--		STA	$4008	// APU_TRIANGLE_LINEAR
+08;
+40;
+
+a9;	--		LDA	#$ce
+ce;
+8d;	--		STA	$400a	// APU_TRIANGLE_TMRL
+0a;
+40;
+
+a9;	--		LDA	#$08
+08;
+8d;	--		STA	$400b	// APU_TRIANGLE_LC
+0b;
+40;
+
+a2;	--		LDX	#$3c	// Delay 1s
+3c;
+20;	--		JSR	$ffe0	// Function call
+e0;
+ff;
+
 a9;	--		LDA	#$2f	// Loop, envelope, period 15
 2f;
 8d;	--		STA	$400c	// APU_NOISE_CTRL

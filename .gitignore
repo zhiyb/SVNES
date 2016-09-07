@@ -4,6 +4,7 @@ db
 *_db
 *_temp
 *_tmp
+transcript
 simulation
 output_files
 *.cr.mti

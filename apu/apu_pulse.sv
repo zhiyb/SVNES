@@ -54,59 +54,30 @@ apu_envelope e0 (
 
 // Timer
 
-logic timer_reload;
-assign timer_reload = we && sysbus.addr[1:0] == 2'd3;
-
-logic [10:0] timer_load;
-logic [10:0] swp_out;
+logic [10:0] timer_load, swp_out;
 logic swp_apply_cpu;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		timer_load <= 11'h0;
-	else if (timer_reload)
+	else if (we && sysbus.addr[1:0] == 2'd3)
 		timer_load <= timer_load_reg;
 	else if (swp_apply_cpu)
 		timer_load <= swp_out;
 
-logic timer_reload_apu, timer_reload_apu_clr;
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		timer_reload_apu <= 1'b0;
-	else if (timer_reload_apu_clr)
-		timer_reload_apu <= 1'b0;
-	else if (timer_reload)
-		timer_reload_apu <= 1'b1;
+logic timer_clk;
+logic [10:0] timer_cnt;
 
-always_ff @(posedge apuclk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		timer_reload_apu_clr <= 1'b0;
-	else
-		timer_reload_apu_clr <= timer_reload_apu;
+apu_timer #(.N(11)) t0 (
+	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
+	.reload(1'b0), .load(timer_load), .cnt(timer_cnt));
 
 logic gate_timer;
-logic [10:0] timer_cnt;
-logic timer_tick;
-
-always_ff @(posedge apuclk, negedge sys.n_reset)
-	if (~sys.n_reset) begin
-		timer_cnt <= 11'h0;
-		timer_tick <= 1'b0;
+always_ff @(posedge timer_clk, negedge sys.n_reset)
+	if (~sys.n_reset)
 		gate_timer <= 1'b0;
-	end else begin
-		if (~en) begin
-			timer_cnt <= 11'h0;
-			gate_timer <= 1'b0;
-		end else if (timer_reload_apu || timer_cnt == 11'h0) begin
-			timer_cnt <= timer_load;
-			if (timer_load[10:3] == 8'h0)
-				gate_timer <= 1'b0;
-			else
-				gate_timer <= 1'b1;
-		end else
-			timer_cnt <= timer_cnt - 11'h1;
-		timer_tick <= timer_cnt == 11'h0;
-	end
+	else
+		gate_timer = timer_load[10:3] != 8'h0;
 
 // Sweep
 
@@ -158,9 +129,6 @@ always_ff @(posedge hframe, negedge sys.n_reset)
 
 // Waveform sequencer
 
-logic seq_clk;
-assign seq_clk = timer_tick & ~apuclk;
-
 logic seq_reset, seq_reset_clr;
 
 always_ff @(posedge apuclk, negedge sys.n_reset)
@@ -168,10 +136,10 @@ always_ff @(posedge apuclk, negedge sys.n_reset)
 		seq_reset <= 1'b0;
 	else if (seq_reset_clr)
 		seq_reset <= 1'b0;
-	else if (timer_reload)
+	else if (we && sysbus.addr[1:0] == 2'd3)
 		seq_reset <= 1'b1;
 
-always_ff @(posedge seq_clk, negedge sys.n_reset)
+always_ff @(posedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		seq_reset_clr <= 1'b0;
 	else
@@ -179,7 +147,7 @@ always_ff @(posedge seq_clk, negedge sys.n_reset)
 
 logic [2:0] seq_step;
 
-always_ff @(posedge seq_clk, negedge sys.n_reset)
+always_ff @(posedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
 		seq_step <= 3'h0;
 	end else if (~en || seq_reset) begin

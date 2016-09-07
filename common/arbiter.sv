@@ -1,7 +1,8 @@
 module arbiter #(parameter N, DEF = 0) (
 	sys_if sys,
+	input logic ifrdy,
 	input logic req[N],
-	output logic sel[N]
+	output logic sel[N], rdy[N]
 );
 
 logic dis[N + 1];
@@ -15,11 +16,12 @@ for (i = 0; i != N; i++) begin: gen
 	assign out = ~sel[i] & ~dis[i] & req[i];
 	assign next = (sel[i] & ~dis[i]) | out;
 	assign dis[i + 1] = (~sel[i] & dis[i]) | out;
+	assign rdy[i] = sel[i] & ifrdy;
 	
 	always_ff @(posedge sys.clk, negedge sys.n_reset)
 		if (~sys.n_reset)
 			sel[i] <= i == DEF;
-		else
+		else if (ifrdy)
 			sel[i] <= next;
 end
 endgenerate

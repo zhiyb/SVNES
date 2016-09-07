@@ -53,7 +53,7 @@ logic [7:0] timer_cnt;
 
 apu_timer #(.N(8)) t0 (
 	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
-	.reload(1'b0), .load(timer_load), .cnt(timer_cnt));
+	.reload(1'b0), .loop(1'b1), .load(timer_load), .cnt(timer_cnt));
 
 // Shift register
 

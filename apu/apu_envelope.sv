@@ -6,23 +6,10 @@ module apu_envelope (
 	output logic [3:0] out
 );
 
-// Start signal holding logc
-
-logic restart, restart_clr;
-
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		restart <= 1'b0;
-	else if (restart_clr)
-		restart <= 1'b0;
-	else if (restart_cpu)
-		restart <= 1'b1;
-
-always_ff @(posedge qframe, negedge sys.n_reset)
-	if (~sys.n_reset)
-		restart_clr <= 1'b0;
-	else
-		restart_clr <= restart;
+logic restart;
+flag_keeper flag0 (.n_reset(sys.n_reset),
+	.clk(sys.clk), .flag(restart_cpu),
+	.clk_s(qframe), .clr(1'b1), .out(restart));
 
 // Envelope divider & decay counter
 

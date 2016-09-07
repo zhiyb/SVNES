@@ -46,27 +46,20 @@ logic [11:0] timer_load;
 apu_rom_noise_ntsc rom1 (.address(period), .aclr(~sys.n_reset), .clock(sys.nclk), .q(timer_load));
 
 logic timer_clk;
-logic [11:0] timer_cnt;
-
 apu_timer #(.N(12)) t0 (
 	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
-	.reload(1'b0), .load(timer_load), .cnt(timer_cnt));
+	.reload(1'b0), .loop(1'b1), .load(timer_load), .cnt());
 
 // LFSR
 
 logic lfsr_fb;
-logic [14:0] lfsr;
+logic [14:0] lfsr_data;
+lfsr #(.N(15), .RESET(15'h1)) l0 (.clk(timer_clk), .n_reset(sys.n_reset), .fb(lfsr_fb), .data(lfsr_data));
 
-always_ff @(posedge timer_clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		lfsr <= 15'h1;
-	else
-		lfsr <= {lfsr_fb, lfsr[14:1]};
-
-assign lfsr_fb = lfsr[0] ^ (mode ? lfsr[6] : lfsr[1]);
+assign lfsr_fb = lfsr_data[0] ^ (mode ? lfsr_data[6] : lfsr_data[1]);
 
 logic gate_lfsr;
-assign gate_lfsr = ~lfsr[0];
+assign gate_lfsr = ~lfsr_data[0];
 
 // Length counter
 
@@ -78,7 +71,7 @@ apu_length_counter lc0 (
 // Output control
 
 logic gate;
-assign gate = en & gate_lfsr & gate_lc;
+assign gate = gate_lfsr & gate_lc;
 assign out = gate ? env_out : 4'b0;
 
 endmodule

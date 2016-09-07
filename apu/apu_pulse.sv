@@ -66,11 +66,9 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 		timer_load <= swp_out;
 
 logic timer_clk;
-logic [10:0] timer_cnt;
-
 apu_timer #(.N(11)) t0 (
 	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
-	.reload(1'b0), .load(timer_load), .cnt(timer_cnt));
+	.reload(1'b0), .loop(1'b1), .load(timer_load), .cnt());
 
 logic gate_timer;
 always_ff @(posedge timer_clk, negedge sys.n_reset)
@@ -81,82 +79,42 @@ always_ff @(posedge timer_clk, negedge sys.n_reset)
 
 // Sweep
 
-logic swp_reload, swp_reload_clr;
+logic swp_reload;
+flag_keeper swp_flag0 (.n_reset(sys.n_reset),
+	.clk(sys.clk), .flag(we && sysbus.addr[1:0] == 2'd1),
+	.clk_s(hframe), .clr(1'b1), .out(swp_reload));
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		swp_reload <= 1'b0;
-	else if (~en || swp_reload_clr)
-		swp_reload <= 1'b0;
-	else if (we && sysbus.addr[1:0] == 2'd1)
-		swp_reload <= 1'b1;
-
-always_ff @(posedge hframe, negedge sys.n_reset)
-	if (~sys.n_reset)
-		swp_reload_clr <= 1'b0;
-	else
-		swp_reload_clr <= swp_reload;
-
-logic gate_swp, swp_ovf, swp_ovf_add, swp_apply, swp_apply_delayed;
+logic gate_swp, swp_ovf, swp_ovf_add;
 assign {swp_ovf_add, swp_out} = timer_load + ((timer_load >> swp_shift) ^ {11{swp_neg}}) + {10'h0, ~defect & swp_neg};
 assign swp_ovf = swp_neg ^ swp_ovf_add;
 assign gate_swp = swp_neg | ~swp_ovf_add;
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		swp_apply_delayed <= 1'b0;
-	else
-		swp_apply_delayed <= swp_apply;
-
-assign swp_apply_cpu = swp_apply & ~swp_apply_delayed;
-
 logic [2:0] swp_div_cnt;
+apu_timer #(.N(3)) swp_t0 (
+	.clk(hframe), .n_reset(sys.n_reset), .clkout(),
+	.reload(1'b0), .loop(swp_en), .load(swp_period), .cnt(swp_div_cnt));
 
+logic swp_apply;
 assign swp_apply = swp_en && swp_div_cnt == 3'h0 && swp_shift != 3'h0 && ~swp_ovf;
-
-always_ff @(posedge hframe, negedge sys.n_reset)
-	if (~sys.n_reset)
-		swp_div_cnt <= 3'h0;
-	else begin
-		if (swp_reload)
-			swp_div_cnt <= swp_period;
-		else if (swp_div_cnt == 3'h0) begin
-			if (swp_en)
-				swp_div_cnt <= swp_period;
-		end else
-			swp_div_cnt <= swp_div_cnt - 3'h1;
-	end
+flag_detector swp_flag1 (.clk(sys.clk), .n_reset(sys.n_reset), .flag(swp_apply), .out(swp_apply_cpu));
 
 // Waveform sequencer
 
-logic seq_reset, seq_reset_clr;
-
-always_ff @(posedge apuclk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		seq_reset <= 1'b0;
-	else if (seq_reset_clr)
-		seq_reset <= 1'b0;
-	else if (we && sysbus.addr[1:0] == 2'd3)
-		seq_reset <= 1'b1;
-
-always_ff @(posedge timer_clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		seq_reset_clr <= 1'b0;
-	else
-		seq_reset_clr <= seq_reset;
+logic seq_reset;
+flag_keeper seq_flag0 (.n_reset(sys.n_reset),
+	.clk(sys.clk), .flag(we && sysbus.addr[1:0] == 2'd3),
+	.clk_s(timer_clk), .clr(1'b1), .out(seq_reset));
 
 logic [2:0] seq_step;
-
 always_ff @(posedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset) begin
 		seq_step <= 3'h0;
-	end else if (~en || seq_reset) begin
+	end else if (seq_reset) begin
 		seq_step <= 3'h0;
 	end else
 		seq_step <= seq_step - 3'h1;
 
 logic gate_seq;
-
 always_comb
 	case (duty)
 	0:	gate_seq = seq_step == 3'b111 ? 1'b1 : 1'b0;
@@ -176,8 +134,7 @@ apu_length_counter lc0 (
 // Output control
 
 logic gate;
-assign gate = en & gate_lc & gate_timer & gate_seq & gate_swp;
-
+assign gate = gate_lc & gate_timer & gate_seq & gate_swp;
 assign out = gate ? env_out : 4'b0;
 
 endmodule

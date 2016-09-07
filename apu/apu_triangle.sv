@@ -29,46 +29,24 @@ assign lc_load_reg = regs[3][7:3];
 
 // Timer
 
-logic timer_reload;
-assign timer_reload = we && sysbus.addr[1:0] == 2'd3;
-
 logic timer_clk;
-logic [10:0] timer_cnt;
-
 apu_timer #(.N(11)) t0 (
 	.clk(sys.clk), .n_reset(sys.n_reset), .clkout(timer_clk),
-	.reload(we && sysbus.addr[1:0] == 2'd3),
-	.load(timer_load_reg), .cnt(timer_cnt));
+	.reload(we && sysbus.addr[1:0] == 2'd3), .loop(1'b1),
+	.load(timer_load_reg), .cnt());
 
 // Linear counter
 
-logic linear_reload, linear_reload_clr;
-
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		linear_reload <= 1'b0;
-	else if (linear_reload_clr)
-		linear_reload <= 1'b0;
-	else if (we && sysbus.addr[1:0] == 2'd3)
-		linear_reload <= 1'b1;
-
-always_ff @(posedge qframe, negedge sys.n_reset)
-	if (~sys.n_reset)
-		linear_reload_clr <= 1'b0;
-	else if (linear_reload)
-		linear_reload_clr <= ~flag_ctrl;
-	else
-		linear_reload_clr <= 1'b0;
+logic linear_reload;
+flag_keeper flag0 (.n_reset(sys.n_reset),
+	.clk(sys.clk), .flag(we && sysbus.addr[1:0] == 2'd3),
+	.clk_s(qframe), .clr(~flag_ctrl), .out(linear_reload));
 
 logic [6:0] linear_cnt;
-
-always_ff @(posedge qframe, negedge sys.n_reset)
-	if (~sys.n_reset)
-		linear_cnt <= 7'h0;
-	else if (linear_reload)
-		linear_cnt <= cnt_load_reg;
-	else if (linear_cnt != 7'h0)
-		linear_cnt <= linear_cnt - 7'h1;
+apu_timer #(.N(7)) lt0 (
+	.clk(qframe), .n_reset(sys.n_reset), .clkout(),
+	.reload(linear_reload), .loop(1'b0),
+	.load(cnt_load_reg), .cnt(linear_cnt));
 
 logic gate_linear;
 assign gate_linear = linear_cnt != 7'h0;
@@ -86,7 +64,6 @@ logic seq_clk;
 assign seq_clk = gate_linear & gate_lc & timer_clk;
 
 logic [4:0] seq_cnt;
-
 always_ff @(posedge seq_clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		seq_cnt <= 5'h0;
@@ -95,8 +72,6 @@ always_ff @(posedge seq_clk, negedge sys.n_reset)
 
 logic [3:0] seq_out;
 assign seq_out = {4{seq_cnt[4]}} ^ seq_cnt[3:0];
-
-// Output control
 
 assign out = en ? seq_out : 4'h0;
 

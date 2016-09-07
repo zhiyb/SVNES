@@ -8,7 +8,7 @@ endinterface
 interface sysbus_if (
 	output wire rdy,
 	input logic we,
-	inout wire [15:0] addr,
+	input logic [15:0] addr,
 	inout wire [7:0] data
 );
 endinterface

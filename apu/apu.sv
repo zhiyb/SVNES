@@ -3,6 +3,10 @@
 module apu (
 	sys_if sys,
 	sysbus_if sysbus,
+	input logic bus_rdy,
+	output logic bus_req, bus_we,
+	output wire [15:0] bus_addr,
+	
 	output logic irq, dbg,
 	output logic [7:0] out
 );

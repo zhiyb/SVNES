@@ -1,11 +1,17 @@
 module apu_dmc (
 	sys_if sys,
 	sysbus_if sysbus,
+	input logic bus_rdy,
+	output logic bus_req, bus_we,
+	output wire [15:0] bus_addr,
+	
 	input logic apuclk, qframe, hframe,
 	input logic sel, en,
 	output logic act, irq,
 	output logic [6:0] out
 );
+
+assign bus_req = 1'b0, bus_we = 1'b0, bus_addr = 16'bz;
 
 // Registers
 

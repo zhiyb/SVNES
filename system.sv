@@ -41,15 +41,17 @@ for (i = 0; i != ARBN; i++) begin: gensel
 end
 endgenerate
 
-assign req = '{1'b1, 1'b0}, we_sel[1] = 1'b0, addr_sel[1] = 16'h0;
-
 arbiter #(.N(ARBN)) arb0 (.ifrdy(rdy), .req(req), .sel(sel), .rdy(rdy_sel), .*);
 
 logic apu_irq;
-apu apu0 (.irq(apu_irq), .out(audio), .*);
+apu apu0 (
+	.bus_req(req[1]), .bus_rdy(rdy_sel[1]),
+	.bus_we(we_sel[1]), .bus_addr(addr_sel[1]),
+	.irq(apu_irq), .out(audio), .*);
 
 logic cpu_irq;
 assign cpu_irq = irq & apu_irq;
+assign req[0] = 1'b1;
 cpu cpu0 (.irq(cpu_irq), .addr(addr_sel[0]), .we(we_sel[0]), .rdy(rdy_sel[0]), .*);
 
 peripherals periph0 (.*);
@@ -57,7 +59,7 @@ peripherals periph0 (.*);
 logic rom0sel;
 assign rom0sel = sysbus.addr >= `BOOTROM_BASE;
 logic [7:0] rom0q;
-assign sysbus.rdy = rom0sel ? 1'b1 : 1'bz;
+assign rdy = rom0sel ? 1'b1 : 1'bz;
 assign sysbus.data = (~sysbus.we & rom0sel) ? rom0q : 8'bz;
 rom rom0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),
@@ -66,7 +68,7 @@ rom rom0 (
 logic ram0sel;
 assign ram0sel = sysbus.addr < `RAM0_SIZE;
 logic [7:0] ram0q;
-assign sysbus.rdy = ram0sel ? 1'b1 : 1'bz;
+assign rdy = ram0sel ? 1'b1 : 1'bz;
 assign sysbus.data = (~sysbus.we & ram0sel) ? ram0q : 8'bz;
 ram2k ram0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),

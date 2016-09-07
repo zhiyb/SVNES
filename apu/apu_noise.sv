@@ -47,42 +47,10 @@ assign lc_load = regs[3][7:3];
 
 // Envelope generator
 
-logic env_start, env_start_clr;
-
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		env_start <= 1'b0;
-	else if (~en || env_start_clr)
-		env_start <= 1'b0;
-	else if (we && sysbus.addr[1:0] == 2'd3)
-		env_start <= 1'b1;
-
-always_ff @(posedge qframe, negedge sys.n_reset)
-	if (~sys.n_reset)
-		env_start_clr <= 1'b0;
-	else
-		env_start_clr <= env_start;
-
-// Envelope divider & decay counter
-
-logic [3:0] env_div_cnt, env_cnt;
-
-always_ff @(posedge qframe, negedge sys.n_reset)
-	if (~sys.n_reset) begin
-		env_div_cnt <= 4'h0;
-		env_cnt <= 4'h0;
-	end else if (env_start) begin
-		env_div_cnt <= env_period;
-		env_cnt <= 4'hf;
-	end else if (env_div_cnt == 4'h0) begin
-		env_div_cnt <= env_period;
-		if (env_loop || env_cnt != 4'h0)
-			env_cnt <= env_cnt - 4'h1;
-	end else
-		env_div_cnt <= env_div_cnt - 4'h1;
-
 logic [3:0] env_out;
-assign env_out = vol_con ? env_vol : env_cnt;
+apu_envelope e0 (
+	.restart_cpu(we && sysbus.addr[1:0] == 2'd3), .loop(env_loop), 
+	.period(env_period), .out(env_out), .*);
 
 // Timer
 

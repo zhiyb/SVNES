@@ -186,7 +186,8 @@ assign int_set = ~frame_mode && ~frame_int_inhibit && int_irq;
 logic int_clr;
 assign int_clr = frame_int_inhibit | stat_read;
 
-counter #(.n($clog2(240 - 1))) c0 (.top(240 - 1), .clk(frame_quarter), .n_reset(sys.n_reset), .out(dbg));
+assign dbg = 1'b0;
+//counter #(.n($clog2(240 - 1))) c0 (.top(240 - 1), .clk(frame_quarter), .n_reset(sys.n_reset), .out(dbg));
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)

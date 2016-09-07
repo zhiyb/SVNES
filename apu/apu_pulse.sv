@@ -244,35 +244,10 @@ always_comb
 
 // Length counter
 
-logic load_lc, load_lc_clr;
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
-		load_lc <= 1'b0;
-	else if (we && sysbus.addr[1:0] == 2'd3)
-		load_lc <= 1'b1;
-	else if (load_lc_clr)
-		load_lc <= 1'b0;
-
 logic gate_lc;
-logic [7:0] cnt, cnt_load;
-assign act = cnt != 8'h0;
-apu_rom_length rom0 (.address(lc_load), .aclr(~sys.n_reset), .clock(sys.nclk), .q(cnt_load));
-
-always_ff @(posedge hframe, negedge sys.n_reset)
-	if (~sys.n_reset) begin
-		cnt <= 8'b0;
-		load_lc_clr <= 1'b0;
-		gate_lc <= 1'b0;
-	end else begin
-		load_lc_clr <= load_lc;
-		gate_lc <= cnt != 8'b0;
-		if (~en)
-			cnt <= 8'b0;
-		else if (load_lc)
-			cnt <= cnt_load;
-		else if (~lc_halt && cnt != 8'b0)
-			cnt <= cnt - 8'b1;
-	end
+apu_length_counter lc0 (
+	.halt(lc_halt), .load_cpu(we && sysbus.addr[1:0] == 2'd3),
+	.idx(lc_load), .gate(gate_lc), .*);
 
 // Output control
 

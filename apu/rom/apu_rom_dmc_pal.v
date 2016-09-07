@@ -4,7 +4,7 @@
 // MODULE: altsyncram 
 
 // ============================================================
-// File Name: apu_rom_pulse.v
+// File Name: apu_rom_dmc_pal.v
 // Megafunction Name(s):
 // 			altsyncram
 //
@@ -37,16 +37,16 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module apu_rom_pulse (
+module apu_rom_dmc_pal (
 	aclr,
 	address,
 	clock,
 	q);
 
 	input	  aclr;
-	input	[4:0]  address;
+	input	[3:0]  address;
 	input	  clock;
-	output	[6:0]  q;
+	output	[7:0]  q;
 `ifndef ALTERA_RESERVED_QIS
 // synopsys translate_off
 `endif
@@ -56,8 +56,8 @@ module apu_rom_pulse (
 // synopsys translate_on
 `endif
 
-	wire [6:0] sub_wire0;
-	wire [6:0] q = sub_wire0[6:0];
+	wire [7:0] sub_wire0;
+	wire [7:0] q = sub_wire0[7:0];
 
 	altsyncram	altsyncram_component (
 				.aclr0 (aclr),
@@ -75,7 +75,7 @@ module apu_rom_pulse (
 				.clocken1 (1'b1),
 				.clocken2 (1'b1),
 				.clocken3 (1'b1),
-				.data_a ({7{1'b1}}),
+				.data_a ({8{1'b1}}),
 				.data_b (1'b1),
 				.eccstatus (),
 				.q_b (),
@@ -87,15 +87,15 @@ module apu_rom_pulse (
 		altsyncram_component.address_aclr_a = "CLEAR0",
 		altsyncram_component.clock_enable_input_a = "BYPASS",
 		altsyncram_component.clock_enable_output_a = "BYPASS",
-		altsyncram_component.init_file = "apu/apu_rom_pulse.mif",
+		altsyncram_component.init_file = "apu/rom/apu_rom_dmc_pal.mif",
 		altsyncram_component.intended_device_family = "Cyclone IV E",
 		altsyncram_component.lpm_type = "altsyncram",
-		altsyncram_component.numwords_a = 31,
+		altsyncram_component.numwords_a = 16,
 		altsyncram_component.operation_mode = "ROM",
 		altsyncram_component.outdata_aclr_a = "CLEAR0",
 		altsyncram_component.outdata_reg_a = "UNREGISTERED",
-		altsyncram_component.widthad_a = 5,
-		altsyncram_component.width_a = 7,
+		altsyncram_component.widthad_a = 4,
+		altsyncram_component.width_a = 8,
 		altsyncram_component.width_byteena_a = 1;
 
 
@@ -121,43 +121,43 @@ endmodule
 // Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 // Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 // Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
-// Retrieval info: PRIVATE: MIFfilename STRING "apu/apu_rom_pulse.mif"
-// Retrieval info: PRIVATE: NUMWORDS_A NUMERIC "31"
+// Retrieval info: PRIVATE: MIFfilename STRING "apu_rom_dmc_pal.mif"
+// Retrieval info: PRIVATE: NUMWORDS_A NUMERIC "16"
 // Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "0"
 // Retrieval info: PRIVATE: RegAddr NUMERIC "1"
 // Retrieval info: PRIVATE: RegOutput NUMERIC "0"
 // Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
 // Retrieval info: PRIVATE: SingleClock NUMERIC "1"
 // Retrieval info: PRIVATE: UseDQRAM NUMERIC "0"
-// Retrieval info: PRIVATE: WidthAddr NUMERIC "5"
-// Retrieval info: PRIVATE: WidthData NUMERIC "7"
+// Retrieval info: PRIVATE: WidthAddr NUMERIC "4"
+// Retrieval info: PRIVATE: WidthData NUMERIC "8"
 // Retrieval info: PRIVATE: rden NUMERIC "0"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 // Retrieval info: CONSTANT: ADDRESS_ACLR_A STRING "CLEAR0"
 // Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_A STRING "BYPASS"
 // Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_A STRING "BYPASS"
-// Retrieval info: CONSTANT: INIT_FILE STRING "apu/apu_rom_pulse.mif"
+// Retrieval info: CONSTANT: INIT_FILE STRING "apu_rom_dmc_pal.mif"
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone IV E"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
-// Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "31"
+// Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "16"
 // Retrieval info: CONSTANT: OPERATION_MODE STRING "ROM"
 // Retrieval info: CONSTANT: OUTDATA_ACLR_A STRING "CLEAR0"
 // Retrieval info: CONSTANT: OUTDATA_REG_A STRING "UNREGISTERED"
-// Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "5"
-// Retrieval info: CONSTANT: WIDTH_A NUMERIC "7"
+// Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "4"
+// Retrieval info: CONSTANT: WIDTH_A NUMERIC "8"
 // Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
 // Retrieval info: USED_PORT: aclr 0 0 0 0 INPUT GND "aclr"
-// Retrieval info: USED_PORT: address 0 0 5 0 INPUT NODEFVAL "address[4..0]"
+// Retrieval info: USED_PORT: address 0 0 4 0 INPUT NODEFVAL "address[3..0]"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT VCC "clock"
-// Retrieval info: USED_PORT: q 0 0 7 0 OUTPUT NODEFVAL "q[6..0]"
+// Retrieval info: USED_PORT: q 0 0 8 0 OUTPUT NODEFVAL "q[7..0]"
 // Retrieval info: CONNECT: @aclr0 0 0 0 0 aclr 0 0 0 0
-// Retrieval info: CONNECT: @address_a 0 0 5 0 address 0 0 5 0
+// Retrieval info: CONNECT: @address_a 0 0 4 0 address 0 0 4 0
 // Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
-// Retrieval info: CONNECT: q 0 0 7 0 @q_a 0 0 7 0
-// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_pulse.v TRUE
-// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_pulse.inc FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_pulse.cmp FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_pulse.bsf FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_pulse_inst.v FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_pulse_bb.v FALSE
+// Retrieval info: CONNECT: q 0 0 8 0 @q_a 0 0 8 0
+// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_dmc_pal.v TRUE
+// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_dmc_pal.inc FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_dmc_pal.cmp FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_dmc_pal.bsf FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_dmc_pal_inst.v FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL apu_rom_dmc_pal_bb.v FALSE
 // Retrieval info: LIB_FILE: altera_mf

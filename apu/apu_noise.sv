@@ -10,20 +10,8 @@ module apu_noise (
 // Registers
 
 logic we;
-assign we = sel & sysbus.we;
-
 logic [7:0] regs[4];
-
-always_ff @(negedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset) begin
-		for (int i = 0; i != 4; i++)
-			regs[i] <= 8'b0;
-	end else if (~en) begin
-		for (int i = 0; i != 4; i++)
-			regs[i] <= 8'b0;
-	end else if (we) begin
-		regs[sysbus.addr[1:0]] <= sysbus.data;
-	end
+apu_registers r0 (.*);
 
 // Separation of register fields
 

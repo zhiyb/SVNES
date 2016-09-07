@@ -9,7 +9,6 @@ logic dis[N + 1];
 assign dis[0] = dis[N];
 
 genvar i;
-
 generate
 for (i = 0; i != N; i++) begin: gen
 	logic out, next;

@@ -6,7 +6,7 @@ interface sys_if (
 endinterface
 
 interface sysbus_if (
-	inout wire rdy,
+	output wire rdy,
 	input logic we,
 	inout wire [15:0] addr,
 	inout wire [7:0] data

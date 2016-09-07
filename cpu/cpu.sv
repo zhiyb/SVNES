@@ -3,14 +3,12 @@ import typepkg::*;
 
 module cpu (
 	sys_if sys,
-	inout wire rdy,
+	input logic rdy,
 	output logic we, fetch,
 	output wire [15:0] addr,
 	inout wire [7:0] data,
 	input logic irq, nmi
 );
-
-sysbus_if sysbus (.*);
 
 // Instruction register
 logic [7:0] ins;
@@ -18,7 +16,7 @@ logic ins_we;
 logic int_evnt;
 register ins0 (
 	.we(ins_we), .oe(1'b0),
-	.in(int_evnt ? 8'h0 : sysbus.data), .out(), .data(ins), .*);
+	.in(int_evnt ? 8'h0 : data), .out(), .data(ins), .*);
 
 // ALU
 wire [7:0] alu_in_a, alu_in_b;
@@ -32,11 +30,11 @@ alu_bus_a_t abus_a;
 assign alu_in_a = abus_a.con ? 8'h0 : 8'bz;
 
 alu_bus_b_t abus_b;
-assign alu_in_b = abus_b.bus ? sysbus.data : 8'bz;
+assign alu_in_b = abus_b.bus ? data : 8'bz;
 assign alu_in_b = abus_b.con ? 8'h1 : 8'bz;
 
 alu_bus_o_t abus_o;
-assign sysbus.data = abus_o.bus ? alu_out : 8'bz;
+assign data = abus_o.bus ? alu_out : 8'bz;
 
 // Registers
 logic [7:0] acc;
@@ -62,17 +60,17 @@ register #(.reset((8'h01 << `STATUS_R) | (8'h01 << `STATUS_I))) p0 (
 	.out(alu_in_a), .data(p), .*);
 
 logic p_oe;
-assign sysbus.data = p_oe ? p : 8'bz;
+assign data = p_oe ? p : 8'bz;
 
 // Stack pointer
 logic [7:0] sp;
 logic sp_addr_oe;
 register sp0 (.we(abus_o.sp), .oe(abus_a.sp), .in(alu_out), .out(alu_in_a), .data(sp), .*);
-assign sysbus.addr = sp_addr_oe ? {8'h1, sp} : 16'bz;
+assign addr = sp_addr_oe ? {8'h1, sp} : 16'bz;
 
 // Data latch registers
 logic [7:0] dl;
-register dl0 (.we(1'b1), .oe(abus_a.dl), .in(sysbus.data), .out(alu_in_a), .data(dl), .*);
+register dl0 (.we(1'b1), .oe(abus_a.dl), .in(data), .out(alu_in_a), .data(dl), .*);
 assign alu_in_b = abus_b.dl ? dl : 8'bz;
 logic dl_sign;
 assign dl_sign = dl[7];
@@ -85,13 +83,13 @@ register adl0 (
 logic [7:0] adh;
 logic adh_bus;
 logic [7:0] adh_in;
-assign adh_in = abus_o.adh ? alu_out : sysbus.data;
+assign adh_in = abus_o.adh ? alu_out : data;
 register adh0 (
 	.we(abus_o.adh | adh_bus), .oe(abus_a.adh),
 	.in(adh_in), .out(alu_in_a), .data(adh), .*);
 
 logic ad_addr_oe;
-assign sysbus.addr = ad_addr_oe ? {adh, adl} : 16'bz;
+assign addr = ad_addr_oe ? {adh, adl} : 16'bz;
 
 // Program counter
 logic [15:0] pc;
@@ -102,11 +100,11 @@ pc pc0 (
 	.oel(abus_a.pcl), .oeh(abus_a.pch),
 	.wel(abus_o.pcl), .weh(abus_o.pch),
 	.in(alu_out), .out(alu_in_a),
-	.load({sysbus.data, dl}), .data(pc), .*);
+	.load({data, dl}), .data(pc), .*);
 
 logic pcl_oe, pch_oe;
-assign sysbus.data = pcl_oe ? pc[7:0] : 8'bz;
-assign sysbus.data = pch_oe ? pc[15:8] : 8'bz;
+assign data = pcl_oe ? pc[7:0] : 8'bz;
+assign data = pch_oe ? pc[15:8] : 8'bz;
 
 // Interrupt logic
 logic int_handled;

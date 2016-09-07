@@ -9,7 +9,7 @@ module sequencer (
 	input Addressing mode,
 	
 	// Bus control
-	inout wire bus_rdy,
+	input logic bus_rdy,
 	output logic bus_we, fetch,
 	
 	// Program counter

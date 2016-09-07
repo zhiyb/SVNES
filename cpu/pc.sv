@@ -1,6 +1,6 @@
 module pc (
 	sys_if sys,
-	sysbus_if sysbus,
+	output wire [15:0] addr,
 	// Read & write control
 	input logic pc_addr_oe,
 	input logic pc_inc, pc_load, pc_int,
@@ -14,7 +14,7 @@ module pc (
 
 logic [15:0] pc;
 assign data = pc;
-assign sysbus.addr = pc_addr_oe ? pc : 16'bz;
+assign addr = pc_addr_oe ? pc : 16'bz;
 
 assign out = oeh ? pc[15:8] : 8'bz;
 assign out = oel ? pc[7:0] : 8'bz;

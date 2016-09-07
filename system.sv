@@ -26,11 +26,31 @@ always_ff @(posedge sys.clk, negedge n_reset_in)
 		n_reset <= 1'b1;
 
 // Interconnections and buses
-wire rdy;
-logic we;
-wire [15:0] addr;
+parameter ARBN = 2;
+wire rdy, we;
+logic req[ARBN], sel[ARBN], rdy_sel[ARBN], we_sel[ARBN];
+wire [15:0] addr, addr_sel[ARBN];
 wire [7:0] data;
 sysbus_if sysbus (.*);
+
+genvar i;
+generate
+for (i = 0; i != ARBN; i++) begin: gensel
+	assign addr = sel[i] ? addr_sel[i] : 16'bz;
+	assign we = sel[i] ? we_sel[i] : 1'bz;
+end
+endgenerate
+
+assign req = '{1'b1, 1'b0}, we_sel[1] = 1'b0, addr_sel[1] = 16'h0;
+
+arbiter #(.N(ARBN)) arb0 (.ifrdy(rdy), .req(req), .sel(sel), .rdy(rdy_sel), .*);
+
+logic apu_irq;
+apu apu0 (.irq(apu_irq), .out(audio), .*);
+
+logic cpu_irq;
+assign cpu_irq = irq & apu_irq;
+cpu cpu0 (.irq(cpu_irq), .addr(addr_sel[0]), .we(we_sel[0]), .rdy(rdy_sel[0]), .*);
 
 peripherals periph0 (.*);
 
@@ -52,10 +72,5 @@ ram2k ram0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),
 	.address(sysbus.addr[10:0]), .data(sysbus.data),
 	.wren(sysbus.we & ram0sel), .q(ram0q));
-
-logic apu_irq;
-apu apu0 (.irq(apu_irq), .out(audio), .*);
-
-cpu cpu0 (.irq(irq & apu_irq), .*);
 
 endmodule

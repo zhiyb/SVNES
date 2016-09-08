@@ -1,6 +1,7 @@
 SRC	= rom.s
 TRG	= rom
 LDFILE	= linker.ld
+CPU	= 6502
 
 OBJ	= $(SRC:.s=.o)
 
@@ -9,7 +10,7 @@ all:	$(TRG).hex
 rom.o: apu.inc
 
 %.o: %.s
-	ca65 -o $@ $<
+	ca65 --cpu $(CPU) -o $@ $<
 
 $(TRG).bin: $(OBJ)
 	ld65 -C $(LDFILE) -o $@ $(OBJ)

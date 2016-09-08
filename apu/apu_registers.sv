@@ -9,11 +9,10 @@ module apu_registers (
 assign we = sel & sysbus.we;
 
 always_ff @(posedge sys.nclk, negedge sys.n_reset)
-	if (~sys.n_reset) begin
+	if (~sys.n_reset)
 		for (int i = 0; i != 4; i++)
 			regs[i] <= 8'b0;
-	end else if (we) begin
+	else if (we)
 		regs[sysbus.addr[1:0]] <= sysbus.data;
-	end
 
 endmodule

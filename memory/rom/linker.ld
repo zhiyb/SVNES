@@ -7,6 +7,7 @@ MEMORY {
 SEGMENTS {
 	CODE:	load = ROM1, type = ro;
 	RODATA:	load = ROM1, type = ro;
+	DMC:	load = ROM1, type = ro, align = 64;
 	DATA:	load = ROM1, run = RAM2, type = rw, define = yes;
 	BSS:	load = RAM2, type = bss, define = yes;
 	VECT:	load = ROM1, type = ro, start = $fffa;

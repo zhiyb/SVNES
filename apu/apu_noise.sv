@@ -43,7 +43,7 @@ apu_envelope e0 (
 // Timer
 
 logic [11:0] timer_load;
-apu_rom_noise_ntsc rom1 (.address(period), .aclr(~sys.n_reset), .clock(sys.nclk), .q(timer_load));
+apu_rom_noise_ntsc rom0 (.address(period), .aclr(~sys.n_reset), .clock(sys.nclk), .q(timer_load));
 
 logic timer_clk;
 apu_timer #(.N(12)) t0 (

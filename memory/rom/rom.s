@@ -91,6 +91,11 @@ noise1:	sta	apu_noise_period
 	lda	#$08
 	sta	apu_noise_lc
 
+	; APU DMC testing
+
+	lda	#$55
+	sta	apu_dmc_load
+
 	; APU pulse channel 2 testing
 
 	lda	#$9f	; Duty 2, no halt, constant
@@ -131,3 +136,7 @@ loop:	lda	irqcnt
 	pla		; Pull A
 	rti
 .endproc
+
+	; DMC sample data
+	.segment	"DMC"
+dmc:	.byte	$00, $01, $02, $03

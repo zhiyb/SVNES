@@ -14,6 +14,8 @@ module system (
 	output logic [7:0] audio
 );
 
+assign dbg = 1'b0;
+
 sys_if sys (.clk(clk_CPU), .nclk(~clk_CPU), .*);
 
 // Reset signal reformation
@@ -42,9 +44,9 @@ endgenerate
 arbiter #(.N(ARBN)) arb0 (.ifrdy(rdy), .req(req), .sel(sel), .rdy(rdy_sel), .*);
 
 logic apu_irq;
+assign we_sel[1] = 1'b0;
 apu apu0 (
-	.bus_req(req[1]), .bus_rdy(rdy_sel[1]),
-	.bus_we(we_sel[1]), .bus_addr(addr_sel[1]),
+	.bus_req(req[1]), .bus_rdy(rdy_sel[1]), .bus_addr(addr_sel[1]),
 	.irq(apu_irq), .out(audio), .*);
 
 logic cpu_irq;

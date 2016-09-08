@@ -22,4 +22,4 @@ $(TRG).bin: $(OBJ)
 	hd $< > $@
 
 clean:
-	rm -f $(OBJ) $(TRG).bin $(TRG).hex
+	rm -f $(OBJ) $(TRG).bin $(TRG).hex $(TRG).bin.dump

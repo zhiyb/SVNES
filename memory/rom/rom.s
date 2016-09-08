@@ -26,6 +26,8 @@ irqcnt:	.byte	0
 	lda	#$1f	; Enable all channels
 	sta	apu_status
 
+	; APU pulse channel 1 testing
+
 	lda	#$ce
 	sta	apu_pulse1_tmrl
 
@@ -41,6 +43,8 @@ irqcnt:	.byte	0
 	ldx	#240	; Delay 4s
 	jsr	delay
 
+	; APU triangle channel testing
+
 	lda	#$7f	; No halt
 	sta	apu_tri_ctrl
 
@@ -52,6 +56,8 @@ irqcnt:	.byte	0
 
 	ldx	#60	; Delay 1s
 	jsr	delay
+
+	; APU noise channel testing
 
 	lda	#$2f	; Loop, envelope, period 15
 	sta	apu_noise_ctrl
@@ -85,6 +91,8 @@ noise1:	sta	apu_noise_period
 	lda	#$08
 	sta	apu_noise_lc
 
+	; APU pulse channel 2 testing
+
 	lda	#$9f	; Duty 2, no halt, constant
 	sta	apu_pulse2_ctrl
 
@@ -100,6 +108,7 @@ reload:	ldx	#60	; Delay 1s
 	jmp	reload
 .endproc
 
+	; Delay, time unit: 1/60 s, length: X
 .proc	delay
 	pha		; Push A
 	stx	irqcnt
@@ -117,7 +126,7 @@ loop:	lda	irqcnt
 
 .proc	irq
 	pha		; Push A
-	dec	irqcnt	; Decrement irqcnt
+	dec	irqcnt
 	lda	apu_status	; Clean frame interrupt
 	pla		; Pull A
 	rti

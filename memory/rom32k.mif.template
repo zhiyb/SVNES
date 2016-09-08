@@ -16,18 +16,17 @@
 -- Quartus Prime generated Memory Initialization File (.mif)
 
 WIDTH=8;
-DEPTH=256;
+DEPTH=32768;
 
 ADDRESS_RADIX=HEX;
 DATA_RADIX=HEX;
 
 CONTENT BEGIN
-	000  :   a9;	--		LDA	#$ff
-	001  :   ff;
-	0fa  :   00;	-- NMI vector
-	0fb  :   ff;
-	0fc  :   00;	-- Reset vector
-	0fd  :   ff;
-	0fe  :   b0;	-- IRQ vector
-	0ff  :   ff;
+	0000  :   00;	--		BRK
+	7ffa  :   00;	-- NMI vector
+	7ffb  :   80;
+	7ffc  :   00;	-- Reset vector
+	7ffd  :   80;
+	7ffe  :   b0;	-- IRQ vector
+	7fff  :   80;
 END;

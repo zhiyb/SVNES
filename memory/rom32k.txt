@@ -168,29 +168,29 @@ b8;	--		CLV
 50;	--		BVC	reload
 ef;	-- -17
 
-	0e0  :   48;	--		PHA		// Push A
-	0e1  :   8a;	--		TXA
-	0e2  :   48;	--		PHA		// Push X
-	0e5  :   58;	--		CLI		// Waiting for 60Hz APU IRQ
-	0e6  :   8a;	--	loop:	TXA
-	0e7  :   d0;	--		BNE	loop
-	0e8  :   fd;	-- -3
-	0e9  :   78;	--		SEI
-	0ea  :   68;	--		PLA		// Pull X
-	0eb  :   aa;	--		TAX
-	0ec  :   68;	--		PLA		// Pull A
-	0ed  :   60;	--		RTS		// Return
+	7fe0  :   48;	--		PHA		// Push A
+	7fe1  :   8a;	--		TXA
+	7fe2  :   48;	--		PHA		// Push X
+	7fe5  :   58;	--		CLI		// Waiting for 60Hz APU IRQ
+	7fe6  :   8a;	--	loop:	TXA
+	7fe7  :   d0;	--		BNE	loop
+	7fe8  :   fd;	-- -3
+	7fe9  :   78;	--		SEI
+	7fea  :   68;	--		PLA		// Pull X
+	7feb  :   aa;	--		TAX
+	7fec  :   68;	--		PLA		// Pull A
+	7fed  :   60;	--		RTS		// Return
 
-	0f0  :   ca;	--	IRQ:	DEX
-	0f1  :   ad;	--		LDA	$4015
-	0f2  :   15;
-	0f3  :   40;
-	0f4  :   40;	--		RTI
+	7ff0  :   ca;	--	IRQ:	DEX
+	7ff1  :   ad;	--		LDA	$4015
+	7ff2  :   15;
+	7ff3  :   40;
+	7ff4  :   40;	--		RTI
 
-	0fa  :   00;	-- NMI vector
-	0fb  :   ff;
-	0fc  :   00;	-- Reset vector
-	0fd  :   ff;
-	0fe  :   f0;	-- IRQ vector
-	0ff  :   ff;
+	7ffa  :   00;	-- NMI vector
+	7ffb  :   80;
+	7ffc  :   00;	-- Reset vector
+	7ffd  :   80;
+	7ffe  :   f0;	-- IRQ vector
+	7fff  :   ff;
 

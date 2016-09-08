@@ -1,18 +1,3 @@
-/*** Common definitions ***/
-`define WRITE	0
-`define READ	1
-
-`define TX	0
-`define RX	1
-
-/*** Architecture configuration ***/
-`define BOOTROM_N		8
-`define BOOTROM_SIZE	(2 ** `BOOTROM_N)
-`define PERIPHS_N		8
-`define ADDR_MAP_N	(16 - `PERIPHS_N)
-`define PERIPH_N		2
-`define PERIPH_MAP_N	(`PERIPHS_N - `PERIPH_N)
-
 /*** Status register ***/
 `define STATUS_N	7
 `define STATUS_V	6
@@ -22,19 +7,6 @@
 `define STATUS_I	2
 `define STATUS_Z	1
 `define STATUS_C	0
-
-/*** Base addresses ***/
-`define BOOTROM_BASE	16'hff00
-`define RAM0_BASE		16'h0000
-`define RAM0_SIZE		16'h2000
-`define APU_BASE		16'h4000
-`define APU_SIZE		16'h0020
-`define PERIPH_BASE	16'h3000
-`define PERIPH_MASK	16'h00ff
-
-`define P_GPIO0	{{`PERIPH_MAP_N{1'b0}} + 0, `PERIPH_N'b0}
-`define P_GPIO1	{{`PERIPH_MAP_N{1'b0}} + 1, `PERIPH_N'b0}
-`define P_SPI0		{{`PERIPH_MAP_N{1'b0}} + 2, `PERIPH_N'b0}
 
 /*** GPIO peripheral registers ***/
 `define GPIO_DIR	0

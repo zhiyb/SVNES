@@ -220,9 +220,9 @@ set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name CDF_FILE SVNES.cdf
-set_global_assignment -name SOURCE_FILE config.h
 set_global_assignment -name SYSTEMVERILOG_FILE wrapper.sv
 set_global_assignment -name SYSTEMVERILOG_FILE system.sv
+set_global_assignment -name SOURCE_FILE defines.h
 set_global_assignment -name QIP_FILE pll.qip
 set_global_assignment -name QIP_FILE pll_ntsc.qip
 set_global_assignment -name QIP_FILE pll_pal.qip
@@ -236,10 +236,11 @@ set_global_assignment -name SYSTEMVERILOG_FILE common/flag_keeper.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/flag_detector.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/lfsr.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/arbiter.sv
-set_global_assignment -name TEXT_FILE memory/rom.txt
-set_global_assignment -name MIF_FILE memory/rom.mif
-set_global_assignment -name QIP_FILE memory/rom.qip
 set_global_assignment -name QIP_FILE memory/ram2k.qip
+set_global_assignment -name QIP_FILE memory/ram8k.qip
+set_global_assignment -name TEXT_FILE memory/rom32k.txt
+set_global_assignment -name MIF_FILE memory/rom32k.mif
+set_global_assignment -name QIP_FILE memory/rom32k.qip
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/register.sv
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/pc.sv

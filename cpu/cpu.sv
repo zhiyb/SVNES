@@ -1,4 +1,4 @@
-`include "config.h"
+`include "defines.h"
 import typepkg::*;
 
 module cpu (

@@ -1,5 +1,3 @@
-`include "config.h"
-
 interface sys_if (
 	input logic clk, nclk, n_reset
 );
@@ -15,7 +13,7 @@ endinterface
 
 interface periphbus_if (
 	input logic we,
-	input logic [`PERIPH_N - 1:0] addr,
+	input logic [1:0] addr,
 	inout wire [7:0] data
 );
 endinterface

@@ -1,5 +1,3 @@
-`include "config.h"
-
 module apu (
 	sys_if sys,
 	sysbus_if sysbus,
@@ -20,7 +18,7 @@ always_ff @(posedge sys.clk, negedge sys.n_reset)
 		apuclk <= ~apuclk;
 
 logic en;
-assign en = (sysbus.addr & ~(`APU_SIZE - 1)) == `APU_BASE;
+assign en = (sysbus.addr & ~16'h001f) == 16'h4000;
 assign sysbus.rdy = en ? 1'b1 : 1'bz;
 
 logic [7:0] sel;

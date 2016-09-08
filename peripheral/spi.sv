@@ -1,4 +1,4 @@
-`include "config.h"
+`include "defines.h"
 
 module spi (
 	sys_if sys,
@@ -14,6 +14,9 @@ module spi (
 /*** Internal registers ***/
 
 logic [7:0] reg_ctrl, reg_stat, reg_data[2];
+
+`define RX	0
+`define TX	1
 
 /*** Register read & write ***/
 

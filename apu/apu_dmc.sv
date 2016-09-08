@@ -12,6 +12,7 @@ module apu_dmc (
 );
 
 assign bus_req = 1'b0, bus_we = 1'b0, bus_addr = 16'bz;
+assign act = 1'b0, irq = 1'b0;
 
 // Registers
 

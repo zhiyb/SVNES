@@ -1,4 +1,4 @@
-`include "config.h"
+`include "defines.h"
 
 module gpio (
 	sys_if sys,

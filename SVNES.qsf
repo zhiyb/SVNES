@@ -238,8 +238,8 @@ set_global_assignment -name SYSTEMVERILOG_FILE common/lfsr.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/arbiter.sv
 set_global_assignment -name QIP_FILE memory/ram2k.qip
 set_global_assignment -name QIP_FILE memory/ram8k.qip
-set_global_assignment -name TEXT_FILE memory/rom32k.txt
-set_global_assignment -name MIF_FILE memory/rom32k.mif
+set_global_assignment -name SOURCE_FILE memory/rom/rom.s
+set_global_assignment -name HEX_FILE memory/rom/rom.hex
 set_global_assignment -name QIP_FILE memory/rom32k.qip
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/register.sv

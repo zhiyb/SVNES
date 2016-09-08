@@ -136,7 +136,7 @@ endmodule
 // Retrieval info: CONSTANT: ADDRESS_ACLR_A STRING "CLEAR0"
 // Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_A STRING "BYPASS"
 // Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_A STRING "BYPASS"
-// Retrieval info: CONSTANT: INIT_FILE STRING "./apu/apu_rom_length.mif"
+// Retrieval info: CONSTANT: INIT_FILE STRING "apu/rom/apu_rom_length.mif"
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone IV E"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
 // Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "32"

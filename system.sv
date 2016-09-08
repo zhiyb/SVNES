@@ -83,7 +83,7 @@ assign rdy = rom0sel ? 1'b1 : 1'bz;
 logic [7:0] rom0q;
 rom32k rom0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),
-	.address(sysbus.addr[15:0]), .q(rom0q));
+	.address(sysbus.addr[14:0]), .q(rom0q));
 assign sysbus.data = (rom0sel & ~sysbus.we) ? rom0q : 8'bz;
 
 endmodule

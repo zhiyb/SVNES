@@ -3,6 +3,7 @@
 	.include	"apu.inc"
 
 	.bss
+	.reloc
 irqcnt:	.byte	0
 
 	.segment "VECT"	; Interrupt vectors

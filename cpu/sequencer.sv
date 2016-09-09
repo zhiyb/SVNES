@@ -903,7 +903,14 @@ begin
 	
 	if (~bus_rdy) begin
 		pc_inc = 1'b0;
+		pc_load = 1'b0;
+		pc_int = 1'b0;
 		int_handled = 1'b0;
+		abus_o.sp = 1'b0;
+		abus_o.adl = 1'b0;
+		abus_o.adh = 1'b0;
+		abus_o.pcl = 1'b0;
+		abus_o.pch = 1'b0;
 	end
 end
 

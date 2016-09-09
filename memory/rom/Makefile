@@ -12,7 +12,7 @@ rom.o: apu.inc
 %.o: %.s
 	ca65 --cpu $(CPU) -o $@ $<
 
-$(TRG).bin: $(OBJ)
+$(TRG).bin: $(OBJ) $(LDFILE)
 	ld65 -C $(LDFILE) -o $@ $(OBJ)
 
 %.hex: %.bin

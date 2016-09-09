@@ -70,7 +70,7 @@ assign addr = sp_addr_oe ? {8'h1, sp} : 16'bz;
 
 // Data latch registers
 logic [7:0] dl;
-register dl0 (.we(1'b1), .oe(abus_a.dl), .in(data), .out(alu_in_a), .data(dl), .*);
+register dl0 (.we(rdy), .oe(abus_a.dl), .in(data), .out(alu_in_a), .data(dl), .*);
 assign alu_in_b = abus_b.dl ? dl : 8'bz;
 logic dl_sign;
 assign dl_sign = dl[7];

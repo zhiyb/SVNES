@@ -23,6 +23,20 @@ irqcnt:	.byte	0
 	tay
 	sta	$3005	; GPIO1_OUT
 
+	; APU DMC testing
+
+	lda	#$80
+	sta	apu_dmc_load
+
+	lda	#$00
+	sta	apu_dmc_len
+
+	lda	#.lobyte(dmc >> 6)
+	sta	apu_dmc_addr
+
+	lda	#$40
+	sta	apu_dmc_ctrl
+
 	lda	#$1f	; Enable all channels
 	sta	apu_status
 
@@ -59,42 +73,14 @@ irqcnt:	.byte	0
 
 	; APU noise channel testing
 
-	lda	#$2f	; Loop, envelope, period 15
-	sta	apu_noise_ctrl
-
 	lda	#$00
-	sta	apu_noise_lc
-
-	lda	#$00
-noise0:	sta	apu_noise_period
-	sta	apu_noise_lc	; Reset envelope
-	ldx	#30	; Delay 500ms
-	jsr	delay
-	clc
-	adc	#$01
-	cmp	#$10
-	bne	noise0
-
-	lda	#$80
-noise1:	sta	apu_noise_period
-	sta	apu_noise_lc	; Reset envelope
-	ldx	#30	; Delay 500ms
-	jsr	delay
-	clc
-	adc	#$01
-	cmp	#$90
-	bne	noise1
+	sta	apu_noise_period
 
 	lda	#$1f	; No halt, constant, volume 15
 	sta	apu_noise_ctrl
 
 	lda	#$08
 	sta	apu_noise_lc
-
-	; APU DMC testing
-
-	lda	#$55
-	sta	apu_dmc_load
 
 	; APU pulse channel 2 testing
 
@@ -139,4 +125,4 @@ loop:	lda	irqcnt
 
 	; DMC sample data
 	.segment	"DMC"
-dmc:	.byte	$00, $01, $02, $03
+dmc:	.byte	$f0

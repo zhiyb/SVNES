@@ -42,7 +42,6 @@ assign len_load_reg = {regs[3], 4'h1};
 logic [14:0] addr;
 logic [11:0] len;
 logic mr_req;
-assign mr_req = 1'b0;
 
 assign bus_req = en && mr_req && (len != 12'h0 || loop || start);
 assign bus_addr = bus_rdy ? {1'b1, addr} : 16'bz;
@@ -86,14 +85,14 @@ apu_timer #(.N(8)) t0 (
 // Shift register
 
 logic [2:0] rem;
-always_ff @(posedge timer_cnt, negedge sys.n_reset)
+always_ff @(negedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		rem <= 3'h0;
 	else
 		rem <= rem - 3'h1;
 
 logic [7:0] shift;
-always_ff @(posedge timer_cnt, negedge sys.n_reset)
+always_ff @(negedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		shift <= 8'h0;
 	else if (rem == 3'h0)
@@ -101,18 +100,38 @@ always_ff @(posedge timer_cnt, negedge sys.n_reset)
 	else
 		shift <= {1'b0, shift[7:1]};
 
+logic shift_req;
+flag_detector swp_flag1 (.clk(sys.clk), .n_reset(sys.n_reset), .flag(rem == 3'h0), .out(shift_req));
+
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		mr_req <= 1'b1;
+	else if (bus_rdy)
+		mr_req <= 1'b0;
+	else if (shift_req)
+		mr_req <= 1'b1;
+
+logic playing;
+always_ff @(posedge sys.clk, negedge sys.n_reset)
+	if (~sys.n_reset)
+		playing <= 1'b0;
+	else if (rem == 3'h0 && timer_clk)
+		playing <= ~mr_req;
+
 // Output level
 
 logic sub;
 assign sub = ~shift[0];
-logic [8:0] target;
-assign target = out + {8{sub}} ^ 8'h2 + sub;
+logic [7:0] target;
+assign target = out + ({7{sub}} ^ 7'h2) + {6'h0, sub};
 logic target_ovf;
-assign target_ovf = target[8] ^ sub;
+assign target_ovf = target[7] ^ sub;
 
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		out <= 7'b0;
+	else if (playing & timer_clk & ~target_ovf)
+		out <= target[6:0];
 	else if (we && sysbus.addr[1:0] == 2'd1)
 		out <= load_reg;
 

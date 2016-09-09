@@ -53,7 +53,7 @@ logic alu_cout_prev;
 always_ff @(posedge sys.clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		alu_cout_prev <= 1'b0;
-	else
+	else if (bus_rdy)
 		alu_cout_prev <= alu_cout;
 
 enum int unsigned {
@@ -900,6 +900,11 @@ begin
 		end
 		default:	;
 		endcase
+	
+	if (~bus_rdy) begin
+		pc_inc = 1'b0;
+		int_handled = 1'b0;
+	end
 end
 
 endmodule

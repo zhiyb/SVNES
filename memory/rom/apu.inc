@@ -25,7 +25,7 @@ apu_noise_lc:		.byte	0
 
 apu_dmc_ctrl:		.byte	0
 apu_dmc_load:		.byte	0
-apu_dmc_saddr:		.byte	0
+apu_dmc_addr:		.byte	0
 apu_dmc_len:		.byte	0
 
 apu_RES0:		.byte	0

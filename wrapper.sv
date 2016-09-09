@@ -21,9 +21,9 @@ module wrapper (
 	inout logic [33:0] GPIO_0,
 	input logic [1:0] GPIO_0_IN,
 	inout logic [33:0] GPIO_1,
-	input logic [1:0] GPIO_1_IN,
+	input logic [1:0] GPIO_1_IN/*,
 	inout logic [12:0] GPIO_2,
-	input logic [2:0] GPIO_2_IN
+	input logic [2:0] GPIO_2_IN*/
 );
 
 logic n_reset_in, n_reset, fetch, dbg;

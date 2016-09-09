@@ -906,6 +906,7 @@ begin
 		pc_load = 1'b0;
 		pc_int = 1'b0;
 		int_handled = 1'b0;
+		p_set = 8'h0;
 		abus_o.sp = 1'b0;
 		abus_o.adl = 1'b0;
 		abus_o.adh = 1'b0;

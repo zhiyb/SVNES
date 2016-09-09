@@ -17,3 +17,5 @@ output_files
 *~
 *.do
 *.nb
+*.stp
+*.xml

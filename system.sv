@@ -2,8 +2,6 @@ module system (
 	// Clock and reset
 	input logic clk_CPU, clk_PPU, n_reset_in,
 	output logic n_reset, fetch, dbg,
-	// Interrupt lines
-	input logic irq, nmi,
 	// GPIO
 	inout wire [7:0] io[2],
 	output logic [7:0] iodir[2],
@@ -43,16 +41,20 @@ endgenerate
 
 arbiter #(.N(ARBN)) arb0 (.ifrdy(rdy), .req(req), .sel(sel), .rdy(rdy_sel), .*);
 
+logic ppu_nmi;
+logic ppu_req;
+assign ppu_req = 1'b0;
+ppu ppu0 (.nmi(ppu_nmi), .*);
+
 logic apu_irq;
 assign we_sel[1] = 1'b0;
 apu apu0 (
 	.bus_req(req[1]), .bus_rdy(rdy_sel[1]), .bus_addr(addr_sel[1]),
 	.irq(apu_irq), .out(audio), .*);
 
-logic cpu_irq;
-assign cpu_irq = irq & apu_irq;
-assign req[0] = 1'b1;
-cpu cpu0 (.irq(cpu_irq), .addr(addr_sel[0]), .we(we_sel[0]), .rdy(rdy_sel[0]), .*);
+assign req[0] = ~ppu_req;
+cpu cpu0 (.irq(apu_irq), .nmi(ppu_nmi),
+	.addr(addr_sel[0]), .we(we_sel[0]), .rdy(rdy_sel[0]), .*);
 
 peripherals periph0 (.*);
 

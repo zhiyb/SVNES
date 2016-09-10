@@ -75,9 +75,6 @@ logic cs, miso;
 logic mosi, sck;
 assign cs = 1'b1, miso = 1'b1;
 
-logic irq, nmi;
-assign irq = 1'b1, nmi = 1'b1;
-
 // Audio
 logic [7:0] audio;
 logic aout;

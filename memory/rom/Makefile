@@ -7,7 +7,7 @@ OBJ	= $(SRC:.s=.o)
 
 all:	$(TRG).hex
 
-rom.o: apu.inc
+rom.o: apu.inc ppu.inc
 
 %.o: %.s
 	ca65 --cpu $(CPU) -o $@ $<

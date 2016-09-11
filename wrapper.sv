@@ -82,13 +82,31 @@ assign GPIO_0[25] = aout;
 apu_pwm #(.N(8)) pwm0 (.clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 // TFT
+logic tft_en, tft_pixclk;
+assign tft_en = SW[0], tft_pixclk = clk10M;
 logic [23:0] tft_rgb;
-assign GPIO_1[23:0] = tft_rgb;
-assign tft_rgb = 24'h66ccff;
 logic [8:0] tft_x, tft_y;
-tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)), .HT('{41, 2, 480, 2}), .VT('{10, 2, 272, 2})) tft0 (
-	.n_reset(n_reset_in), .pixclk(clk10M), .x(tft_x), .y(tft_y),
-	.disp(GPIO_1[24]), .de(GPIO_1[25]), .vsync(GPIO_1[26]), .hsync(GPIO_1[27]), .dclk(GPIO_1[28]));
+tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
+	.HT('{40, 1, 479, 1}), .VT('{10, 1, 271, 1})) tft0 (
+	.n_reset(n_reset_in), .pixclk(tft_pixclk), .en(tft_en),
+	.x(tft_x), .y(tft_y), .data(tft_rgb), .out(GPIO_1[23:0]),
+	.disp(GPIO_1[24]), .de(GPIO_1[25]), .dclk(GPIO_1[28]),
+	.vsync(GPIO_1[26]), .hsync(GPIO_1[27]));
+
+// TFT pixel data
+always_ff @(negedge tft_pixclk, negedge n_reset)
+	if (~n_reset)
+		tft_rgb <= 24'h0;
+	else if (tft_x == 9'd0)
+		tft_rgb <= 24'hff0000;
+	else if (tft_x == 9'd479)
+		tft_rgb <= 24'h00ff00;
+	else if (tft_y == 9'd0)
+		tft_rgb <= 24'h0000ff;
+	else if (tft_y == 9'd271)
+		tft_rgb <= 24'hffff00;
+	else
+		tft_rgb <= tft_x[8] ? {8'b0, tft_y[7:0], tft_x[7:0]} : {tft_x[7:0], tft_y[7:0], 8'b0};
 
 system sys0 (.*);
 

@@ -81,6 +81,15 @@ logic aout;
 assign GPIO_0[25] = aout;
 apu_pwm #(.N(8)) pwm0 (.clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
+// TFT
+logic [23:0] tft_rgb;
+assign GPIO_1[23:0] = tft_rgb;
+assign tft_rgb = 24'h66ccff;
+logic [8:0] tft_x, tft_y;
+tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)), .HT('{41, 2, 480, 2}), .VT('{10, 2, 272, 2})) tft0 (
+	.n_reset(n_reset_in), .pixclk(clk10M), .x(tft_x), .y(tft_y),
+	.disp(GPIO_1[24]), .de(GPIO_1[25]), .vsync(GPIO_1[26]), .hsync(GPIO_1[27]), .dclk(GPIO_1[28]));
+
 system sys0 (.*);
 
 assign LED[7:0] = audio;

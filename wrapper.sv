@@ -8,7 +8,7 @@ module wrapper (
 	output logic [1:0] DRAM_BA, DRAM_DQM,
 	output logic DRAM_CKE, DRAM_CLK,
 	output logic DRAM_CS_N, DRAM_CAS_N, DRAM_RAS_N, DRAM_WE_N,
-	inout logic [15:0] DRAM_DQ,
+	inout wire [15:0] DRAM_DQ,
 	
 	inout logic I2C_SCLK, I2C_SDAT,
 	
@@ -29,13 +29,11 @@ module wrapper (
 logic n_reset_in, n_reset, fetch, dbg;
 assign n_reset_in = KEY[1];
 
-logic clk1M, clk10M, clk20M, clk50M;
+logic clk1M, clk10M, clk20M, clk50M, clk140M;
 assign clk50M = CLOCK_50;
 logic pll0_locked;
-pll pll0 (
-	.areset(~n_reset_in), .inclk0(clk50M),
-	.c0(clk20M), .c1(clk10M), .c2(clk1M),
-	.locked(pll0_locked));
+pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .locked(pll0_locked),
+	.c0(clk20M), .c1(clk10M), .c2(clk1M), .c3(clk140M));
 
 `define NTSC	0
 `define PAL		1
@@ -45,10 +43,8 @@ logic clkMaster[3], clkPPU[3], clkCPU[3];
 //assign clkMaster[`DENDY] = clkMaster[`PAL];
 //assign clkPPU[`DENDY] = clkPPU[`PAL];
 logic pll1_locked;
-pll_ntsc pll1 (
-	.areset(~n_reset_in), .inclk0(clk50M),
-	.c0(clkMaster[`NTSC]), .c1(clkPPU[`NTSC]), .c2(clkCPU[`NTSC]),
-	.locked(pll1_locked));
+pll_ntsc pll1 (.areset(~n_reset_in), .inclk0(clk50M), .locked(pll1_locked),
+	.c0(clkMaster[`NTSC]), .c1(clkPPU[`NTSC]), .c2(clkCPU[`NTSC]));
 //pll_pal pll2 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clkPPU[`PAL]), .c1(clkCPU[`DENDY]));
 
 parameter clksel = `NTSC;
@@ -83,7 +79,7 @@ apu_pwm #(.N(8)) pwm0 (.clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 // TFT
 logic tft_en, tft_pixclk;
-assign tft_en = SW[0], tft_pixclk = clk10M;
+assign tft_en = SW[0], tft_pixclk = clk20M;
 logic [23:0] tft_rgb;
 logic [8:0] tft_x, tft_y;
 tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
@@ -94,19 +90,21 @@ tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
 	.vsync(GPIO_1[26]), .hsync(GPIO_1[27]));
 
 // TFT pixel data
-always_ff @(negedge tft_pixclk, negedge n_reset)
-	if (~n_reset)
-		tft_rgb <= 24'h0;
-	else if (tft_x == 9'd0)
-		tft_rgb <= 24'hff0000;
+always_comb
+begin
+	tft_rgb = tft_x[8] ? {8'b0, tft_y[7:0], tft_x[7:0]} : {tft_x[7:0], tft_y[7:0], 8'b0};
+	if (tft_x == 9'd0)
+		tft_rgb = 24'hff0000;
 	else if (tft_x == 9'd479)
-		tft_rgb <= 24'h00ff00;
+		tft_rgb = 24'h00ff00;
 	else if (tft_y == 9'd0)
-		tft_rgb <= 24'h0000ff;
+		tft_rgb = 24'h0000ff;
 	else if (tft_y == 9'd271)
-		tft_rgb <= 24'hffff00;
-	else
-		tft_rgb <= tft_x[8] ? {8'b0, tft_y[7:0], tft_x[7:0]} : {tft_x[7:0], tft_y[7:0], 8'b0};
+		tft_rgb = 24'hffff00;
+end
+
+// DRAM
+sdram sdram0 (.clk(clk140M), .en(1'b1), .*);
 
 system sys0 (.*);
 

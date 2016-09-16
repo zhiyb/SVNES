@@ -104,7 +104,7 @@ begin
 end
 
 // DRAM
-sdram sdram0 (.clk(clk140M), .en(1'b1), .*);
+sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.clk(clk140M), .en(1'b1), .*);
 
 system sys0 (.*);
 

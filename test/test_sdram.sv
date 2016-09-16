@@ -13,7 +13,7 @@ assign en = 1'b1;
 
 logic we;
 logic [15:0] data;
-assign DRAM_DQ = we ? data : 1'bz;
+assign DRAM_DQ = we ? data : 16'bz;
 assign we = 1'b0;
 
 sdram sdram0 (.*);

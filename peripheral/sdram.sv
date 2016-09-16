@@ -57,7 +57,7 @@ begin
 	endcase
 end
 
-enum {Reset, Init, InitPALL, InitREF1, InitREF2, Active, Precharge, Refresh} state, state_next;
+enum int unsigned {Reset, Init, InitPALL, InitREF1, InitREF2, Active, Precharge, Refresh} state, state_next;
 logic [15:0] cnt, cnt_load;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin

@@ -11,10 +11,19 @@ wire [15:0] DRAM_DQ;
 
 assign en = 1'b1;
 
-logic we;
-logic [15:0] data;
-assign DRAM_DQ = we ? data : 16'bz;
-assign we = 1'b0;
+logic dram_we;
+logic [15:0] dram_data;
+assign DRAM_DQ = dram_we ? dram_data : 16'bz;
+assign dram_we = 1'b1;
+assign dram_data = 16'ha5c3;
+
+logic [23:0] addr;
+wire [15:0] data;
+logic we, rd;
+logic rdy;
+
+assign addr = 24'h123456;
+assign we = 1'b0, rd = 1'b1;
 
 sdram sdram0 (.*);
 

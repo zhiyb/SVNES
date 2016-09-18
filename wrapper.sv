@@ -75,7 +75,24 @@ assign cs = 1'b1, miso = 1'b1;
 logic [7:0] audio;
 logic aout;
 assign GPIO_0[25] = aout;
-apu_pwm #(.N(8)) pwm0 (.clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
+apu_pwm #(.N(8)) pwm0 (.n_reset(n_reset_in), .clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
+
+// SDRAM
+logic clkSDRAM;
+assign clkSDRAM = clk140M;
+
+logic [23:0] addr_in;
+logic [15:0] data_in;
+assign data_in = 16'h0;
+logic we, req;
+assign we = 1'b0;
+logic rdy;
+
+logic [23:0] addr_out;
+logic [15:0] data_out;
+logic rdy_out;
+
+sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM), .en(1'b1), .*);
 
 // TFT
 logic tft_en, tft_pixclk;
@@ -89,40 +106,40 @@ tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
 	.disp(GPIO_1[24]), .de(GPIO_1[25]), .dclk(GPIO_1[28]),
 	.vsync(GPIO_1[26]), .hsync(GPIO_1[27]));
 
-// TFT pixel data
-always_comb
-begin
-	tft_rgb = tft_x[8] ? {8'b0, tft_y[7:0], tft_x[7:0]} : {tft_x[7:0], tft_y[7:0], 8'b0};
-	if (tft_x == 9'd0)
-		tft_rgb = 24'hff0000;
-	else if (tft_x == 9'd479)
-		tft_rgb = 24'h00ff00;
-	else if (tft_y == 9'd0)
-		tft_rgb = 24'h0000ff;
-	else if (tft_y == 9'd271)
-		tft_rgb = 24'hffff00;
-end
+// TFT pixel data generator
+logic tft_update;
+flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(~tft_pixclk), .out(tft_update));
 
-// SDRAM
+logic [23:0] tft_addr;
+assign tft_addr = {6'h0, tft_y, tft_x};
 
-logic [23:0] addr_in;
-assign addr_in = 24'h0;
-logic [15:0] data_in;
-assign data_in = 16'h0;
-logic we, req;
-assign we = 1'b0, req = 1'b0;
-logic rdy;
+enum int unsigned {Idle, Fetch} tft_state;
+always_ff @(posedge clkSDRAM, negedge n_reset_in)
+	if (~n_reset_in) begin
+		tft_state <= Idle;
+		tft_rgb <= 24'h66ccff;
+	end else begin
+		case (tft_state)
+		Idle:
+			if (tft_update)
+				tft_state <= Fetch;
+		Fetch:
+			if (rdy) begin
+				tft_rgb <= {{8{tft_x[0]}} & {8{tft_y[0]}}, ~{8{tft_x[0]}} & ~{8{tft_y[0]}}, tft_x[8:5], tft_y[8:5]}; //{data_out[15:11], 3'h0, data_out[10:5], 2'h0, data_out[4:0], 3'h0};
+				tft_state <= Idle;
+			end
+		endcase
+	end
 
-logic [23:0] addr_out;
-logic [15:0] data_out;
-logic rdy_out;
-
-sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.clk(clk140M), .en(1'b1), .*);
+assign addr_in = tft_addr;
+assign req = tft_state == Idle && tft_update;
 
 // System
+logic [7:0] ppu_x, ppu_y;
+logic [24:0] ppu_rgb;
+system sys0 (.x(ppu_x), .y(ppu_y), .rgb(ppu_rgb), .*);
 
-system sys0 (.*);
-
-assign LED[7:0] = audio;
+// Debug LEDs
+assign LED[7:0] = {req, rdy, GPIO_1[26], GPIO_1[27], aout, io[1][2:0]};
 
 endmodule

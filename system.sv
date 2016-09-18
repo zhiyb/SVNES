@@ -9,8 +9,32 @@ module system (
 	input logic cs, miso,
 	output logic mosi, sck,
 	// Audio
-	output logic [7:0] audio
+	output logic [7:0] audio,
+	// Graphics
+	output logic [7:0] x, y,
+	output logic [23:0] rgb
 );
+
+// Graphic output test
+always_ff @(posedge clk_PPU, negedge n_reset_in)
+	if (~n_reset_in) begin
+		x <= 8'd0;
+		y <= 8'd0;
+	end else begin
+		x <= x + 8'd1;
+		if (x == 8'd255) begin
+			if (y == 8'd239)
+				y <= 8'd0;
+			else
+				y <= y + 8'd1;
+		end
+	end
+
+always_ff @(posedge clk_PPU, negedge n_reset_in)
+	if (~n_reset_in)
+		rgb <= 24'h0;
+	else
+		rgb <= rgb + 24'h1;
 
 assign dbg = 1'b0;
 
@@ -39,7 +63,8 @@ for (i = 0; i != ARBN; i++) begin: gensel
 end
 endgenerate
 
-arbiter #(.N(ARBN)) arb0 (.ifrdy(rdy), .req(req), .sel(sel), .rdy(rdy_sel), .*);
+arbiter #(.N(ARBN)) arb0 (.n_reset(sys.n_reset), .clk(sys.clk),
+	.ifrdy(rdy), .ifreq(), .req(req), .sel(sel), .rdy(rdy_sel));
 
 logic ppu_nmi;
 logic ppu_req;

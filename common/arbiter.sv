@@ -1,12 +1,15 @@
 module arbiter #(parameter N, DEF = 0) (
-	sys_if sys,
+	input logic n_reset, clk,
 	input logic ifrdy,
+	output logic ifreq,
 	input logic req[N],
 	output logic sel[N], rdy[N]
 );
 
-logic dis[N + 1];
+logic dis[N + 1], ifreqs[N + 1];
 assign dis[0] = dis[N];
+assign ifreqs[0] = 1'b0;
+assign ifreq = ifreqs[N];
 
 genvar i;
 generate
@@ -16,9 +19,10 @@ for (i = 0; i != N; i++) begin: gen
 	assign next = (sel[i] & ~dis[i]) | out;
 	assign dis[i + 1] = (~sel[i] & dis[i]) | out;
 	assign rdy[i] = sel[i] & ifrdy;
+	assign ifreqs[i + 1] = ifreqs[i] | (sel[i] & req[i]);
 	
-	always_ff @(posedge sys.clk, negedge sys.n_reset)
-		if (~sys.n_reset)
+	always_ff @(posedge clk, negedge n_reset)
+		if (~n_reset)
 			sel[i] <= i == DEF;
 		else if (ifrdy)
 			sel[i] <= next;

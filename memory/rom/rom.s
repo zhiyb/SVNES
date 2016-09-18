@@ -49,8 +49,6 @@ reload:	ldx	#60	; Delay 1s
 	jsr	delay
 	lda	#$10
 	sta	apu_pulse2_lc
-	iny
-	sty	$3005	; GPIO1_OUT
 	jmp	reload
 .endproc
 

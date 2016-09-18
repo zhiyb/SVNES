@@ -1,5 +1,6 @@
-module sdram #(parameter logic [2:0] CAS = 3, BURST = 3'b001,
-	int TINIT = 14300, TREFC = 1117, TRC = 9, TRAS = 6, TRP = 3, TMRD = 2, TRCD = 3) (
+module sdram #(parameter logic [2:0] CAS = 3, BURST = 3'b000,
+	int TINIT = 14300, TREFC = 1117,
+	int TRC = 9, TRAS = 6, TRP = 3, TMRD = 2, TRCD = 3) (
 	input logic n_reset, clk, en,
 	
 	output logic [12:0] DRAM_ADDR,
@@ -10,11 +11,12 @@ module sdram #(parameter logic [2:0] CAS = 3, BURST = 3'b001,
 	
 	input logic [23:0] addr_in,
 	input logic [15:0] data_in,
-	input logic we, rd,
+	input logic we, req,
+	output logic rdy,
 	
 	output logic [23:0] addr_out,
 	output logic [15:0] data_out,
-	output logic rdy
+	output logic rdy_out
 );
 
 assign DRAM_CLK = ~clk;
@@ -22,19 +24,90 @@ assign DRAM_CS_N = ~en;
 
 // Input synchronous FIFO
 
+logic rdack, empty, full, underrun, overrun;
+logic [40:0] fifo_in, fifo_out;
+fifo_sync #(.N(41), .DEPTH_N(3)) fifo0 (.wrreq(req), .in(fifo_in), .out(fifo_out), .*);
+// WE, BA[1:0], ROW[12:0], COLUMN[8:0], DATA[15:0]
+assign fifo_in = {we, addr_in, data_in};
+assign rdy = ~full;
+logic fifo_we;
+logic [1:0] fifo_ba;
+logic [12:0] fifo_row;
+logic [8:0] fifo_column;
+logic [15:0] fifo_data;
+logic [23:0] fifo_addr;
+assign {fifo_we, fifo_ba, fifo_row, fifo_column, fifo_data} = fifo_out;
+assign fifo_addr = fifo_out[39:16];
+
+// Commands
+
+typedef enum int unsigned {NOP, BST, READ, READ_AUTO, WRITE, WRITE_AUTO, ACT, PRE, PALL, REF, SELF, MRS} Commands;
+Commands command;
+
 // Output address calculation & control
 
-logic we_out;
-logic [15:0] data_out;
-assign data = we_out ? data_out : 16'bz;
+Commands command_reg[CAS + 1], command_delayed;
+assign command_reg[0] = command;
+assign command_delayed = command_reg[CAS];
+
+logic [23:0] addr_reg[CAS + 1], addr_delayed;
+assign addr_reg[0] = fifo_addr;
+assign addr_delayed = addr_reg[CAS];
+logic [1:0] ba_delayed;
+logic [12:0] row_delayed;
+logic [8:0] column_delayed;
+assign {ba_delayed, row_delayed, column_delayed} = addr_reg[CAS - 1];
+
+genvar i;
+generate
+	for (i = 0; i < CAS; i++) begin: gen0
+		always_ff @(posedge clk, negedge n_reset)
+			if (~n_reset) begin
+				command_reg[i + 1] <= NOP;
+				addr_reg[i + 1] <= 24'h0;
+			end else begin
+				command_reg[i + 1] <= command_reg[i];
+				addr_reg[i + 1] <= addr_reg[i];
+			end
+	end
+endgenerate
+
+struct {
+	logic active;
+	logic [12:0] row;
+} bank[4];
+
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset) begin
+		for (int i = 0; i < 4; i++) begin
+			bank[i].active = 1'b0;
+			bank[i].row <= 13'h0;
+		end
+	end else begin
+		case (command_reg[CAS - 1])
+		ACT: begin
+			bank[ba_delayed].active <= 1'b1;
+			bank[ba_delayed].row <= row_delayed;
+		end
+		PRE: bank[ba_delayed].active <= 1'b0;
+		PALL:
+			for (int i = 0; i < 4; i++)
+				bank[i].active <= 1'b0;
+		endcase
+	end
+
 always_ff @(posedge DRAM_CLK, negedge n_reset)
 	if (~n_reset) begin
-		rdy <= 1'b0;
+		addr_out <= 24'h0;
 		data_out <= 16'h0;
+		rdy_out <= 1'b0;
 	end else begin
-		rdy <= we_out;
+		addr_out <= addr_delayed;
 		data_out <= DRAM_DQ;
+		rdy_out <= command_delayed == READ;
 	end
+
+// SDRAM tri-state data bus control
 
 logic dram_we;
 logic [15:0] dram_data;
@@ -42,7 +115,8 @@ assign DRAM_DQ = dram_we ? dram_data : 16'bz;
 assign dram_we = 1'b0;
 assign dram_data = 16'h0;
 
-enum int unsigned {NOP, BST, READ, READ_AUTO, WRITE, WRITE_AUTO, ACT, PRE, PALL, REF, SELF, MRS} command;
+// Command control logic
+
 always_comb
 begin
 	DRAM_CKE = 1'b0;
@@ -52,6 +126,7 @@ begin
 	DRAM_BA = 2'h0;
 	DRAM_ADDR = 13'h0;
 	DRAM_DQM = 2'b11;
+	rdack = 1'b0;
 	case (command)
 	NOP: begin
 		DRAM_CKE = 1'b1;
@@ -80,8 +155,34 @@ begin
 		// Write burst, sequential, length = 2x16bit
 		{DRAM_BA, DRAM_ADDR} = {5'b00000, 1'b0, 2'b00, CAS, 1'b0, BURST};
 	end
+	PRE: begin
+		DRAM_CKE = 1'b1;
+		DRAM_RAS_N = 1'b0;
+		DRAM_CAS_N = 1'b1;
+		DRAM_WE_N = 1'b0;
+		{DRAM_BA, DRAM_ADDR[10]} = {fifo_ba, 1'b0};
+	end
+	ACT: begin
+		DRAM_CKE = 1'b1;
+		DRAM_RAS_N = 1'b0;
+		DRAM_CAS_N = 1'b1;
+		DRAM_WE_N = 1'b1;
+		{DRAM_BA, DRAM_ADDR} = {fifo_ba, fifo_row};
+	end
+	READ: begin
+		DRAM_CKE = 1'b1;
+		DRAM_RAS_N = 1'b1;
+		DRAM_CAS_N = 1'b0;
+		DRAM_WE_N = 1'b1;
+		DRAM_BA = fifo_ba;
+		DRAM_ADDR[10] = 1'b0;
+		DRAM_ADDR[8:0] = fifo_column;
+		rdack = 1'b1;
+	end
 	endcase
 end
+
+// Initialisation, refresh states and counter
 
 enum int unsigned {Reset, Init, InitPALL, InitREF1, InitREF2, Active, Precharge, Refresh} state, state_next;
 logic [15:0] cnt, cnt_load;
@@ -95,6 +196,8 @@ always_ff @(posedge clk, negedge n_reset)
 	end else
 		cnt <= cnt - 16'h1;
 
+// Command delay counter
+
 logic [2:0] delay, delay_load;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
@@ -104,12 +207,16 @@ always_ff @(posedge clk, negedge n_reset)
 	else
 		delay <= delay - 3'h1;
 
-enum int unsigned {OP_IDLE, OP_MODE, OP_ACTIVE, OP_READ, OP_WRITE, OP_PRECHARGE} op, op_next;
+// Initialise mode register
+
+logic mode;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
-		op <= OP_MODE;
-	else
-		op <= op_next;
+		mode <= 1'b0;
+	else if (command == MRS)
+		mode <= 1'b1;
+
+// Next state logic
 
 logic execute;
 always_comb
@@ -119,8 +226,6 @@ begin
 	command = NOP;
 	delay_load = 3'h0;
 	execute = 1'b0;
-	we_out = 1'b0;
-	op_next = op;
 	case (state)
 	Reset: begin
 		state_next = Init;
@@ -163,31 +268,19 @@ begin
 	endcase
 	
 	if (execute && delay == 3'h0) begin
-		if (op == OP_MODE) begin
+		if (~mode) begin
 			command = MRS;
 			delay_load = TMRD - 1;
-			op_next = OP_IDLE;
-		end
-		if (rd) begin
-			case (op)
-			OP_ACTIVE: begin
+		end else if (~empty) begin
+			if (~bank[fifo_ba].active) begin
 				command = ACT;
 				delay_load = TRCD - 1;
-				op_next = OP_READ;
-			end
-			OP_READ: begin
-				command = READ;
-				delay_load = CAS - 1;
-				op_next = OP_PRECHARGE;
-			end
-			OP_PRECHARGE: begin
-				command = PALL;
+			end else if (bank[fifo_ba].row != fifo_row) begin
+				command = PRE;
 				delay_load = TRP - 1;
-				op_next = OP_IDLE;
-				we_out = 1'b1;
+			end else begin
+				command = fifo_we ? WRITE : READ;
 			end
-			default: op_next = OP_ACTIVE;
-			endcase
 		end
 	end
 end

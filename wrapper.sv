@@ -103,8 +103,23 @@ begin
 		tft_rgb = 24'hffff00;
 end
 
-// DRAM
+// SDRAM
+
+logic [23:0] addr_in;
+assign addr_in = 24'h0;
+logic [15:0] data_in;
+assign data_in = 16'h0;
+logic we, req;
+assign we = 1'b0, req = 1'b0;
+logic rdy;
+
+logic [23:0] addr_out;
+logic [15:0] data_out;
+logic rdy_out;
+
 sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.clk(clk140M), .en(1'b1), .*);
+
+// System
 
 system sys0 (.*);
 

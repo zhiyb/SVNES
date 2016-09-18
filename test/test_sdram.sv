@@ -32,7 +32,7 @@ sdram sdram0 (.*);
 initial
 begin
 	addr_in = 24'h0;
-	forever #1us addr_in++;
+	forever #1us addr_in += 24'h000040;
 end
 
 initial

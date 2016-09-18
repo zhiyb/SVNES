@@ -60,7 +60,7 @@ assign {ba_delayed, row_delayed, column_delayed} = addr_reg[CAS - 1];
 
 genvar i;
 generate
-	for (i = 0; i < CAS; i++) begin: gen0
+	for (i = 0; i < CAS; i++) begin: gen_delay
 		always_ff @(posedge clk, negedge n_reset)
 			if (~n_reset) begin
 				command_reg[i + 1] <= NOP;
@@ -75,7 +75,50 @@ endgenerate
 struct {
 	logic active;
 	logic [12:0] row;
+	logic [3:0] precnt, actcnt, rwcnt;
 } bank[4];
+
+// Bank specific command delay counter
+
+generate
+	for (i = 0; i < 4; i++) begin: gen_bankcnt
+		logic [3:0] precnt, precnt_next, actcnt, actcnt_next, rwcnt, rwcnt_next;
+		assign precnt = bank[i].precnt, actcnt = bank[i].actcnt, rwcnt = bank[i].rwcnt;
+		
+		always_ff @(posedge clk, negedge n_reset)
+			if (~n_reset) begin
+				bank[i].precnt <= 4'h0;
+				bank[i].actcnt <= 4'h0;
+				bank[i].rwcnt <= 4'h0;
+			end else begin
+				bank[i].precnt <= precnt_next;
+				bank[i].actcnt <= actcnt_next;
+				bank[i].rwcnt <= rwcnt_next;
+			end
+		
+		always_comb
+		begin
+			precnt_next = precnt != 4'h0 ? precnt - 4'h1 : 4'h0;
+			actcnt_next = actcnt != 4'h0 ? actcnt - 4'h1 : 4'h0;
+			rwcnt_next = rwcnt != 4'h0 ? rwcnt - 4'h1 : 4'h0;
+			if (fifo_ba == i) begin
+				case (command)
+				ACT: begin
+					precnt_next = TRAS - 1;
+					actcnt_next = TRC - 1;
+					rwcnt_next = TRCD - 1;
+				end
+				PRE: begin
+					precnt_next = 4'h0;
+					actcnt_next = TRP - 1;
+				end
+				endcase
+			end
+		end
+	end
+endgenerate
+
+// Bank specific row address update for reading
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin
@@ -84,12 +127,14 @@ always_ff @(posedge clk, negedge n_reset)
 			bank[i].row <= 13'h0;
 		end
 	end else begin
-		case (command_reg[CAS - 1])
+		case (command)
 		ACT: begin
-			bank[ba_delayed].active <= 1'b1;
-			bank[ba_delayed].row <= row_delayed;
+			bank[fifo_ba].active <= 1'b1;
+			bank[fifo_ba].row <= fifo_row;
 		end
-		PRE: bank[ba_delayed].active <= 1'b0;
+		READ_AUTO,
+		WRITE_AUTO,
+		PRE: bank[fifo_ba].active <= 1'b0;
 		PALL:
 			for (int i = 0; i < 4; i++)
 				bank[i].active <= 1'b0;
@@ -273,13 +318,14 @@ begin
 			delay_load = TMRD - 1;
 		end else if (~empty) begin
 			if (~bank[fifo_ba].active) begin
-				command = ACT;
-				delay_load = TRCD - 1;
+				if (bank[fifo_ba].actcnt == 4'h0 && cnt >= TRAS)
+					command = ACT;
 			end else if (bank[fifo_ba].row != fifo_row) begin
-				command = PRE;
-				delay_load = TRP - 1;
+				if (bank[fifo_ba].precnt == 4'h0)
+					command = PRE;
 			end else begin
-				command = fifo_we ? WRITE : READ;
+				if (bank[fifo_ba].rwcnt == 4'h0)
+					command = fifo_we ? WRITE : READ;
 			end
 		end
 	end

@@ -85,7 +85,6 @@ logic [23:0] addr_in;
 logic [15:0] data_in;
 assign data_in = 16'h0;
 logic we, req;
-assign we = 1'b0;
 logic rdy;
 
 logic [23:0] addr_out;
@@ -93,6 +92,20 @@ logic [15:0] data_out;
 logic rdy_out;
 
 sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM), .en(1'b1), .*);
+
+// SDRAM cache
+logic cache_we, cache_req;
+assign cache_we = 1'b0;
+logic cache_miss, cache_rdy;
+logic [23:0] cache_addr;
+wire [15:0] cache_data;
+cache cache0 (.n_reset(n_reset_in), .clk(clkSDRAM),
+	.we(cache_we), .req(cache_req), .miss(cache_miss), .rdy(cache_rdy),
+	.addr(cache_addr), .data(cache_data),
+	.if_addr_out(addr_in), .if_data_out(data_in),
+	.if_we(we), .if_req(req), .if_rdy(rdy),
+	.if_addr_in(addr_out), .if_data_in(data_out), .if_rdy_in(rdy_out)
+);
 
 // TFT
 logic tft_en, tft_pixclk;
@@ -113,26 +126,18 @@ flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(~tft_pixclk
 logic [23:0] tft_addr;
 assign tft_addr = {6'h0, tft_y, tft_x};
 
-enum int unsigned {Idle, Fetch} tft_state;
 always_ff @(posedge clkSDRAM, negedge n_reset_in)
 	if (~n_reset_in) begin
-		tft_state <= Idle;
 		tft_rgb <= 24'h66ccff;
-	end else begin
-		case (tft_state)
-		Idle:
-			if (tft_update)
-				tft_state <= Fetch;
-		Fetch:
-			if (rdy) begin
-				tft_rgb <= {{8{tft_x[0]}} & {8{tft_y[0]}}, ~{8{tft_x[0]}} & ~{8{tft_y[0]}}, tft_x[8:5], tft_y[8:5]}; //{data_out[15:11], 3'h0, data_out[10:5], 2'h0, data_out[4:0], 3'h0};
-				tft_state <= Idle;
-			end
-		endcase
+		cache_req <= 1'b0;
+	end else if (tft_update) begin
+		cache_req <= 1'b1;
+	end else if (cache_rdy) begin
+		tft_rgb <= {{8{tft_x[0]}} & {8{tft_y[0]}}, ~{8{tft_x[0]}} & ~{8{tft_y[0]}}, tft_x[8:5], tft_y[8:5]}; //{data_out[15:11], 3'h0, data_out[10:5], 2'h0, data_out[4:0], 3'h0};
+		cache_req <= 1'b0;
 	end
 
-assign addr_in = tft_addr;
-assign req = tft_state == Idle && tft_update;
+assign cache_addr = tft_addr;
 
 // System
 logic [7:0] ppu_x, ppu_y;
@@ -140,6 +145,6 @@ logic [24:0] ppu_rgb;
 system sys0 (.x(ppu_x), .y(ppu_y), .rgb(ppu_rgb), .*);
 
 // Debug LEDs
-assign LED[7:0] = {req, rdy, GPIO_1[26], GPIO_1[27], aout, io[1][2:0]};
+assign LED[7:0] = {cache_miss, req, rdy, GPIO_1[26], GPIO_1[27], aout, io[1][1:0]};
 
 endmodule

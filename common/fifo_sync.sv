@@ -8,8 +8,8 @@ module fifo_sync #(parameter N, DEPTH_N) (
 
 logic [N - 1:0] data[2 ** DEPTH_N];
 logic [DEPTH_N - 1:0] head, head_next, tail, tail_next, level;
-assign head_next = rdack & ~empty ? head + {{DEPTH_N - 1{1'b0}}, 1'b1} : head;
-assign tail_next = wrreq & ~full ? tail + {{DEPTH_N - 1{1'b0}}, 1'b1} : tail;
+assign head_next = head + {{DEPTH_N - 1{1'b0}}, 1'b1};
+assign tail_next = tail + {{DEPTH_N - 1{1'b0}}, 1'b1};
 assign level = tail - head;
 
 always_ff @(posedge clk, negedge n_reset)
@@ -24,11 +24,13 @@ always_ff @(posedge clk, negedge n_reset)
 		overrun <= 1'b0;
 	end else begin
 		if (wrreq & ~full)
-				data[tail] <= in;
-		head <= head_next;
-		tail <= tail_next;
-		empty <= (empty | rdack) & tail_next == head_next;
-		full <= (full | wrreq) & tail_next == head_next;
+			data[tail] <= in;
+		if (rdack & ~empty)
+			head <= head_next;
+		if (wrreq & ~full)
+			tail <= tail_next;
+		empty <= ~wrreq & (empty | (rdack & (tail == head_next)));
+		full <= ~rdack & (full | (wrreq & (tail_next == head)));
 		underrun <= empty & rdack;
 		overrun <= full & wrreq;
 	end

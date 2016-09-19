@@ -109,7 +109,7 @@ cache cache0 (.n_reset(n_reset_in), .clk(clkSDRAM),
 
 // TFT
 logic tft_en, tft_pixclk;
-assign tft_en = SW[0], tft_pixclk = clk20M;
+assign tft_en = SW[0], tft_pixclk = clk10M;
 logic [23:0] tft_rgb;
 logic [8:0] tft_x, tft_y;
 tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
@@ -133,7 +133,7 @@ always_ff @(posedge clkSDRAM, negedge n_reset_in)
 	end else if (tft_update) begin
 		cache_req <= 1'b1;
 	end else if (cache_rdy) begin
-		tft_rgb <= {{8{tft_x[0]}} & {8{tft_y[0]}}, ~{8{tft_x[0]}} & ~{8{tft_y[0]}}, tft_x[8:5], tft_y[8:5]}; //{data_out[15:11], 3'h0, data_out[10:5], 2'h0, data_out[4:0], 3'h0};
+		tft_rgb <= {~tft_x[7:0], ~tft_y[7:0], tft_x[8:5], tft_y[8:5]}; //{data_out[15:11], 3'h0, data_out[10:5], 2'h0, data_out[4:0], 3'h0};
 		cache_req <= 1'b0;
 	end
 
@@ -145,6 +145,6 @@ logic [24:0] ppu_rgb;
 system sys0 (.x(ppu_x), .y(ppu_y), .rgb(ppu_rgb), .*);
 
 // Debug LEDs
-assign LED[7:0] = {cache_miss, req, rdy, GPIO_1[26], GPIO_1[27], aout, io[1][1:0]};
+assign LED[7:0] = {cache_req & cache_miss, req, rdy, GPIO_1[26], GPIO_1[27], aout, io[1][1:0]};
 
 endmodule

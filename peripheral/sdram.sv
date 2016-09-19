@@ -26,7 +26,7 @@ assign DRAM_CS_N = ~en;
 
 logic rdack, empty, full, underrun, overrun;
 logic [40:0] fifo_in, fifo_out;
-fifo_sync #(.N(41), .DEPTH_N(3)) fifo0 (.wrreq(req), .in(fifo_in), .out(fifo_out), .*);
+fifo_sync #(.N(41), .DEPTH_N(2)) fifo0 (.wrreq(req), .in(fifo_in), .out(fifo_out), .*);
 // WE, BA[1:0], ROW[12:0], COLUMN[8:0], DATA[15:0]
 assign fifo_in = {we, addr_in, data_in};
 assign rdy = ~full;

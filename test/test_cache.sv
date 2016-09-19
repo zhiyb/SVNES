@@ -15,15 +15,20 @@ logic if_we, if_req;
 logic if_rdy;
 assign if_rdy = 1'b1;
 
-logic [23:0] if_addr_in;
+logic [23:0] if_addr_in, if_addr_in_0;
 logic [15:0] if_data_in;
-logic if_rdy_in;
+logic if_rdy_in, if_rdy_in_0;
 
 always_ff @(posedge clk)
 begin
-	if_addr_in <= if_addr_out;
-	//if_data_in <= if_data_out;
-	if_rdy_in <= if_req;
+	if_addr_in_0 <= if_addr_out;
+	if_rdy_in_0 <= if_req;
+end
+
+always_ff @(posedge clk)
+begin
+	if_addr_in <= if_addr_in_0;
+	if_rdy_in <= if_rdy_in_0;
 end
 
 cache cache0 (.*);
@@ -31,12 +36,13 @@ cache cache0 (.*);
 initial
 begin
 	addr = 24'h0;
-	forever #3us if (rdy) addr += 24'h1;
+	forever #4us if (rdy) addr += 24'h1;
 end
 
 initial
 begin
 	if_data_in = 16'ha5c3;
+	#500ns;
 	forever #1us if_data_in++;
 end
 

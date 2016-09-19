@@ -97,7 +97,7 @@ sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM
 logic cache_we, cache_req;
 assign cache_we = 1'b0;
 logic cache_miss, cache_rdy;
-logic [23:0] cache_addr;
+wire [23:0] cache_addr;
 wire [15:0] cache_data;
 cache cache0 (.n_reset(n_reset_in), .clk(clkSDRAM),
 	.we(cache_we), .req(cache_req), .miss(cache_miss), .rdy(cache_rdy),
@@ -106,6 +106,20 @@ cache cache0 (.n_reset(n_reset_in), .clk(clkSDRAM),
 	.if_we(we), .if_req(req), .if_rdy(rdy),
 	.if_addr_in(addr_out), .if_data_in(data_out), .if_rdy_in(rdy_out)
 );
+
+// SDRAM arbiter
+parameter ARBN = 2;
+logic arb_req[ARBN], arb_sel[ARBN], arb_rdy[ARBN];
+logic [23:0] arb_addr[ARBN];
+arbiter #(.N(ARBN)) arb0 (.n_reset(n_reset_in), .clk(clkSDRAM),
+	.ifrdy(cache_rdy), .ifreq(cache_req), .req(arb_req), .sel(arb_sel), .rdy(arb_rdy));
+
+assign cache_addr = arb_addr[arb_sel[1]];
+/*generate
+	for (i = 0; i != ARBN; i++) begin: gen_arb
+		assign cache_addr = arb_sel[i] ? arb_addr[i] : 16'bz;
+	end
+endgenerate*/
 
 // TFT
 logic tft_en, tft_pixclk;
@@ -124,24 +138,30 @@ logic tft_update;
 flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(~tft_pixclk), .out(tft_update));
 
 logic [23:0] tft_addr;
-assign tft_addr = {6'h0, tft_y, tft_x};
+assign arb_addr[0] = tft_addr;
+
+logic tft_req, tft_sel, tft_rdy;
+assign arb_req[0] = tft_req;
+assign tft_sel = arb_sel[0], tft_rdy = arb_rdy[0];
 
 always_ff @(posedge clkSDRAM, negedge n_reset_in)
 	if (~n_reset_in) begin
+		tft_addr <= 24'h0;
 		tft_rgb <= 24'h66ccff;
-		cache_req <= 1'b0;
+		tft_req <= 1'b0;
 	end else if (tft_update) begin
-		cache_req <= 1'b1;
-	end else if (cache_rdy) begin
-		tft_rgb <= {~tft_x[7:0], ~tft_y[7:0], tft_x[8:5], tft_y[8:5]}; //{data_out[15:11], 3'h0, data_out[10:5], 2'h0, data_out[4:0], 3'h0};
-		cache_req <= 1'b0;
+		tft_addr <= {6'h0, tft_y, tft_x};
+		tft_req <= 1'b1;
+	end else if (tft_rdy) begin
+		tft_rgb <= {~tft_x[7:0], ~tft_y[7:0], {8{tft_x[0]}}};
+		//tft_rgb <= {cache_data[15:11], 3'h0, cache_data[10:5], 2'h0, cache_data[4:0], 3'h0};
+		tft_req <= 1'b0;
 	end
-
-assign cache_addr = tft_addr;
 
 // System
 logic [7:0] ppu_x, ppu_y;
 logic [24:0] ppu_rgb;
+assign arb_req[1] = 1'b0;
 system sys0 (.x(ppu_x), .y(ppu_y), .rgb(ppu_rgb), .*);
 
 // Debug LEDs

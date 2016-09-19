@@ -51,7 +51,7 @@ assign {ram_valid, ram_fetch, ram_tag, ram_data} = ram_out_a;
 assign ram_addr_b = if_index;
 assign ram_be_b = 4'b1111;
 assign ram_data_b = {1'b1, 1'b0, if_tag, if_data_in};
-assign ram_we_b = if_rdy_in && !(if_req && index == if_index);
+assign ram_we_b = if_rdy_in && !(ram_we_a && ram_addr_a == ram_addr_b);
 
 // Output logic
 always_comb

@@ -23,7 +23,6 @@ assign DRAM_CLK = ~clk;
 assign DRAM_CS_N = ~en;
 
 // Input register
-
 logic rdack, pending;
 logic [40:0] reg_in, reg_out;
 assign reg_in = {we, addr_in, data_in};
@@ -39,59 +38,72 @@ always_ff @(posedge clk, negedge n_reset)
 
 assign rdy = rdack | ~pending;
 
-// Input synchronous FIFO
+logic reg_we;
+logic [1:0] reg_ba;
+logic [12:0] reg_row;
+logic [8:0] reg_column;
+logic [15:0] reg_data;
+assign {reg_we, reg_ba, reg_row, reg_column, reg_data} = reg_out;
+logic [23:0] reg_addr;
+assign reg_addr = reg_out[39:16];
 
 logic [40:0] fifo_out;
 assign fifo_out = reg_out;
+
 logic fifo_we;
 logic [1:0] fifo_ba;
 logic [12:0] fifo_row;
 logic [8:0] fifo_column;
 logic [15:0] fifo_data;
-logic [23:0] fifo_addr;
 assign {fifo_we, fifo_ba, fifo_row, fifo_column, fifo_data} = fifo_out;
+logic [23:0] fifo_addr;
 assign fifo_addr = fifo_out[39:16];
 
 // Commands
-
-typedef enum int unsigned {NOP, BST, READ, READ_AUTO, WRITE, WRITE_AUTO, ACT, PRE, PALL, REF, SELF, MRS} Commands;
-Commands command;
+typedef enum int unsigned {NOP, BST, READ, /*READ_AUTO,*/ WRITE, /*WRITE_AUTO,*/ ACT, PRE, PALL, REF, SELF, MRS} Commands;
+Commands command, command_out;
+assign command_out = command;
 
 // Output address calculation & control
-
-Commands command_reg[CAS + 1], command_delayed;
-assign command_reg[0] = command;
-assign command_delayed = command_reg[CAS];
+logic read_reg[CAS + 1], read_delayed;
+assign read_reg[0] = command == READ;
+assign read_delayed = read_reg[CAS];
 
 logic [23:0] addr_reg[CAS + 1], addr_delayed;
 assign addr_reg[0] = fifo_addr;
 assign addr_delayed = addr_reg[CAS];
-logic [1:0] ba_delayed;
-logic [12:0] row_delayed;
-logic [8:0] column_delayed;
-assign {ba_delayed, row_delayed, column_delayed} = addr_reg[CAS - 1];
 
 genvar i;
 generate
 	for (i = 0; i < CAS; i++) begin: gen_delay
 		always_ff @(posedge clk, negedge n_reset)
 			if (~n_reset) begin
-				command_reg[i + 1] <= NOP;
+				read_reg[i + 1] <= 1'b0;
 				addr_reg[i + 1] <= 24'h0;
 			end else begin
-				command_reg[i + 1] <= command_reg[i];
+				read_reg[i + 1] <= read_reg[i];
 				addr_reg[i + 1] <= addr_reg[i];
 			end
 	end
 endgenerate
 
+always_ff @(posedge DRAM_CLK, negedge n_reset)
+	if (~n_reset) begin
+		addr_out <= 24'h0;
+		data_out <= 16'h0;
+		rdy_out <= 1'b0;
+	end else begin
+		addr_out <= addr_delayed;
+		data_out <= DRAM_DQ;
+		rdy_out <= read_delayed;
+	end
+
+// Bank specific command delay counter
 struct {
 	logic active;
 	logic [12:0] row;
 	logic [3:0] precnt, actcnt, rwcnt;
 } bank[4];
-
-// Bank specific command delay counter
 
 generate
 	for (i = 0; i < 4; i++) begin: gen_bankcnt
@@ -125,9 +137,9 @@ generate
 					precnt_next = 4'h0;
 					actcnt_next = TRP - 1;
 				end
-				/*WRITE: begin
+				WRITE: begin
 					precnt_next = precnt_next > TDPL - 1 ? precnt_next : TDPL - 1;
-				end*/
+				end
 				endcase
 			end
 		end
@@ -135,7 +147,6 @@ generate
 endgenerate
 
 // Bank specific row address update for reading
-
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin
 		for (int i = 0; i < 4; i++) begin
@@ -145,36 +156,23 @@ always_ff @(posedge clk, negedge n_reset)
 	end else begin
 		case (command)
 		ACT: begin
-			bank[fifo_ba].active <= 1'b1;
-			bank[fifo_ba].row <= fifo_row;
+			bank[reg_ba].active <= 1'b1;
+			bank[reg_ba].row <= fifo_row;
 		end
-		READ_AUTO,
-		WRITE_AUTO,
-		PRE: bank[fifo_ba].active <= 1'b0;
+		/*READ_AUTO,
+		WRITE_AUTO,*/
+		PRE: bank[reg_ba].active <= 1'b0;
 		PALL:
 			for (int i = 0; i < 4; i++)
 				bank[i].active <= 1'b0;
 		endcase
 	end
 
-always_ff @(posedge DRAM_CLK, negedge n_reset)
-	if (~n_reset) begin
-		addr_out <= 24'h0;
-		data_out <= 16'h0;
-		rdy_out <= 1'b0;
-	end else begin
-		addr_out <= addr_delayed;
-		data_out <= DRAM_DQ;
-		rdy_out <= command_delayed == READ;
-	end
-
 // SDRAM tri-state data bus control
-
 logic dram_we;
 assign DRAM_DQ = dram_we ? fifo_data : 16'bz;
 
-// Command control logic
-
+// Output control logic
 always_comb
 begin
 	DRAM_CKE = 1'b0;
@@ -187,7 +185,7 @@ begin
 	DRAM_DQM = 2'b11;
 	rdack = 1'b0;
 	dram_we = 1'b0;
-	case (command)
+	case (command_out)
 	NOP: begin
 		DRAM_CKE = 1'b1;
 		DRAM_RAS_N = 1'b1;
@@ -240,8 +238,8 @@ begin
 		DRAM_ADDR[8:0] = fifo_column;
 		rdack = 1'b1;
 	end
-	/*WRITE,
-	WRITE_AUTO: begin
+	WRITE/*,
+	WRITE_AUTO*/: begin
 		DRAM_CKE = 1'b1;
 		DRAM_RAS_N = 1'b1;
 		DRAM_CAS_N = 1'b0;
@@ -251,13 +249,12 @@ begin
 		DRAM_ADDR[8:0] = fifo_column;
 		rdack = 1'b1;
 		dram_we = 1'b1;
-	end*/
+	end
 	endcase
 end
 
 // Initialisation, refresh states and counter
-
-enum int unsigned {Reset, Init, InitPALL, InitREF1, InitREF2, Active, Precharge, Refresh} state, state_next;
+enum int unsigned {Reset, Init, InitPALL, Execute, Active, Precharge, Refresh} state, state_next;
 logic [15:0] cnt, cnt_load;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin
@@ -270,27 +267,16 @@ always_ff @(posedge clk, negedge n_reset)
 		cnt <= cnt - 16'h1;
 
 // Command delay counter
-
-logic [2:0] delay, delay_load;
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset)
-		delay <= 3'h0;
-	else if (delay == 3'h0)
-		delay <= delay_load;
-	else
-		delay <= delay - 3'h1;
-
 logic [2:0] wrdelay;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		wrdelay <= 3'h0;
-	else if (command == READ || command == READ_AUTO)
+	else if (command == READ /*|| command == READ_AUTO*/)
 		wrdelay <= CAS + 2 - 1;
 	else
 		wrdelay <= wrdelay - 3'h1;
 
-// Initialise mode register
-
+// Mode register
 logic mode;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
@@ -299,14 +285,12 @@ always_ff @(posedge clk, negedge n_reset)
 		mode <= 1'b1;
 
 // Next state logic
-
 logic execute;
 always_comb
 begin
 	state_next = state;
 	cnt_load = 16'h0;
 	command = NOP;
-	delay_load = 3'h0;
 	execute = 1'b0;
 	case (state)
 	Reset: begin
@@ -330,43 +314,41 @@ begin
 		command = cnt == 16'h0 ? REF : NOP;
 	end
 	Refresh: begin
+		if (mode) begin
+			state_next = Refresh;
+			cnt_load = TMRD - 1;
+			command = cnt == 16'h0 ? MRS : NOP;
+		end else begin
+			state_next = Execute;
+			cnt_load = TREFC - 1 - TRP - TRC - 1;
+			//execute = cnt == 16'h0;
+		end
+	end
+	Execute: begin
 		state_next = Active;
-		cnt_load = TREFC - 1 - TRP - TRC;
-		execute = cnt == 16'h0;
+		cnt_load = 16'h0;
+		execute = 1'b1;
 	end
 	Active: begin
 		state_next = Precharge;
 		cnt_load = TRP - 1;
-		if (cnt == 16'h0)
-			command = PALL;
-		else
-			execute = 1'b1;
-	end
-	default: begin
-		state_next = Active;
-		cnt_load = TREFC - 1;
-		command = cnt == 16'h0 ? REF : NOP;
+		command = PALL;
 	end
 	endcase
 	
-	if (execute && delay == 3'h0) begin
-		if (~mode) begin
-			command = MRS;
-			delay_load = TMRD - 1;
-		end else if (pending) begin
-			if (~bank[fifo_ba].active) begin
-				if (bank[fifo_ba].actcnt == 4'h0 && cnt >= TRAS)
-					command = ACT;
-			end else if (bank[fifo_ba].row != fifo_row) begin
-				if (bank[fifo_ba].precnt == 4'h0)
-					command = PRE;
-			end else begin
-				if (bank[fifo_ba].rwcnt == 4'h0) begin
-					if (~fifo_we)
-						command = READ;
-					else //if (wrdelay == 3'h0)
-						command = WRITE;
-				end
+	if (execute & pending) begin
+		if (~bank[reg_ba].active) begin
+			if (bank[reg_ba].actcnt == 4'h0 && cnt >= TRAS)
+				command = ACT;
+		end else if (bank[reg_ba].row != reg_row) begin
+			if (bank[reg_ba].precnt == 4'h0)
+				command = PRE;
+		end else begin
+			if (bank[reg_ba].rwcnt == 4'h0) begin
+				if (~reg_we)
+					command = READ;
+				else if (wrdelay == 3'h0)
+					command = WRITE;
 			end
 		end
 	end

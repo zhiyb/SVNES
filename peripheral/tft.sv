@@ -2,20 +2,13 @@
 module tft #(parameter HN, VN, logic [HN - 1:0] HT[4], logic [VN - 1:0] VT[4]) (
 	input logic n_reset, pixclk, en,
 	output logic dclk, hsync, vsync, disp, de,
+	output logic hblank, vblank,
 	output logic [HN - 1:0] x,
-	output logic [VN - 1:0] y,
-	input logic [23:0] data,
-	output logic [23:0] out
+	output logic [VN - 1:0] y
 );
 
 assign dclk = pixclk;
 assign disp = en;
-
-always_ff @(posedge pixclk, negedge n_reset)
-	if (~n_reset)
-		out <= 24'h0;
-	else
-		out <= data;
 
 logic [HN - 1:0] hcnt;
 logic [VN - 1:0] vcnt;
@@ -39,13 +32,10 @@ always_ff @(posedge pixclk, negedge n_reset)
 always_ff @(posedge pixclk, negedge n_reset)
 	if (~n_reset)
 		x <= {HN{1'b0}};
-	else if (hcnt == {HN{1'b0}})
-		case (hstate)
-		2'h0: x <= {HN{1'b0}};
-		2'h2: x <= {{HN - 1{1'b0}}, 1'b1};
-		endcase
-	else if (hstate == 2'h3)
-		x <= x + {{HN - 1{1'b0}}, 1'b1};
+	else if (hblank)
+		x <= {HN{1'b0}};
+	else
+		x <= x + 1;
 
 // Horizontal signal states
 always_ff @(posedge htick, negedge n_reset)
@@ -59,6 +49,7 @@ always_ff @(posedge htick, negedge n_reset)
 		de <= hstate == 2'h2;
 	end
 
+assign hblank = hstate != 2'h3;
 assign hsync = ~hs;
 
 // Vertical timing counter
@@ -78,13 +69,10 @@ always_ff @(posedge hs, negedge n_reset)
 always_ff @(posedge hs, negedge n_reset)
 	if (~n_reset)
 		y <= {VN{1'b0}};
-	else if (vcnt == {VN{1'b0}})
-		case (vstate)
-		2'h0: y <= {VN{1'b0}};
-		2'h2: y <= {{VN - 1{1'b0}}, 1'b1};
-		endcase
-	else if (vstate == 2'h3)
-		y <= y + {{VN - 1{1'b0}}, 1'b1};
+	else if (vblank)
+		y <= {VN{1'b0}};
+	else
+		y <= y + 1;
 
 // Vertical signal states
 always_ff @(posedge vtick, negedge n_reset)
@@ -96,6 +84,7 @@ always_ff @(posedge vtick, negedge n_reset)
 		vs <= vstate == 2'h0;
 	end
 
+assign vblank = vstate != 2'h3;
 assign vsync = ~vs;
 
 endmodule

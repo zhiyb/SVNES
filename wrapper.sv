@@ -121,39 +121,67 @@ assign cache_addr = arb_addr[arb_sel[1]];
 // TFT
 logic tft_en, tft_pixclk;
 assign tft_en = SW[0], tft_pixclk = clk10M;
-logic [23:0] tft_rgb;
+logic [23:0] tft_out;
+assign GPIO_1[23:0] = tft_out;
 logic [8:0] tft_x, tft_y;
+logic tft_hblank, tft_vblank;
 tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
 	.HT('{40, 1, 479, 1}), .VT('{10, 1, 271, 1})) tft0 (
 	.n_reset(n_reset_in), .pixclk(tft_pixclk), .en(tft_en),
-	.x(tft_x), .y(tft_y), .data(tft_rgb), .out(GPIO_1[23:0]),
+	.hblank(tft_hblank), .vblank(tft_vblank), .x(tft_x), .y(tft_y),
 	.disp(GPIO_1[24]), .de(GPIO_1[25]), .dclk(GPIO_1[28]),
 	.vsync(GPIO_1[26]), .hsync(GPIO_1[27]));
 
 // TFT pixel data generator
-logic tft_update;
-flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(~tft_pixclk), .out(tft_update));
+logic tft_update, tft_update_async;
+flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(~tft_pixclk), .out(tft_update_async));
 
-logic [23:0] tft_addr;
-assign arb_addr[0] = tft_addr;
+always_ff @(posedge clkSDRAM, negedge n_reset_in)
+	if (~n_reset_in)
+		tft_update <= 1'b0;
+	else
+		tft_update <= tft_update_async;
 
+// TFT FIFO data buffer
 logic tft_req, tft_rdy;
 assign arb_req[0] = tft_req;
 assign tft_rdy = arb_rdy[0];
 
+logic tft_fifo_empty, tft_fifo_full;
+assign tft_req = ~tft_fifo_full & ~tft_vblank;
+logic [3:0] tft_head, tft_tail;
+fifo_sync #(.DEPTH_N(4)) fifo0 (.clk(clkSDRAM), .n_reset(n_reset_in),
+	.wrreq(tft_req & tft_rdy), .rdack(tft_vblank | (tft_update & ~tft_hblank)), .flush(tft_vblank),
+	.empty(tft_fifo_empty), .full(tft_fifo_full), .underrun(), .overrun(),
+	.head(tft_head), .tail(tft_tail), .level());
+
+logic [15:0] tft_fifo;
+ramdual16x16 ram0 (
+	.aclr(~n_reset_in), .clock(clkSDRAM),
+	.data(cache_data_out), .q(tft_fifo),
+	.rdaddress(tft_tail), .wraddress(tft_head),
+	.wren(tft_req & tft_rdy));
+
+// TFT data address counter
+logic [16:0] tft_addr;
+assign arb_addr[0] = {7'b1111000, tft_addr};
+
 always_ff @(posedge clkSDRAM, negedge n_reset_in)
-	if (~n_reset_in) begin
-		tft_addr <= 24'h0;
-		tft_rgb <= 24'h66ccff;
-		tft_req <= 1'b0;
-	end else if (tft_update) begin
-		tft_addr <= {6'h0, tft_y, tft_x};
-		tft_req <= 1'b1;
-	end else if (tft_rdy) begin
-		tft_rgb <= {~tft_x[7:0], ~tft_y[7:0], {8{tft_x[0]}}};
-		//tft_rgb <= {cache_data[15:11], 3'h0, cache_data[10:5], 2'h0, cache_data[4:0], 3'h0};
-		tft_req <= 1'b0;
-	end
+	if (~n_reset_in)
+		tft_addr <= 17'h0;
+	else if (tft_vblank)
+		tft_addr <= 17'h0;
+	else if (tft_req & tft_rdy)
+		tft_addr <= tft_addr + 17'h1;
+
+// TFT data output
+always_comb
+begin
+	tft_out = 24'h66ccff;
+	if (~tft_fifo_empty)
+		tft_out = {~tft_x[7:0], ~tft_y[7:0], {8{tft_x[0]}}};
+		//tft_out = {tft_fifo[15:11], 3'h0, tft_fifo[10:5], 2'h0, tft_fifo[4:0], 3'h0};
+end
 
 // System
 logic [7:0] ppu_x, ppu_y;
@@ -163,6 +191,6 @@ assign arb_addr[1] = 24'h0;
 system sys0 (.x(ppu_x), .y(ppu_y), .rgb(ppu_rgb), .*);
 
 // Debug LEDs
-assign LED[7:0] = {cache_req & cache_miss, req, rdy, GPIO_1[26], GPIO_1[27], aout, io[1][1:0]};
+assign LED[7:0] = {cache_req & cache_miss, req, rdy, GPIO_1[26], GPIO_1[27], aout, tft_fifo_full, tft_fifo_empty};
 
 endmodule

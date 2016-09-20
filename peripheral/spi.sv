@@ -145,7 +145,7 @@ always_ff @(posedge sys.clk, negedge enabled)
 	if (~enabled)
 		reg_stat <= `SPI_STAT_TXE;
 	else
-		reg_stat = reg_stat_in;
+		reg_stat <= reg_stat_in;
 
 /*** IO logic ***/
 

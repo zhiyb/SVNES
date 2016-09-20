@@ -33,7 +33,7 @@ begin
 	if (sel && ~sysbus.we)
 		case (sysbus.addr[2:0])
 		3'h2:	sysbus.data = reg_status;
-		3'h4:	sysbus.data = reg_oam_data_out;
+		3'h4:	sysbus.data = reg_oam_data;
 		3'h7:	sysbus.data = reg_data_out;
 		endcase
 end
@@ -69,6 +69,8 @@ assign reg_data = regs[7];
 // TODO
 
 assign vb_started = 1'b0, sp_hit0 = 1'b0, sp_ovf = 1'b0;
-assign reg_oam_data_out = 8'h0;
+assign reg_oam_data = 8'h0;
+assign reg_data_out = 8'h0;
+assign nmi = 1'b0;
 
 endmodule

@@ -75,7 +75,7 @@ always_ff @(posedge timer_clk, negedge sys.n_reset)
 	if (~sys.n_reset)
 		gate_timer <= 1'b0;
 	else
-		gate_timer = timer_load[10:3] != 8'h0;
+		gate_timer <= timer_load[10:3] != 8'h0;
 
 // Sweep
 

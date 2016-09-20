@@ -64,7 +64,7 @@ end
 endgenerate
 
 arbiter #(.N(ARBN)) arb0 (.n_reset(sys.n_reset), .clk(sys.clk),
-	.ifrdy(rdy), .ifreq(), .req(req), .sel(sel), .rdy(rdy_sel));
+	.ifrdy(rdy), .ifreq(), .ifswap(1'b0), .req(req), .sel(sel), .rdy(rdy_sel));
 
 logic ppu_nmi;
 logic ppu_req;

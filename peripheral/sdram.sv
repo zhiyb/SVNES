@@ -61,8 +61,7 @@ assign fifo_addr = fifo_out[39:16];
 
 // Commands
 typedef enum int unsigned {NOP, BST, READ, /*READ_AUTO,*/ WRITE, /*WRITE_AUTO,*/ ACT, PRE, PALL, REF, SELF, MRS} Commands;
-Commands command, command_out;
-assign command_out = command;
+Commands command;
 
 // Output address calculation & control
 logic read_reg[CAS + 1], read_delayed;
@@ -98,77 +97,31 @@ always_ff @(posedge DRAM_CLK, negedge n_reset)
 		rdy_out <= read_delayed;
 	end
 
-// Bank specific command delay counter
+// Bank specific
 struct {
-	logic active;
-	logic [12:0] row;
-	logic [3:0] precnt, actcnt, rwcnt;
+	logic sel, active, match;
+	logic pre, act, rw;
 } bank[4];
 
 generate
-	for (i = 0; i < 4; i++) begin: gen_bankcnt
-		logic [3:0] precnt, precnt_next, actcnt, actcnt_next, rwcnt, rwcnt_next;
-		assign precnt = bank[i].precnt, actcnt = bank[i].actcnt, rwcnt = bank[i].rwcnt;
-		
-		always_ff @(posedge clk, negedge n_reset)
-			if (~n_reset) begin
-				bank[i].precnt <= 4'h0;
-				bank[i].actcnt <= 4'h0;
-				bank[i].rwcnt <= 4'h0;
-			end else begin
-				bank[i].precnt <= precnt_next;
-				bank[i].actcnt <= actcnt_next;
-				bank[i].rwcnt <= rwcnt_next;
-			end
-		
-		always_comb
-		begin
-			precnt_next = precnt != 4'h0 ? precnt - 4'h1 : 4'h0;
-			actcnt_next = actcnt != 4'h0 ? actcnt - 4'h1 : 4'h0;
-			rwcnt_next = rwcnt != 4'h0 ? rwcnt - 4'h1 : 4'h0;
-			if (fifo_ba == i) begin
-				case (command)
-				ACT: begin
-					precnt_next = TRAS - 1;
-					actcnt_next = TRC - 1;
-					rwcnt_next = TRCD - 1;
-				end
-				PRE: begin
-					precnt_next = 4'h0;
-					actcnt_next = TRP - 1;
-				end
-				WRITE: begin
-					precnt_next = precnt_next > TDPL - 1 ? precnt_next : TDPL - 1;
-				end
-				endcase
-			end
-		end
+	for (i = 0; i < 4; i++) begin: gen_bank
+		sdram_bank #(.TRC(TRC), .TRAS(TRAS), .TRP(TRP), .TRCD(TRCD), .TDPL(TDPL))
+			bank0 (.sel(bank[i].sel), 
+			.cmd_pre(command == PRE || command == PALL),
+			.cmd_act(command == ACT), .cmd_write(command == WRITE),
+			.cmd_row(fifo_row), .active(bank[i].active), .match(bank[i].match),
+			.pre(bank[i].pre), .act(bank[i].act), .rw(bank[i].rw), .*);
 	end
 endgenerate
 
-// Bank specific row address update for reading
-always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
-		for (int i = 0; i < 4; i++) begin
-			bank[i].active = 1'b0;
-			bank[i].row <= 13'h0;
-		end
-	end else begin
-		case (command)
-		ACT: begin
-			bank[reg_ba].active <= 1'b1;
-			bank[reg_ba].row <= fifo_row;
-		end
-		/*READ_AUTO,
-		WRITE_AUTO,*/
-		PRE: bank[reg_ba].active <= 1'b0;
-		PALL:
-			for (int i = 0; i < 4; i++)
-				bank[i].active <= 1'b0;
-		endcase
-	end
+always_comb
+begin
+	for (int i = 0; i < 4; i++)
+		bank[i].sel = command == PALL;
+	bank[fifo_ba].sel = 1'b1;
+end
 
-// SDRAM tri-state data bus control
+// Tri-state data bus control
 logic dram_we;
 assign DRAM_DQ = dram_we ? fifo_data : 16'bz;
 
@@ -185,7 +138,7 @@ begin
 	DRAM_DQM = 2'b11;
 	rdack = 1'b0;
 	dram_we = 1'b0;
-	case (command_out)
+	case (command)
 	NOP: begin
 		DRAM_CKE = 1'b1;
 		DRAM_RAS_N = 1'b1;
@@ -273,7 +226,7 @@ always_ff @(posedge clk, negedge n_reset)
 		wrdelay <= 3'h0;
 	else if (command == READ /*|| command == READ_AUTO*/)
 		wrdelay <= CAS + 2 - 1;
-	else
+	else if (wrdelay != 3'h0)
 		wrdelay <= wrdelay - 3'h1;
 
 // Mode register
@@ -338,13 +291,13 @@ begin
 	
 	if (execute & pending) begin
 		if (~bank[reg_ba].active) begin
-			if (bank[reg_ba].actcnt == 4'h0 && cnt >= TRAS)
+			if (bank[reg_ba].act && cnt >= TRAS)
 				command = ACT;
-		end else if (bank[reg_ba].row != reg_row) begin
-			if (bank[reg_ba].precnt == 4'h0)
+		end else if (~bank[reg_ba].match) begin
+			if (bank[reg_ba].pre)
 				command = PRE;
 		end else begin
-			if (bank[reg_ba].rwcnt == 4'h0) begin
+			if (bank[reg_ba].rw) begin
 				if (~reg_we)
 					command = READ;
 				else if (wrdelay == 3'h0)

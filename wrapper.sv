@@ -96,7 +96,7 @@ sdram #(.TINIT(13200), .TREFC(1031)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM
 // SDRAM cache
 logic cache_we, cache_req;
 assign cache_we = 1'b0;
-logic cache_miss, cache_rdy;
+logic cache_miss, cache_rdy, cache_swap;
 logic [23:0] cache_addr;
 logic [15:0] cache_data_in, cache_data_out;
 assign cache_data_in = 16'h0;
@@ -113,7 +113,8 @@ parameter ARBN = 2;
 logic arb_req[ARBN], arb_sel[ARBN], arb_rdy[ARBN];
 logic [23:0] arb_addr[ARBN];
 arbiter #(.N(ARBN)) arb0 (.n_reset(n_reset_in), .clk(clkSDRAM),
-	.ifrdy(cache_rdy), .ifreq(cache_req), .req(arb_req), .sel(arb_sel), .rdy(arb_rdy));
+	.ifrdy(cache_rdy), .ifreq(cache_req), .ifswap(cache_swap),
+	.req(arb_req), .sel(arb_sel), .rdy(arb_rdy));
 
 assign cache_addr = arb_addr[arb_sel[1]];
 
@@ -136,9 +137,9 @@ flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(~tft_pixclk
 logic [23:0] tft_addr;
 assign arb_addr[0] = tft_addr;
 
-logic tft_req, tft_sel, tft_rdy;
+logic tft_req, tft_rdy;
 assign arb_req[0] = tft_req;
-assign tft_sel = arb_sel[0], tft_rdy = arb_rdy[0];
+assign tft_rdy = arb_rdy[0];
 
 always_ff @(posedge clkSDRAM, negedge n_reset_in)
 	if (~n_reset_in) begin
@@ -158,6 +159,7 @@ always_ff @(posedge clkSDRAM, negedge n_reset_in)
 logic [7:0] ppu_x, ppu_y;
 logic [24:0] ppu_rgb;
 assign arb_req[1] = 1'b0;
+assign arb_addr[1] = 24'h0;
 system sys0 (.x(ppu_x), .y(ppu_y), .rgb(ppu_rgb), .*);
 
 // Debug LEDs

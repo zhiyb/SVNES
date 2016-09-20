@@ -1,6 +1,6 @@
 module arbiter #(parameter N, DEF = 0) (
 	input logic n_reset, clk,
-	input logic ifrdy,
+	input logic ifrdy, ifswap,
 	output logic ifreq,
 	input logic req[N],
 	output logic sel[N], rdy[N]
@@ -24,7 +24,7 @@ for (i = 0; i != N; i++) begin: gen
 	always_ff @(posedge clk, negedge n_reset)
 		if (~n_reset)
 			sel[i] <= i == DEF;
-		else if (ifrdy)
+		else if (ifrdy | ifswap)
 			sel[i] <= next;
 end
 endgenerate

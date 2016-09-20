@@ -6,7 +6,7 @@ logic n_reset, clk;
 logic we, req;
 logic miss, rdy;
 logic [23:0] addr;
-wire [15:0] data;
+logic [15:0] data_in, data_out;
 assign we = 1'b0, req = 1'b1;
 
 logic [23:0] if_addr_out;
@@ -18,6 +18,8 @@ assign if_rdy = 1'b1;
 logic [23:0] if_addr_in, if_addr_in_0;
 logic [15:0] if_data_in;
 logic if_rdy_in, if_rdy_in_0;
+
+assign data_in = if_data_in;
 
 always_ff @(posedge clk)
 begin

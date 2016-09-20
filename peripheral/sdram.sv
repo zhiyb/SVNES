@@ -1,6 +1,6 @@
-module sdram #(parameter logic [2:0] CAS = 3, BURST = 3'b000,
-	int TINIT = 14300, TREFC = 1117,
-	int TRC = 9, TRAS = 6, TRP = 3, TMRD = 2, TRCD = 3) (
+module sdram #(parameter logic [2:0] CAS = 2, BURST = 3'b000,
+	int TINIT = 13300, TREFC = 1039,
+	int TRC = 8, TRAS = 6, TRP = CAS, TMRD = 2, TRCD = CAS, TDPL = 2) (
 	input logic n_reset, clk, en,
 	
 	output logic [12:0] DRAM_ADDR,
@@ -22,14 +22,27 @@ module sdram #(parameter logic [2:0] CAS = 3, BURST = 3'b000,
 assign DRAM_CLK = ~clk;
 assign DRAM_CS_N = ~en;
 
+// Input register
+
+logic rdack, pending;
+logic [40:0] reg_in, reg_out;
+assign reg_in = {we, addr_in, data_in};
+
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset) begin
+		reg_out <= 41'h0;
+		pending <= 1'b0;
+	end else if (rdy) begin
+		reg_out <= reg_in;
+		pending <= req;
+	end
+
+assign rdy = rdack | ~pending;
+
 // Input synchronous FIFO
 
-logic rdack, empty, full, underrun, overrun;
-logic [40:0] fifo_in, fifo_out;
-fifo_sync #(.N(41), .DEPTH_N(3)) fifo0 (.wrreq(req), .in(fifo_in), .out(fifo_out), .*);
-// WE, BA[1:0], ROW[12:0], COLUMN[8:0], DATA[15:0]
-assign fifo_in = {we, addr_in, data_in};
-assign rdy = ~full;
+logic [40:0] fifo_out;
+assign fifo_out = reg_out;
 logic fifo_we;
 logic [1:0] fifo_ba;
 logic [12:0] fifo_row;
@@ -112,6 +125,9 @@ generate
 					precnt_next = 4'h0;
 					actcnt_next = TRP - 1;
 				end
+				/*WRITE: begin
+					precnt_next = precnt_next > TDPL - 1 ? precnt_next : TDPL - 1;
+				end*/
 				endcase
 			end
 		end
@@ -155,10 +171,7 @@ always_ff @(posedge DRAM_CLK, negedge n_reset)
 // SDRAM tri-state data bus control
 
 logic dram_we;
-logic [15:0] dram_data;
-assign DRAM_DQ = dram_we ? dram_data : 16'bz;
-assign dram_we = 1'b0;
-assign dram_data = 16'h0;
+assign DRAM_DQ = dram_we ? fifo_data : 16'bz;
 
 // Command control logic
 
@@ -168,10 +181,12 @@ begin
 	DRAM_RAS_N = 1'b1;
 	DRAM_CAS_N = 1'b1;
 	DRAM_WE_N = 1'b1;
-	DRAM_BA = 2'h0;
+	DRAM_BA = fifo_ba;
 	DRAM_ADDR = 13'h0;
+	DRAM_ADDR[8:0] = fifo_column;
 	DRAM_DQM = 2'b11;
 	rdack = 1'b0;
+	dram_we = 1'b0;
 	case (command)
 	NOP: begin
 		DRAM_CKE = 1'b1;
@@ -214,16 +229,29 @@ begin
 		DRAM_WE_N = 1'b1;
 		{DRAM_BA, DRAM_ADDR} = {fifo_ba, fifo_row};
 	end
-	READ: begin
+	READ/*,
+	READ_AUTO*/: begin
 		DRAM_CKE = 1'b1;
 		DRAM_RAS_N = 1'b1;
 		DRAM_CAS_N = 1'b0;
 		DRAM_WE_N = 1'b1;
 		DRAM_BA = fifo_ba;
-		DRAM_ADDR[10] = 1'b0;
+		DRAM_ADDR[10] = 1'b0;//command == READ_AUTO;
 		DRAM_ADDR[8:0] = fifo_column;
 		rdack = 1'b1;
 	end
+	/*WRITE,
+	WRITE_AUTO: begin
+		DRAM_CKE = 1'b1;
+		DRAM_RAS_N = 1'b1;
+		DRAM_CAS_N = 1'b0;
+		DRAM_WE_N = 1'b0;
+		DRAM_BA = fifo_ba;
+		DRAM_ADDR[10] = 1'b0;//command == WRITE_AUTO;
+		DRAM_ADDR[8:0] = fifo_column;
+		rdack = 1'b1;
+		dram_we = 1'b1;
+	end*/
 	endcase
 end
 
@@ -251,6 +279,15 @@ always_ff @(posedge clk, negedge n_reset)
 		delay <= delay_load;
 	else
 		delay <= delay - 3'h1;
+
+logic [2:0] wrdelay;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		wrdelay <= 3'h0;
+	else if (command == READ || command == READ_AUTO)
+		wrdelay <= CAS + 2 - 1;
+	else
+		wrdelay <= wrdelay - 3'h1;
 
 // Initialise mode register
 
@@ -316,7 +353,7 @@ begin
 		if (~mode) begin
 			command = MRS;
 			delay_load = TMRD - 1;
-		end else if (~empty) begin
+		end else if (pending) begin
 			if (~bank[fifo_ba].active) begin
 				if (bank[fifo_ba].actcnt == 4'h0 && cnt >= TRAS)
 					command = ACT;
@@ -324,8 +361,12 @@ begin
 				if (bank[fifo_ba].precnt == 4'h0)
 					command = PRE;
 			end else begin
-				if (bank[fifo_ba].rwcnt == 4'h0)
-					command = fifo_we ? WRITE : READ;
+				if (bank[fifo_ba].rwcnt == 4'h0) begin
+					if (~fifo_we)
+						command = READ;
+					else //if (wrdelay == 3'h0)
+						command = WRITE;
+				end
 			end
 		end
 	end

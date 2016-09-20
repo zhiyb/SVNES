@@ -3,7 +3,8 @@ module cache (
 	input logic we, req,
 	output logic miss, rdy,
 	input logic [23:0] addr,
-	inout wire [15:0] data,
+	input logic [15:0] data_in,
+	output logic [15:0] data_out,
 	
 	output logic [23:0] if_addr_out,
 	output logic [15:0] if_data_out,
@@ -15,7 +16,7 @@ module cache (
 	input logic if_rdy_in
 );
 
-// RAM, data format: valid(1), fetch(1), tag(14), data(16)
+// RAM, data format: valid(1), pending(1), tag(14), data(16)
 logic [9:0] ram_addr_a, ram_addr_b;
 logic [3:0] ram_be_a, ram_be_b;
 logic [31:0] ram_data_a, ram_data_b;
@@ -28,9 +29,6 @@ ramdual1kx32 ram0 (.aclr(~n_reset), .clock(~clk),
 	.wren_a(ram_we_a), .wren_b(ram_we_b),
 	.q_a(ram_out_a), .q_b(ram_out_b));
 
-logic [15:0] data_out;
-assign data = we ? 16'bz : data_out;
-
 // Separate tag and index from address
 logic [13:0] tag, if_tag;
 logic [9:0] index, if_index;
@@ -40,12 +38,12 @@ assign {if_tag, if_index} = if_addr_in;
 // RAM interface A: access bus
 assign ram_addr_a = index;
 assign ram_be_a = 4'b1111;
-assign ram_data_a = {we, 1'b1, tag, data};
+assign ram_data_a = {we, ~we, tag, data_in};
 assign ram_we_a = if_req;
-logic ram_valid, ram_fetch;
+logic ram_valid, ram_pend;
 logic [13:0] ram_tag;
 logic [15:0] ram_data;
-assign {ram_valid, ram_fetch, ram_tag, ram_data} = ram_out_a;
+assign {ram_valid, ram_pend, ram_tag, ram_data} = ram_out_a;
 
 // RAM interface B: interfacing
 assign ram_addr_b = if_index;
@@ -59,10 +57,10 @@ begin
 	miss = ~ram_valid || ram_tag != tag;
 	data_out = ram_data;
 	if_addr_out = addr;
-	if_data_out = data;
+	if_data_out = data_in;
 	if_we = we;
-	if_req = if_rdy & req & miss & ~ram_fetch;
-	rdy = ~miss;
+	if_req = if_rdy & req & ~ram_pend & (we | miss);
+	rdy = /*we ? if_req :*/ ~miss;
 end
 
 endmodule

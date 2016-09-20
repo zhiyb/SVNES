@@ -29,11 +29,11 @@ module wrapper (
 logic n_reset_in, n_reset, fetch, dbg;
 assign n_reset_in = KEY[1];
 
-logic clk1M, clk10M, clk20M, clk50M, clk140M;
+logic clk1M, clk10M, clk20M, clk50M, clk132M;
 assign clk50M = CLOCK_50;
 logic pll0_locked;
 pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .locked(pll0_locked),
-	.c0(clk20M), .c1(clk10M), .c2(clk1M), .c3(clk140M));
+	.c0(clk20M), .c1(clk10M), .c2(clk1M), .c3(clk132M));
 
 `define NTSC	0
 `define PAL		1
@@ -79,7 +79,7 @@ apu_pwm #(.N(8)) pwm0 (.n_reset(n_reset_in), .clk(clk10M), .cmp(audio), .q(aout)
 
 // SDRAM
 logic clkSDRAM;
-assign clkSDRAM = clk140M;
+assign clkSDRAM = clk132M;
 
 logic [23:0] addr_in;
 logic [15:0] data_in;
@@ -91,18 +91,19 @@ logic [23:0] addr_out;
 logic [15:0] data_out;
 logic rdy_out;
 
-sdram #(.TINIT(14000), .TREFC(1093)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM), .en(1'b1), .*);
+sdram #(.TINIT(13200), .TREFC(1031)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM), .en(1'b1), .*);
 
 // SDRAM cache
 logic cache_we, cache_req;
 assign cache_we = 1'b0;
 logic cache_miss, cache_rdy;
-wire [23:0] cache_addr;
-wire [15:0] cache_data;
+logic [23:0] cache_addr;
+logic [15:0] cache_data_in, cache_data_out;
+assign cache_data_in = 16'h0;
 cache cache0 (.n_reset(n_reset_in), .clk(clkSDRAM),
 	.we(cache_we), .req(cache_req), .miss(cache_miss), .rdy(cache_rdy),
-	.addr(cache_addr), .data(cache_data),
-	.if_addr_out(addr_in), .if_data_out(data_in),
+	.addr(cache_addr), .data_in(cache_data_in), .data_out(cache_data_out),
+	.if_addr_out(addr_in), .if_data_out(/*data_in*/),
 	.if_we(we), .if_req(req), .if_rdy(rdy),
 	.if_addr_in(addr_out), .if_data_in(data_out), .if_rdy_in(rdy_out)
 );
@@ -115,11 +116,6 @@ arbiter #(.N(ARBN)) arb0 (.n_reset(n_reset_in), .clk(clkSDRAM),
 	.ifrdy(cache_rdy), .ifreq(cache_req), .req(arb_req), .sel(arb_sel), .rdy(arb_rdy));
 
 assign cache_addr = arb_addr[arb_sel[1]];
-/*generate
-	for (i = 0; i != ARBN; i++) begin: gen_arb
-		assign cache_addr = arb_sel[i] ? arb_addr[i] : 16'bz;
-	end
-endgenerate*/
 
 // TFT
 logic tft_en, tft_pixclk;

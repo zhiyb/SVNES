@@ -135,7 +135,7 @@ begin
 	DRAM_BA = fifo_ba;
 	DRAM_ADDR = 13'h0;
 	DRAM_ADDR[8:0] = fifo_column;
-	DRAM_DQM = 2'b11;
+	DRAM_DQM = 2'b00;
 	rdack = 1'b0;
 	dram_we = 1'b0;
 	case (command)

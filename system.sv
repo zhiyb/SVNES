@@ -11,30 +11,25 @@ module system (
 	// Audio
 	output logic [7:0] audio,
 	// Graphics
-	output logic [7:0] x, y,
-	output logic [23:0] rgb
+	output logic [23:0] ppu_addr,
+	output logic [23:0] ppu_rgb
 );
 
 // Graphic output test
+logic [1:0] cnt;
 always_ff @(posedge clk_PPU, negedge n_reset_in)
 	if (~n_reset_in) begin
-		x <= 8'd0;
-		y <= 8'd0;
+		ppu_addr <= 24'hf00000;
+		ppu_rgb <= 24'h0000ff;
+		cnt <= 2'h0;
+	end else if (ppu_addr == 24'hf1fdff) begin
+		ppu_addr <= 24'hf00000;
+		if (cnt == 2'h0)
+			ppu_rgb <= {ppu_rgb[22:0], ppu_rgb[23]};
+		cnt <= cnt + 2'h1;
 	end else begin
-		x <= x + 8'd1;
-		if (x == 8'd255) begin
-			if (y == 8'd239)
-				y <= 8'd0;
-			else
-				y <= y + 8'd1;
-		end
+		ppu_addr <= ppu_addr + 24'h1;
 	end
-
-always_ff @(posedge clk_PPU, negedge n_reset_in)
-	if (~n_reset_in)
-		rgb <= 24'h0;
-	else
-		rgb <= rgb + 24'h1;
 
 assign dbg = 1'b0;
 

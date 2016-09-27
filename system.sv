@@ -1,7 +1,7 @@
 module system (
 	// Clock and reset
-	input logic clk_CPU, clk_PPU, n_reset_in,
-	output logic n_reset, fetch, dbg,
+	input logic clkCPU, clkPPU, n_reset_in,
+	output logic fetch, dbg,
 	// GPIO
 	inout wire [7:0] io[2],
 	output logic [7:0] iodir[2],
@@ -17,7 +17,7 @@ module system (
 
 // Graphic output test
 //logic [1:0] cnt;
-always_ff @(posedge clk_PPU, negedge n_reset_in)
+always_ff @(posedge clkPPU, negedge n_reset_in)
 	if (~n_reset_in) begin
 		ppu_addr <= 24'hf00000;
 		ppu_rgb <= 24'h0000ff;
@@ -33,11 +33,9 @@ assign dbg = 1'b0;
 sys_if sys (.clk(clk_CPU), .nclk(~clk_CPU), .*);
 
 // Reset signal reformation
-always_ff @(posedge sys.clk, negedge n_reset_in)
-	if (~n_reset_in)
-		n_reset <= 1'b0;
-	else
-		n_reset <= 1'b1;
+logic n_reset;
+always_ff @(posedge sys.clk)
+	n_reset <= n_reset_in;
 
 // Interconnections and buses
 parameter ARBN = 2;

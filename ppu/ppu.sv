@@ -1,7 +1,7 @@
 module ppu (
 	sys_if sys,
 	sysbus_if sysbus,
-	input logic clk_PPU,
+	input logic clkPPU,
 	output logic nmi
 );
 

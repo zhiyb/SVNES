@@ -1,3 +1,5 @@
+// Output '1' for only 1 cycle when flag goes '1'
+
 module flag_detector (
 	input logic clk, n_reset,
 	input logic flag,

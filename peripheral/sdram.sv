@@ -23,9 +23,6 @@ logic clkSDRAM;
 always_ff @(posedge clk)
 	clkSDRAM <= ~clkSDRAM;
 
-assign DRAM_CLK = ~clkSDRAM;
-assign DRAM_CS_N = ~en;
-
 // Input registers
 logic reg_req, reg_pending;
 logic [40:0] reg_in, reg_out;
@@ -269,6 +266,9 @@ logic [15:0] dram_out;
 assign DRAM_DQ = dram_we ? dram_out : 16'bz;
 
 // Output logic
+assign DRAM_CLK = clkSDRAM;
+assign DRAM_CS_N = ~en;
+
 logic [12:0] DRAM_ADDR_n;
 logic [1:0] DRAM_BA_n, DRAM_DQM_n;
 logic DRAM_CKE_n, DRAM_RAS_N_n, DRAM_CAS_N_n, DRAM_WE_N_n;

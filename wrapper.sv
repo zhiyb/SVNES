@@ -182,7 +182,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		test_data_reg <= test_data;
 	end
 
-assign arb0_req[1] = test_req_reg;
+assign arb0_req[1] = SW[1] & test_req_reg;
 assign test_rdy = arb0_rdy[1];
 assign arb0_addr[1] = {4'hf, test_addr_reg};
 assign arb0_data[1] = test_data_reg;

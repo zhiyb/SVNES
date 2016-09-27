@@ -16,17 +16,14 @@ module system (
 );
 
 // Graphic output test
-logic [1:0] cnt;
+//logic [1:0] cnt;
 always_ff @(posedge clk_PPU, negedge n_reset_in)
 	if (~n_reset_in) begin
 		ppu_addr <= 24'hf00000;
 		ppu_rgb <= 24'h0000ff;
-		cnt <= 2'h0;
 	end else if (ppu_addr == 24'hf1fdff) begin
 		ppu_addr <= 24'hf00000;
-		if (cnt == 2'h0)
-			ppu_rgb <= {ppu_rgb[22:0], ppu_rgb[23]};
-		cnt <= cnt + 2'h1;
+		ppu_rgb <= {ppu_rgb[15:0], ppu_rgb[23:16]};
 	end else begin
 		ppu_addr <= ppu_addr + 24'h1;
 	end

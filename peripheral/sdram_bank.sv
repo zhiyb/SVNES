@@ -1,4 +1,4 @@
-module sdram_bank #(parameter TRC = 8, TRAS = 6, TRP = 2, TRCD = 2, TDPL = 2) (
+module sdram_bank #(parameter TRC, TRAS, TRP, TRCD, TDPL) (
 	input logic n_reset, clk, sel,
 	input logic cmd_pre, cmd_act, cmd_write,
 	input logic [12:0] cmd_row,

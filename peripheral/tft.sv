@@ -42,15 +42,14 @@ always_ff @(posedge htick, negedge n_reset)
 	if (~n_reset) begin
 		hstate <= 2'h0;
 		hs <= 1'b0;
-		de <= 1'b0;
 	end else begin
 		hstate <= hstate + 2'h1;
 		hs <= hstate == 2'h0;
-		de <= hstate == 2'h2;
 	end
 
 assign hblank = hstate != 2'h3;
 assign hsync = ~hs;
+assign de = 1'b0;
 
 // Vertical timing counter
 always_ff @(posedge hs, negedge n_reset)

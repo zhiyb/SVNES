@@ -29,11 +29,13 @@ module wrapper (
 logic n_reset_in, n_reset, fetch, dbg;
 assign n_reset_in = KEY[1];
 
-logic clk1M, clk10M, clk20M, clk50M, clk132M;
+// Clocks
+
+logic clk50M, clkTFT, clkSDRAM, clkSYS;
 assign clk50M = CLOCK_50;
-logic pll0_locked;
-pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .locked(pll0_locked),
-	.c0(clk20M), .c1(clk10M), .c2(clk1M), .c3(clk132M));
+// 10MHz; 20MHz; 33.125MHz; 265MHz
+pll pll0 (.areset(1'b0), .inclk0(clk50M), .locked(),
+	.c0(), .c1(), .c2(clkTFT), .c3(clkSYS));
 
 `define NTSC	0
 `define PAL		1
@@ -42,8 +44,7 @@ pll pll0 (.areset(~n_reset_in), .inclk0(clk50M), .locked(pll0_locked),
 logic clkMaster[3], clkPPU[3], clkCPU[3];
 //assign clkMaster[`DENDY] = clkMaster[`PAL];
 //assign clkPPU[`DENDY] = clkPPU[`PAL];
-logic pll1_locked;
-pll_ntsc pll1 (.areset(~n_reset_in), .inclk0(clk50M), .locked(pll1_locked),
+pll_ntsc pll1 (.areset(~n_reset_in), .inclk0(clk50M), .locked(),
 	.c0(clkMaster[`NTSC]), .c1(clkPPU[`NTSC]), .c2(clkCPU[`NTSC]));
 //pll_pal pll2 (.areset(~n_reset_in), .inclk0(clk50M), .c0(clkPPU[`PAL]), .c1(clkCPU[`DENDY]));
 
@@ -53,7 +54,7 @@ logic clk_Master, clk_PPU, clk_CPU;
 assign clk_Master = clkMaster[clksel];
 assign clk_PPU = clkPPU[clksel];
 assign clk_CPU = clkCPU[clksel];
-
+/*
 // GPIO
 wire [7:0] io[2];
 logic [7:0] iodir[2], ioin;
@@ -76,11 +77,8 @@ logic [7:0] audio;
 logic aout;
 assign GPIO_0[25] = aout;
 apu_pwm #(.N(8)) pwm0 (.n_reset(n_reset_in), .clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
-
+*/
 // SDRAM
-logic clkSDRAM;
-assign clkSDRAM = clk132M;
-
 logic [23:0] addr_in;
 logic [15:0] data_in;
 logic we, req;
@@ -90,8 +88,19 @@ logic [23:0] addr_out;
 logic [15:0] data_out;
 logic rdy_out;
 
-sdram #(.TINIT(13200), .TREFC(1031)) sdram0 (.n_reset(n_reset_in), .clk(clkSDRAM), .en(1'b1), .*);
+sdram #(.TINIT(9600), .TREFC(750)) sdram0 (.n_reset(n_reset_in), .clk(clkSYS), .en(1'b1), .*);
+/*
+// SDRAM arbiter
+parameter ARBN = 2;
+logic arb_req[ARBN], arb_sel[ARBN], arb_rdy[ARBN], arb_we[ARBN];
+logic [23:0] arb_addr[ARBN];
+arbiter #(.N(ARBN)) arb0 (.n_reset(n_reset_in), .clk(clkSDRAM),
+	.ifrdy(cache_rdy), .ifreq(cache_req), .ifswap(cache_swap),
+	.req(arb_req), .sel(arb_sel), .rdy(arb_rdy));
 
+assign cache_addr = arb_addr[arb_sel[1]];
+assign cache_we = arb_we[arb_sel[1]];*/
+/*
 // SDRAM cache
 logic cache_we, cache_req;
 logic cache_miss, cache_rdy, cache_swap;
@@ -115,84 +124,38 @@ arbiter #(.N(ARBN)) arb0 (.n_reset(n_reset_in), .clk(clkSDRAM),
 
 assign cache_addr = arb_addr[arb_sel[1]];
 assign cache_we = arb_we[arb_sel[1]];
-
+*/
 // TFT
-logic tft_en, tft_pixclk;
-assign tft_en = SW[0], tft_pixclk = clk10M;
 logic [23:0] tft_out;
-assign GPIO_1[23:0] = tft_out;
-logic [8:0] tft_x, tft_y;
+assign GPIO_0[23:0] = tft_out;
+logic [9:0] tft_x, tft_y;
 logic tft_hblank, tft_vblank;
 tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
-	.HT('{40, 1, 479, 1}), .VT('{10, 1, 271, 1})) tft0 (
-	.n_reset(n_reset_in), .pixclk(tft_pixclk), .en(tft_en),
+	.HT('{1, 40, 479, 1}), .VT('{1, 9, 271, 1})) tft0 (
+	//.HT('{1, 43, 799, 209}), .VT('{1, 20, 479, 21})) tft0 (
+	.n_reset(n_reset_in), .pixclk(clkTFT), .en(SW[0]),
 	.hblank(tft_hblank), .vblank(tft_vblank), .x(tft_x), .y(tft_y),
-	.disp(GPIO_1[24]), .de(GPIO_1[25]), .dclk(GPIO_1[28]),
-	.vsync(GPIO_1[26]), .hsync(GPIO_1[27]));
+	.disp(GPIO_0[24]), .de(GPIO_0[25]), .dclk(GPIO_0[28]),
+	.vsync(GPIO_0[26]), .hsync(GPIO_0[27]));
 
-// TFT pixel data generator
-logic tft_pix_reg;
-always_ff @(posedge clkSDRAM, negedge n_reset_in)
-	if (~n_reset_in)
-		tft_pix_reg <= 1'b0;
-	else
-		tft_pix_reg <= ~tft_pixclk;
-
-logic tft_update;
-flag_detector tft_flag0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flag(tft_pix_reg), .out(tft_update));
-
-// TFT FIFO data buffer
-logic tft_req, tft_rdy;
-assign arb_req[0] = tft_req;
-assign tft_rdy = arb_rdy[0];
-
-logic tft_hblank_reg, tft_vblank_reg;
-always_ff @(posedge clkSDRAM, negedge n_reset_in)
-	if (~n_reset_in) begin
-		tft_hblank_reg <= 1'b1;
-		tft_vblank_reg <= 1'b1;
-	end else begin
-		tft_hblank_reg <= tft_hblank;
-		tft_vblank_reg <= tft_vblank;
-	end
-
-logic tft_fifo_empty, tft_fifo_full;
-assign tft_req = ~tft_fifo_full & ~tft_vblank_reg;
-logic [3:0] tft_head, tft_tail;
-fifo_sync #(.DEPTH_N(4)) fifo0 (.clk(clkSDRAM), .n_reset(n_reset_in), .flush(tft_vblank_reg),
-	.wrreq(tft_req & tft_rdy), .rdack(tft_vblank_reg | (tft_update & ~tft_hblank_reg)),
-	.empty(tft_fifo_empty), .full(tft_fifo_full), .underrun(), .overrun(),
-	.head(tft_head), .tail(tft_tail), .level());
-
-logic [15:0] tft_fifo;
-ramdual16x16 ram0 (
-	.aclr(~n_reset_in), .clock(clkSDRAM),
-	.data(cache_data_out), .q(tft_fifo),
-	.rdaddress(tft_tail), .wraddress(tft_head),
-	.wren(tft_req & tft_rdy));
-
-// TFT data address counter
-logic [16:0] tft_addr;
-assign arb_addr[0] = {7'b1111000, tft_addr};
-assign arb_we[0] = 1'b0;
-
-always_ff @(posedge clkSDRAM, negedge n_reset_in)
-	if (~n_reset_in)
-		tft_addr <= 17'h0;
-	else if (tft_vblank_reg)
-		tft_addr <= 17'h0;
-	else if (tft_req & tft_rdy)
-		tft_addr <= tft_addr + 17'h1;
-
-// TFT data output
-always_comb
-begin
-	tft_out = 24'h66ccff;
-	if (~tft_fifo_empty)
-		//tft_out = {~tft_x[7:0], ~tft_y[7:0], {8{tft_x[0]}}};
-		tft_out = {tft_fifo[15:11], 3'h0, tft_fifo[10:5], 2'h0, tft_fifo[4:0], 3'h0};
-end
-
+// TFT pixel data fetch
+logic tft_req, tft_rdy, tft_underrun;
+assign req = tft_req;
+assign we = 1'b0;
+assign tft_rdy = rdy_out && addr_out[23:20] == 4'hf;
+//assign tft_rdy = tft_req;
+//always_ff @(posedge clkSYS)
+//	tft_rdy <= tft_req;
+logic [23:0] tft_addr;
+assign addr_in = tft_addr;
+assign data_in = 16'h1234;
+logic [15:0] tft_data;
+assign tft_data = data_out;
+//assign tft_data = {{5{tft_addr[0]}}, {6{tft_addr[1]}}, tft_addr[17:13]};
+tft_fetch tft_fetch0 (.n_reset(n_reset_in), .out(tft_out),
+	.vblank(tft_vblank), .hblank(tft_hblank), .underrun(tft_underrun),
+	.req(tft_req), .ifrdy(tft_rdy), .addr(tft_addr), .data(tft_data), .*);
+/*
 // System
 logic ppu_clk_reg;
 always_ff @(posedge clkSDRAM, negedge n_reset_in)
@@ -223,8 +186,12 @@ always_ff @(posedge clkSDRAM, negedge n_reset_in)
 assign cache_data_in = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
 
 system sys0 (.*);
-
+*/
 // Debug LEDs
-assign LED[7:0] = {cache_req & cache_miss, req, rdy, GPIO_1[26], GPIO_1[27], aout, tft_fifo_full, tft_fifo_empty};
+logic dbg_latch;
+flag_keeper flag0 (.n_reset(n_reset_in), .clk(clkSYS), .clk_s(clkSYS),
+	.flag(tft_underrun), .clr(~KEY[0]), .out(dbg_latch));
+
+assign LED[7:0] = {/*cache_req & cache_miss, req, rdy*/4'h0, tft_vblank, tft_hblank, tft_req, dbg_latch};
 
 endmodule

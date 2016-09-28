@@ -41,18 +41,18 @@ always_ff @(posedge pixclk, negedge n_reset)
 always_ff @(posedge htick, negedge n_reset)
 	if (~n_reset) begin
 		hstate <= 2'h0;
-		hs <= 1'b0;
+		hsync <= 1'b0;
+		hblank <= 1'b1;
 	end else begin
 		hstate <= hstate + 2'h1;
-		hs <= hstate == 2'h0;
+		hsync <= hstate != 2'h0;
+		hblank <= hstate != 2'h2;
 	end
 
-assign hblank = hstate != 2'h3;
-assign hsync = ~hs;
 assign de = 1'b0;
 
 // Vertical timing counter
-always_ff @(posedge hs, negedge n_reset)
+always_ff @(negedge hsync, negedge n_reset)
 	if (~n_reset) begin
 		vcnt <= {VN{1'b0}};
 		vtick <= 1'b0;
@@ -65,7 +65,7 @@ always_ff @(posedge hs, negedge n_reset)
 	end
 
 // y-coordinate counter
-always_ff @(posedge hs, negedge n_reset)
+always_ff @(negedge hsync, negedge n_reset)
 	if (~n_reset)
 		y <= {VN{1'b0}};
 	else if (vblank)
@@ -77,13 +77,12 @@ always_ff @(posedge hs, negedge n_reset)
 always_ff @(posedge vtick, negedge n_reset)
 	if (~n_reset) begin
 		vstate <= 2'h0;
-		vs <= 1'b0;
+		vsync <= 1'b0;
+		vblank <= 1'b1;
 	end else begin
 		vstate <= vstate + 2'h1;
-		vs <= vstate == 2'h0;
+		vsync <= vstate != 2'h0;
+		vblank <= vstate != 2'h2;
 	end
-
-assign vblank = vstate != 2'h3;
-assign vsync = ~vs;
 
 endmodule

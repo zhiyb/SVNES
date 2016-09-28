@@ -144,7 +144,7 @@ generate
 			bank0 (.sel(bank[i].sel), .clk(clkSDRAM),
 			.cmd_pre(command == PRE || command == PALL),
 			.cmd_act(command == ACT), .cmd_write(command == WRITE),
-			.cmd_row(reg_row), .active(bank[i].active), .match(bank[i].match),
+			.cmd_row(fifo_row), .active(bank[i].active), .match(bank[i].match),
 			.pre(bank[i].pre), .act(bank[i].act), .rw(bank[i].rw), .*);
 	end
 endgenerate
@@ -183,9 +183,9 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 logic mode;
 always_ff @(posedge clkSDRAM, negedge n_reset)
 	if (~n_reset)
-		mode <= 1'b0;
-	else if (command == MRS)
 		mode <= 1'b1;
+	else if (command == MRS)
+		mode <= 1'b0;
 
 // Next state logic
 logic execute;

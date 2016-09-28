@@ -39,12 +39,10 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		reset <= vblank;
 
 // FIFO controller
-logic we;
-assign we = ifrdy;
 logic empty, full, overrun;
 logic [4:0] head, tail;
 fifo_sync #(.DEPTH_N(5)) fifo0 (.clk(clkSYS), .flush(reset),
-	.wrreq(we), .rdack(update), .level(), .*);
+	.wrreq(ifrdy), .rdack(update), .*);
 
 // FIFO level counter
 logic [4:0] level;
@@ -58,7 +56,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 	else if (update && level != 0)
 		level <= level - 1'b1;
 
-assign req = ~reset & ~level[4] & ~level[3];
+assign req = ~reset & ~(level[4] & level[3]);
 
 // Address counter
 assign addr[23:20] = 4'hf;
@@ -74,7 +72,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 // FIFO data RAM
 logic [15:0] fifo;
 ramdual32x16 ram0 (.aclr(~n_reset), .clock(clkSYS), .data(data), .q(fifo),
-	.rdaddress(tail), .wraddress(head), .wren(we));
+	.rdaddress(tail), .wraddress(head), .wren(ifrdy));
 
 // Pixel output
 assign out = {fifo[15:11], 3'h0, fifo[10:5], 2'h0, fifo[4:0], 3'h0};

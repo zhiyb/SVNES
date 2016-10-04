@@ -1,9 +1,10 @@
 module tft_fetch (
-	input logic n_reset, clkSYS, clkTFT,
+	input logic n_reset,
 	// TFT interface
-	input logic vblank, hblank,
+	input logic clkTFT, vblank, hblank,
 	output logic [23:0] out,
-	// Data interface
+	// High speed data interface
+	input logic clkSYS,
 	output logic req, underrun,
 	input logic rdy, ifrdy,
 	output logic [23:0] addr,
@@ -54,9 +55,14 @@ always_ff @(posedge clkSYS, negedge n_reset)
 	else if (req & rdy)
 		level <= level + 4 - (update ? 1 : 0);
 	else if (update && level != 0)
-		level <= level - 1'b1;
+		level <= level - 1;
 
-assign req = ~reset & ~(level[4] & level[3]);
+// Request generator
+always_ff @(posedge clkSYS, negedge n_reset)
+	if (~n_reset)
+		req <= 1'b0;
+	else
+		req <= ~reset & ~(level[4] & level[3]);
 
 // Address counter
 assign addr[23:20] = 4'hf;

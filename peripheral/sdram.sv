@@ -1,6 +1,6 @@
 module sdram #(parameter logic [2:0] CAS = 2, BURST = 3'b010,
-	int TINIT = 13300, TREFC = 1039,
-	int TRC = 8, TRAS = 6, TRP = CAS, TMRD = 2, TRCD = CAS, TDPL = 2) (
+	int TRC = 8, TRAS = 6, TRP = CAS, TMRD = 2, TRCD = CAS, TDPL = 2,
+	int TINIT = 13300, TREFC = 1039, TWAIT = 6 /* max(TRAS, 2 ** BURST, TDPL) */) (
 	input logic n_reset, clk, en,
 	
 	output logic [12:0] DRAM_ADDR,
@@ -19,39 +19,34 @@ module sdram #(parameter logic [2:0] CAS = 2, BURST = 3'b010,
 	output logic rdy_out
 );
 
+// SDRAM clock, half frequency
 logic clkSDRAM;
 always_ff @(posedge clk)
 	clkSDRAM <= ~clkSDRAM;
 
 // Input registers
-logic reg_req, reg_pending;
-logic [40:0] reg_in, reg_out;
-assign reg_in = {we, addr_in, data_in};
+logic [40:0] reg_out;
 always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
+	if (~n_reset)
 		reg_out <= 41'h0;
-		reg_pending <= 1'b0;
-	end else if (rdy) begin
-		reg_out <= reg_in;
-		reg_pending <= req;
-	end else if (clkSDRAM & reg_req) begin
-		reg_pending <= 1'b0;
-	end
+	else if (rdy)
+		reg_out <= {we, addr_in, data_in};
 
-assign rdy = ~reg_pending;
+logic reg_we;
+logic [1:0] reg_ba;
+logic [12:0] reg_row;
+logic [8:0] reg_column;
+logic [15:0] reg_data;
+assign {reg_we, reg_ba, reg_row, reg_column, reg_data} = reg_out;
+logic [23:0] reg_addr;
+assign reg_addr = reg_out[39:16];
 
-logic rdack, pending;
 logic [40:0] fifo_out;
 always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
+	if (~n_reset)
 		fifo_out <= 41'h0;
-		pending <= 1'b0;
-	end else if (clkSDRAM & reg_req) begin
+	else if (clkSDRAM)
 		fifo_out <= reg_out;
-		pending <= reg_pending;
-	end
-
-assign reg_req = rdack | ~pending;
 
 logic fifo_we;
 logic [1:0] fifo_ba;
@@ -64,200 +59,250 @@ assign fifo_addr = fifo_out[39:16];
 
 // Commands
 typedef enum int unsigned {NOP, BST, READ, /*READ_AUTO,*/ WRITE, /*WRITE_AUTO,*/ ACT, PRE, PALL, REF, SELF, MRS} Commands;
-Commands command;
+Commands command, command_state, command_execute;
 
-always_comb
-begin
-	rdack = 1'b0;
-	case (command)
-	READ,
-	WRITE: begin
-		rdack = 1'b1;
-	end
-	endcase
-end
-
-// Burst counter
-logic [BURST - 1:0] burst;
-always_ff @(posedge clkSDRAM, negedge n_reset)
-	if (~n_reset)
-		burst <= {2 ** BURST{1'b0}};
-	else if (command == READ)
-		burst <= {2 ** BURST{1'b1}};
-	else if (burst != 0)
-		burst <= burst - 1;
-
-// Output address calculation & control
-logic read_reg[CAS + 2], read_delayed, burst_reg[CAS + 2], burst_delayed;
-assign read_reg[0] = command == READ;
-assign read_delayed = read_reg[CAS + 1];
-assign burst_reg[0] = burst != 0;
-assign burst_delayed = burst_reg[CAS + 1];
-
-logic [23:0] addr_reg[CAS + 2], addr_delayed;
-assign addr_reg[0] = fifo_addr;
-assign addr_delayed = addr_reg[CAS + 1];
-
-genvar i;
-generate
-	for (i = 0; i < CAS + 1; i++) begin: gen_delay
-		always_ff @(posedge clkSDRAM, negedge n_reset)
-			if (~n_reset) begin
-				read_reg[i + 1] <= 1'b0;
-				burst_reg[i + 1] <= 1'b0;
-				addr_reg[i + 1] <= 24'h0;
-			end else begin
-				read_reg[i + 1] <= read_reg[i];
-				burst_reg[i + 1] <= burst_reg[i];
-				addr_reg[i + 1] <= addr_reg[i];
-			end
-	end
-endgenerate
-
-logic dram_rdy_out;
-always_ff @(posedge DRAM_CLK, negedge n_reset)
-	if (~n_reset) begin
-		addr_out <= 24'h0;
-		data_out <= 16'h0;
-		dram_rdy_out <= 1'b0;
-	end else begin
-		addr_out[23:BURST] <= addr_delayed[23:BURST];
-		if (burst_delayed)
-			addr_out[BURST - 1:0] <= addr_out[BURST - 1:0] + 1;
-		else
-			addr_out[BURST - 1:0] <= addr_delayed[BURST - 1:0];
-		data_out <= DRAM_DQ;
-		dram_rdy_out <= read_delayed | burst_delayed;
-	end
-
-assign rdy_out = ~clkSDRAM & dram_rdy_out;
-
-// Bank specific
+// Bank states
 struct {
 	logic sel, active, match;
 	logic pre, act, rw;
 } bank[4];
 
-generate
-	for (i = 0; i < 4; i++) begin: gen_bank
-		sdram_bank #(.TRC(TRC), .TRAS(TRAS), .TRP(TRP), .TRCD(TRCD), .TDPL(TDPL))
-			bank0 (.sel(bank[i].sel), .clk(clkSDRAM),
-			.cmd_pre(command == PRE || command == PALL),
-			.cmd_act(command == ACT), .cmd_write(command == WRITE),
-			.cmd_row(fifo_row), .active(bank[i].active), .match(bank[i].match),
-			.pre(bank[i].pre), .act(bank[i].act), .rw(bank[i].rw), .*);
-	end
-endgenerate
-
 always_comb
 begin
 	for (int i = 0; i < 4; i++)
 		bank[i].sel = command == PALL;
-	bank[fifo_ba].sel = 1'b1;
+	bank[reg_ba].sel = 1'b1;
 end
 
-// Initialisation, refresh states and counter
-enum int unsigned {Reset, Init, InitPALL, Execute, Active, Precharge, Refresh} state, state_next;
-logic [15:0] cnt, cnt_load;
-always_ff @(posedge clkSDRAM, negedge n_reset)
-	if (~n_reset) begin
-		state <= Reset;
-		cnt <= 16'h0;
-	end else if (cnt == 16'h0) begin
-		state <= state_next;
-		cnt <= cnt_load;
-	end else
-		cnt <= cnt - 16'h1;
+genvar i;
+generate
+	for (i = 0; i < 4; i++) begin: gen_bank
+		sdram_bank #(.TRC(TRC), .TRAS(TRAS), .TRP(TRP), .TRCD(TRCD), .TDPL(TDPL))
+			bank0 (.sel(bank[i].sel),
+			.cmd_pre(command == PRE || command == PALL),
+			.cmd_act(command == ACT), .cmd_write(command == WRITE),
+			.cmd_row(reg_row), .active(bank[i].active), .match(bank[i].match),
+			.pre(bank[i].pre), .act(bank[i].act), .rw(bank[i].rw), .*);
+	end
+endgenerate
 
-// Command delay counter
+// Burst counter
+logic [2 ** BURST + CAS:0] burst;
+logic burst_wait;
+assign burst_wait = burst[1 + CAS];
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		burst <= 0;
+	else if (~clkSDRAM) begin
+		if (command == READ)
+			burst[2 ** BURST + CAS -: 2 ** BURST - 1] <= {2 ** BURST - 1{1'b1}};
+		else
+			burst[2 ** BURST + CAS -: 2 ** BURST - 1] <= {1'b0, burst[2 ** BURST + CAS -: 2 ** BURST - 2]};
+		burst[CAS + 1:0] <= burst[CAS + 2:1];
+	end
+
+// Data output address calculation
+logic [23:0] addr_reg[CAS + 2], addr_delayed;
+assign addr_reg[0] = fifo_addr;
+assign addr_delayed = addr_reg[CAS + 1];
+
+generate
+	for (i = 0; i < CAS + 1; i++) begin: gen_addr
+		always_ff @(posedge clk, negedge n_reset)
+			if (~n_reset)
+				addr_reg[i + 1] <= 24'h0;
+			else if (clkSDRAM)
+				addr_reg[i + 1] <= addr_reg[i];
+	end
+endgenerate
+
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		addr_out <= 24'h0;
+	else if (~clkSDRAM) begin
+		if (burst[0]) begin
+			addr_out[23:BURST] <= addr_out[23:BURST];
+			addr_out[BURST - 1:0] <= addr_out[BURST - 1:0] + 1;
+		end else begin
+			addr_out[23:BURST] <= addr_delayed[23:BURST];
+			addr_out[BURST - 1:0] <= addr_delayed[BURST - 1:0];
+		end
+	end
+
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		data_out <= 16'h0;
+	else
+		data_out <= DRAM_DQ;
+
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		rdy_out <= 1'b0;
+	else if (clkSDRAM)
+		rdy_out <= burst[1] | burst[0];
+	else
+		rdy_out <= 1'b0;
+
+// Write delay counter
 logic [3:0] wrdelay;
-always_ff @(posedge clkSDRAM, negedge n_reset)
+always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		wrdelay <= 3'h0;
-	else if (command == READ /*|| command == READ_AUTO*/)
+	else if (command == READ)
 		wrdelay <= CAS + (2 ** BURST) + 2 - 1;
-	else if (wrdelay != 3'h0)
-		wrdelay <= wrdelay - 3'h1;
+	else if (~clkSDRAM && wrdelay != 0)
+		wrdelay <= wrdelay - 1;
+
+// State delay counter
+logic [15:0] cnt, cnt_load;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		cnt <= 0;
+	else if (clkSDRAM) begin
+		if (cnt == 0)
+			cnt <= cnt_load;
+		else
+			cnt <= cnt - 1;
+	end
+
+logic update;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		update <= 1'b0;
+	else
+		update <= cnt == 0;
+
+// Initialisation, refresh and active states
+enum int unsigned {Reset, Init, InitPALL, Execute, Active, Precharge, Refresh} state, state_next;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		state <= Reset;
+	else if (clkSDRAM)
+		if (update)
+			state <= state_next;
+
+// Command to execute
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		command <= NOP;
+	else if (clkSDRAM) begin
+		if (update)
+			command <= command_state;
+		else if (state == Execute && ~burst_wait)
+			command <= command_execute;
+		else
+			command <= NOP;
+	end
+
+// Command state machine
+enum int unsigned {CIdle, CRegistered, CPrecharge, CActive, CExecute} cstate;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		cstate <= CIdle;
+	else if (state != Execute) begin
+		if (req || cstate != CIdle)
+			cstate <= CRegistered;
+	end else
+		case (cstate)
+		CIdle:
+			if (req)
+				cstate <= CRegistered;
+		CRegistered: begin
+			if (~bank[reg_ba].active)
+				cstate <= CActive;
+			else if (~bank[reg_ba].match)
+				cstate <= CPrecharge;
+			else
+				cstate <= CExecute;
+		end
+		CActive:
+			if (command == ACT)
+				cstate <= CExecute;
+		CPrecharge:
+			if (command == PRE)
+				cstate <= CActive;
+		CExecute:
+			if (command == READ || command == WRITE)
+				cstate <= CIdle;
+		endcase
+
+always_comb
+begin
+	rdy = cstate == CIdle;
+	command_execute = NOP;
+	case (cstate)
+	CActive: begin
+		if (bank[reg_ba].act)
+			command_execute = ACT;
+	end
+	CPrecharge: begin
+		if (bank[reg_ba].pre)
+			command_execute = PRE;
+	end
+	CExecute: begin
+		if (bank[reg_ba].rw) begin
+			if (~reg_we)
+				command_execute = READ;
+			else if (wrdelay == 0)
+				command_execute = WRITE;
+		end
+	end
+	endcase
+end
 
 // Mode register
 logic mode;
-always_ff @(posedge clkSDRAM, negedge n_reset)
+always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		mode <= 1'b1;
 	else if (command == MRS)
 		mode <= 1'b0;
 
 // Next state logic
-logic execute;
 always_comb
 begin
 	state_next = state;
 	cnt_load = 16'h0;
-	command = NOP;
-	execute = 1'b0;
+	command_state = NOP;
 	case (state)
 	Reset: begin
 		state_next = Init;
 		cnt_load = TINIT - 1;
-		command = NOP;
 	end
 	Init: begin
 		state_next = InitPALL;
 		cnt_load = TRP - 1;
-		command = cnt == 16'h0 ? PALL : NOP;
+		command_state = PALL;
 	end
 	InitPALL: begin
 		state_next = Precharge;
 		cnt_load = TRC - 1;
-		command = cnt == 16'h0 ? REF : NOP;
+		command_state = REF;
 	end
 	Precharge: begin
 		state_next = Refresh;
 		cnt_load = TRC - 1;
-		command = cnt == 16'h0 ? REF : NOP;
+		command_state = REF;
 	end
 	Refresh: begin
 		if (mode) begin
-			state_next = Refresh;
 			cnt_load = TMRD - 1;
-			command = cnt == 16'h0 ? MRS : NOP;
+			command_state = MRS;
 		end else begin
 			state_next = Execute;
-			cnt_load = TREFC - 1 - TRP - TRC - 1;
-			//execute = cnt == 16'h0;
+			cnt_load = TREFC - 1 - TRP - TRC - 1 - TWAIT;
 		end
 	end
 	Execute: begin
 		state_next = Active;
-		cnt_load = 16'h0;
-		execute = 1'b1;
+		cnt_load = TWAIT - 1;
 	end
 	Active: begin
 		state_next = Precharge;
 		cnt_load = TRP - 1;
-		command = PALL;
+		command_state = PALL;
 	end
 	endcase
-	
-	if (execute && pending && burst == 0) begin
-		if (~bank[fifo_ba].active) begin
-			if (bank[fifo_ba].act && cnt >= TRAS)
-				command = ACT;
-		end else if (~bank[fifo_ba].match) begin
-			if (bank[fifo_ba].pre)
-				command = PRE;
-		end else begin
-			if (bank[fifo_ba].rw) begin
-				if (~fifo_we) begin
-					if (cnt >= 2 ** BURST)
-						command = READ;
-				end else if (wrdelay == 3'h0) begin
-					if (cnt >= TDPL)
-						command = WRITE;
-				end
-			end
-		end
-	end
 end
 
 // Tri-state data bus control
@@ -265,7 +310,7 @@ logic dram_we;
 logic [15:0] dram_out;
 assign DRAM_DQ = dram_we ? dram_out : 16'bz;
 
-// Output logic
+// Interface logic
 assign DRAM_CLK = clkSDRAM;
 assign DRAM_CS_N = ~en;
 
@@ -274,7 +319,7 @@ logic [1:0] DRAM_BA_n, DRAM_DQM_n;
 logic DRAM_CKE_n, DRAM_RAS_N_n, DRAM_CAS_N_n, DRAM_WE_N_n;
 logic dram_we_n;
 
-always_ff @(posedge clkSDRAM, negedge n_reset)
+always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin
 		DRAM_CKE <= 1'b0;
 		DRAM_RAS_N <= 1'b1;
@@ -285,7 +330,7 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 		DRAM_DQM <= 2'b00;
 		dram_we <= 1'b0;
 		dram_out <= 16'h0;
-	end else begin
+	end else if (clkSDRAM) begin
 		DRAM_CKE <= DRAM_CKE_n;
 		DRAM_RAS_N <= DRAM_RAS_N_n;
 		DRAM_CAS_N <= DRAM_CAS_N_n;
@@ -305,6 +350,7 @@ begin
 	DRAM_WE_N_n = 1'b1;
 	DRAM_BA_n = fifo_ba;
 	DRAM_ADDR_n = 13'h0;
+	DRAM_ADDR_n = fifo_row;
 	DRAM_ADDR_n[8:0] = fifo_column;
 	DRAM_DQM_n = 2'b00;
 	dram_we_n = 1'b0;

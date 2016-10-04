@@ -18,7 +18,7 @@ begin
 	end
 	if (wrreq) begin
 		logic ovf;
-		{ovf, level_n} = {level, 1'b0};
+		{ovf, level_n} = {level_n, 1'b0};
 		level_n[2 ** DEPTH_N] |= ovf;
 	end
 end

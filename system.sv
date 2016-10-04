@@ -30,7 +30,7 @@ always_ff @(posedge clkPPU, negedge n_reset_in)
 
 assign dbg = 1'b0;
 
-sys_if sys (.clk(clk_CPU), .nclk(~clk_CPU), .*);
+sys_if sys (.clk(clkCPU), .nclk(~clkCPU), .*);
 
 // Reset signal reformation
 logic n_reset;

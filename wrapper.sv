@@ -44,9 +44,9 @@ pll pll0 (.areset(1'b0), .inclk0(clk50M), .locked(),
 logic clk_Master[3], clk_PPU[3], clk_CPU[3];
 //assign clk_Master[`DENDY] = clk_Master[`PAL];
 //assign clk_PPU[`DENDY] = clk_PPU[`PAL];
-pll_ntsc pll1 (.areset(~n_reset), .inclk0(clk50M), .locked(),
+pll_ntsc pll1 (.areset(1'b0), .inclk0(clk50M), .locked(),
 	.c0(clk_Master[`NTSC]), .c1(clk_PPU[`NTSC]), .c2(clk_CPU[`NTSC]));
-//pll_pal pll2 (.areset(~n_reset), .inclk0(clk50M), .c0(clk_PPU[`PAL]), .c1(clk_CPU[`DENDY]));
+//pll_pal pll2 (.areset(1'b0), .inclk0(clk50M), .c0(clk_PPU[`PAL]), .c1(clk_CPU[`DENDY]));
 
 parameter clksel = `NTSC;
 
@@ -118,80 +118,66 @@ logic arb0_we[ARB0N];
 assign we = arb0_we[arb0_sel[1]];
 
 // TFT pixel data fetch (SDRAM arbiter interface 0)
-logic tft_req, tft_rdy, tft_underrun;
+logic tft_rdy, tft_underrun;
 assign tft_rdy = rdy_out && addr_out[23:20] == 4'hf;
-logic [23:0] tft_addr;
 tft_fetch tft_fetch0 (.out(tft_out),
 	.vblank(tft_vblank), .hblank(tft_hblank), .underrun(tft_underrun),
-	.req(tft_req), .rdy(arb0_rdy[0]), .ifrdy(tft_rdy), .addr(tft_addr), .data(data_out), .*);
+	.req(arb0_req[0]), .rdy(arb0_rdy[0]), .ifrdy(tft_rdy), .addr(arb0_addr[0]), .data(data_out), .*);
 
-assign arb0_req[0] = tft_req;
-assign arb0_addr[0] = tft_addr;
 assign arb0_data[0] = 16'h0;
 assign arb0_we[0] = 1'b0;
 
+// TFT pixel data buffer (SDRAM arbiter interface 1)
+logic tft_we, tft_overrun;
+logic [23:0] tft_addr;
+logic [15:0] tft_data;
+tft_write tft_write0 (.clkData(clkPPU),
+	.we(tft_we), .addr_in(tft_addr), .data_in(tft_data), .overrun(tft_overrun),
+	.req(arb0_req[1]), .rdy(arb0_rdy[1]), .addr(arb0_addr[1]), .data(arb0_data[1]), .*);
+
+assign arb0_we[1] = 1'b1;
+
 // Test data generator (SDRAM arbiter interface 1)
-logic test_frame, test_req_reg;
+logic test_frame;
 logic [19:0] test_addr;
-assign test_frame = test_addr == 480 * 272 - 1;
 always_ff @(posedge clkPPU, negedge n_reset)
 	if (~n_reset)
 		test_addr <= 0;
-	else if (~test_req_reg) begin
-		if (test_frame)
-			test_addr <= 0;
-		else
-			test_addr <= test_addr + 1;
-	end
+	else if (test_frame)
+		test_addr <= 0;
+	else
+		test_addr <= test_addr + 1;
+
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
+		test_frame <= 1'b0;
+	else
+		test_frame <= test_addr == 480 * 272 - 2;
 
 logic test_en;
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
+		test_en <= 1'b0;
+	else if (test_frame)
+		test_en <= SW[1];
+
 logic [15:0] test_data;
 always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset) begin
-		test_en <= 1'b1;
-		test_data <= 16'hf800;
-	end else if (test_frame) begin
-		test_en <= SW[1];
-		test_data[15:11] <= test_data[10:6];
+	if (~n_reset)
+		test_data <= 16'h8000;
+	else begin
+		if (test_frame)
+			;
+		else
+			{test_data[15:6], test_data[4:0]} <= {test_data[0], test_data[15:6], test_data[4:1]};
+		/*test_data[15:11] <= test_data[10:6];
 		test_data[10:5] <= {test_data[4:0], 1'b0};
-		test_data[4:0] <= test_data[15:11];
+		test_data[4:0] <= test_data[15:11];*/
 	end
 
-logic test_clk_reg;
-always_ff @(posedge clkSYS, negedge n_reset)
-	if (~n_reset)
-		test_clk_reg <= 1'b0;
-	else
-		test_clk_reg <= clkPPU;
-
-logic test_req;
-flag_detector test_flag0 (.clk(clkSYS), .flag(test_clk_reg), .out(test_req), .*);
-
-logic test_rdy;
-always_ff @(posedge clkSYS, negedge n_reset)
-	if (~n_reset)
-		test_req_reg <= 1'b0;
-	else if (test_req)
-		test_req_reg <= SW[2] & test_en;
-	else if (test_rdy)
-		test_req_reg <= 1'b0;
-
-logic [19:0] test_addr_reg;
-logic [15:0] test_data_reg;
-always_ff @(posedge clkSYS, negedge n_reset)
-	if (~n_reset) begin
-		test_addr_reg <= 19'h0;
-		test_data_reg <= 16'h0;
-	end else begin
-		test_addr_reg <= test_addr;
-		test_data_reg <= test_data;
-	end
-
-assign arb0_req[1] = test_req_reg;
-assign test_rdy = arb0_rdy[1];
-assign arb0_addr[1] = {4'hf, test_addr_reg};
-assign arb0_data[1] = test_data_reg;
-assign arb0_we[1] = 1'b1;
+assign tft_we = test_en & SW[2];
+assign tft_addr = {4'hf, test_addr};
+assign tft_data = test_data;
 /*
 // SDRAM cache
 logic cache_we, cache_req;
@@ -253,6 +239,7 @@ logic dbg_latch;
 flag_keeper flag0 (.n_reset(n_reset), .clk(clkSYS), .clk_s(clkSYS),
 	.flag(tft_underrun), .clr(~KEY[0]), .out(dbg_latch));
 
-assign LED[7:0] = {/*cache_req & cache_miss, req, rdy*/4'h0, tft_vblank, tft_hblank, tft_req, dbg_latch};
+assign LED[7:0] = {/*cache_req & cache_miss, req, rdy*/2'h0,
+	arb0_req[0], arb0_req[1], tft_vblank, tft_hblank, tft_overrun, dbg_latch};
 
 endmodule

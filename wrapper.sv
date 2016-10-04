@@ -30,12 +30,11 @@ logic n_reset, fetch, dbg;
 assign n_reset = KEY[1];
 
 // Clocks
-
-logic clk50M, clkTFT, clkSDRAM, clkSYS;
+logic clk50M, clkTFT, clkSYS;
 assign clk50M = CLOCK_50;
 // 10MHz; 20MHz; 33.125MHz; 265MHz
 pll pll0 (.areset(1'b0), .inclk0(clk50M), .locked(),
-	.c0(), .c1(), .c2(clkTFT), .c3(clkSYS));
+	.c0(clkAudio), .c1(), .c2(clkTFT), .c3(clkSYS));
 
 `define NTSC	0
 `define PAL		1
@@ -54,7 +53,7 @@ logic clkMaster, clkPPU, clkCPU;
 assign clkMaster = clk_Master[clksel];
 assign clkPPU = clk_PPU[clksel];
 assign clkCPU = clk_CPU[clksel];
-/*
+
 // GPIO
 wire [7:0] io[2];
 logic [7:0] iodir[2], ioin;
@@ -75,9 +74,9 @@ assign cs = 1'b1, miso = 1'b1;
 // Audio PWM
 logic [7:0] audio;
 logic aout;
-assign GPIO_0[25] = aout;
-apu_pwm #(.N(8)) pwm0 (.clk(clk10M), .cmp(audio), .q(aout), .en(1'b1), .*);
-*/
+assign GPIO_1[25] = SW[1] & aout;
+apu_pwm #(.N(8)) pwm0 (.clk(clkAudio), .cmp(audio), .q(aout), .en(1'b1), .*);
+
 // TFT
 logic [23:0] tft_out;
 assign GPIO_0[23:0] = tft_out;
@@ -137,7 +136,7 @@ tft_write tft_write0 (.clkData(clkPPU),
 
 assign arb0_we[1] = 1'b1;
 
-// Test data generator (SDRAM arbiter interface 1)
+// Test data generator
 logic test_frame;
 logic [19:0] test_addr;
 always_ff @(posedge clkPPU, negedge n_reset)
@@ -159,14 +158,14 @@ always_ff @(posedge clkPPU, negedge n_reset)
 	if (~n_reset)
 		test_en <= 1'b0;
 	else if (test_frame)
-		test_en <= SW[1];
+		test_en <= SW[2];
 
 logic [15:0] test_data;
 always_ff @(posedge clkPPU, negedge n_reset)
 	if (~n_reset)
-		test_data <= 16'h8000;
+		test_data <= 16'h0003;
 	else begin
-		if (test_frame)
+		if (test_frame & SW[3])
 			;
 		else
 			{test_data[15:6], test_data[4:0]} <= {test_data[0], test_data[15:6], test_data[4:1]};
@@ -175,7 +174,7 @@ always_ff @(posedge clkPPU, negedge n_reset)
 		test_data[4:0] <= test_data[15:11];*/
 	end
 
-assign tft_we = test_en & SW[2];
+assign tft_we = test_en;
 assign tft_addr = {4'hf, test_addr};
 assign tft_data = test_data;
 /*
@@ -192,7 +191,7 @@ cache cache0 (.n_reset(n_reset), .clk(clkSDRAM),
 	.if_addr_in(addr_out), .if_data_in(data_out), .if_rdy_in(rdy_out)
 );
 
-// SDRAM arbiter
+// SDRAM cache arbiter
 parameter ARBN = 2;
 logic arb_req[ARBN], arb_sel[ARBN], arb_rdy[ARBN], arb_we[ARBN];
 logic [23:0] arb_addr[ARBN];
@@ -202,44 +201,24 @@ arbiter #(.N(ARBN)) arb0 (.n_reset(n_reset), .clk(clkSDRAM),
 
 assign cache_addr = arb_addr[arb_sel[1]];
 assign cache_we = arb_we[arb_sel[1]];
-
-// System
-logic ppu_clk_reg;
-always_ff @(posedge clkSDRAM, negedge n_reset)
-	if (~n_reset)
-		ppu_clk_reg <= 1'b0;
-	else
-		ppu_clk_reg <= ~clk_PPU;
-
-logic ppu_update;
-flag_detector ppu_flag0 (.clk(clkSDRAM), .n_reset(n_reset), .flag(ppu_clk_reg), .out(ppu_update));
-
-logic [23:0] ppu_addr, ppu_rgb;
-assign arb_addr[1] = ppu_addr;
-assign arb_we[1] = 1'b1;
-
-logic ppu_req, ppu_rdy;
-assign arb_req[1] = ppu_req;
-assign ppu_rdy = arb_rdy[1];
-
-always_ff @(posedge clkSDRAM, negedge n_reset)
-	if (~n_reset)
-		ppu_req <= 1'b0;
-	else if (ppu_update)
-		ppu_req <= 1'b1;
-	else if (ppu_rdy)
-		ppu_req <= 1'b0;
-
-assign cache_data_in = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
-
-system sys0 (.*);
 */
-// Debug LEDs
-logic dbg_latch;
-flag_keeper flag0 (.n_reset(n_reset), .clk(clkSYS), .clk_s(clkSYS),
-	.flag(tft_underrun), .clr(~KEY[0]), .out(dbg_latch));
+// System
+logic [23:0] ppu_addr, ppu_rgb;
+logic [15:0] ppu_data;
+assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
 
-assign LED[7:0] = {/*cache_req & cache_miss, req, rdy*/2'h0,
-	arb0_req[0], arb0_req[1], tft_vblank, tft_hblank, tft_overrun, dbg_latch};
+system sys0 (.n_reset_in(n_reset), .*);
+
+// Debug LEDs
+logic latch_underrun;
+flag_keeper flag0 (.n_reset(n_reset), .clk(clkSYS), .clk_s(clkSYS),
+	.flag(tft_underrun), .clr(~KEY[0]), .out(latch_underrun));
+
+logic latch_overrun;
+flag_keeper flag1 (.n_reset(n_reset), .clk(clkSYS), .clk_s(clkSYS),
+	.flag(tft_overrun), .clr(~KEY[0]), .out(latch_overrun));
+
+assign LED[7:0] = {/*cache_req & cache_miss, req, rdy*/3'h0, aout,
+	tft_vblank, tft_hblank, latch_overrun, latch_underrun};
 
 endmodule

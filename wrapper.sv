@@ -30,11 +30,11 @@ logic n_reset, fetch, dbg;
 assign n_reset = KEY[1];
 
 // Clocks
-logic clk50M, clkTFT, clkSYS;
+logic clk50M, clkTFT, clkSDRAM;//, clkSYS;
 assign clk50M = CLOCK_50;
-// 10MHz; 20MHz; 33.125MHz; 265MHz
+// 10MHz; 20MHz; 33.125MHz; 120MHz
 pll pll0 (.areset(1'b0), .inclk0(clk50M), .locked(),
-	.c0(clkAudio), .c1(), .c2(clkTFT), .c3(clkSYS));
+	.c0(clkAudio), .c1(), .c2(clkTFT), .c3(clkSDRAM));
 
 `define NTSC	0
 `define PAL		1
@@ -82,9 +82,9 @@ logic [23:0] tft_out;
 assign GPIO_0[23:0] = tft_out;
 logic [9:0] tft_x, tft_y;
 logic tft_hblank, tft_vblank;
-tft #(.HN($clog2(480 - 1)), .VN($clog2(272 - 1)),
-	.HT('{1, 40, 479, 1}), .VT('{1, 9, 271, 1})) tft0 (
-	//.HT('{1, 43, 799, 209}), .VT('{1, 20, 479, 21})) tft0 (
+tft #(.HN(10), .VN(10),
+	//.HT('{1, 40, 479, 1}), .VT('{1, 9, 271, 1})) tft0 (
+	.HT('{1, 43, 799, 15}), .VT('{1, 20, 479, 6})) tft0 (
 	.n_reset(n_reset), .pixclk(clkTFT), .en(SW[0]),
 	.hblank(tft_hblank), .vblank(tft_vblank), .x(tft_x), .y(tft_y),
 	.disp(GPIO_0[24]), .de(GPIO_0[25]), .dclk(GPIO_0[28]),
@@ -100,12 +100,12 @@ logic [23:0] addr_out;
 logic [15:0] data_out;
 logic rdy_out;
 
-sdram #(.TINIT(9600), .TREFC(750)) sdram0 (.clk(clkSYS), .en(1'b1), .*);
+sdram #(.TINIT(12000), .TREFC(937)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
 
 // SDRAM arbiter
 parameter ARB0N = 2;
 logic arb0_req[ARB0N], arb0_sel[ARB0N], arb0_rdy[ARB0N];
-arbiter #(.N(ARB0N)) arb0 (.n_reset(n_reset), .clk(clkSYS),
+arbiter #(.N(ARB0N)) arb0 (.n_reset(n_reset), .clk(clkSDRAM),
 	.ifrdy(rdy), .ifreq(req), .ifswap(1'b0),
 	.req(arb0_req), .sel(arb0_sel), .rdy(arb0_rdy));
 
@@ -119,7 +119,7 @@ assign we = arb0_we[arb0_sel[1]];
 // TFT pixel data fetch (SDRAM arbiter interface 0)
 logic tft_rdy, tft_underrun;
 assign tft_rdy = rdy_out && addr_out[23:20] == 4'hf;
-tft_fetch tft_fetch0 (.out(tft_out),
+tft_fetch tft_fetch0 (.clk(clkSDRAM), .out(tft_out),
 	.vblank(tft_vblank), .hblank(tft_hblank), .underrun(tft_underrun),
 	.req(arb0_req[0]), .rdy(arb0_rdy[0]), .ifrdy(tft_rdy), .addr(arb0_addr[0]), .data(data_out), .*);
 
@@ -130,13 +130,15 @@ assign arb0_we[0] = 1'b0;
 logic tft_we, tft_overrun;
 logic [23:0] tft_addr;
 logic [15:0] tft_data;
-tft_write tft_write0 (.clkData(clkPPU),
+tft_write tft_write0 (.clk(clkSDRAM), .clkData(clkPPU),
 	.we(tft_we), .addr_in(tft_addr), .data_in(tft_data), .overrun(tft_overrun),
 	.req(arb0_req[1]), .rdy(arb0_rdy[1]), .addr(arb0_addr[1]), .data(arb0_data[1]), .*);
 
 assign arb0_we[1] = 1'b1;
 
 // Test data generator
+//parameter width = 480, height = 272;
+parameter width = 800, height = 480;
 logic test_frame;
 logic [19:0] test_addr;
 always_ff @(posedge clkPPU, negedge n_reset)
@@ -151,7 +153,7 @@ always_ff @(posedge clkPPU, negedge n_reset)
 	if (~n_reset)
 		test_frame <= 1'b0;
 	else
-		test_frame <= test_addr == 480 * 272 - 2;
+		test_frame <= test_addr == width * height - 2;
 
 logic test_en;
 always_ff @(posedge clkPPU, negedge n_reset)
@@ -160,19 +162,44 @@ always_ff @(posedge clkPPU, negedge n_reset)
 	else if (test_frame)
 		test_en <= SW[2];
 
-logic [15:0] test_data;
+logic [9:0] test_x;
 always_ff @(posedge clkPPU, negedge n_reset)
 	if (~n_reset)
-		test_data <= 16'h0003;
-	else begin
-		if (test_frame & SW[3])
-			;
+		test_x <= 0;
+	else if (test_x == width - 1)
+		test_x <= 0;
+	else
+		test_x <= test_x + 1;
+
+logic [9:0] test_y;
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
+		test_y <= 0;
+	else if (test_x == width - 1) begin
+		if (test_y == height - 1)
+			test_y <= 0;
 		else
-			{test_data[15:6], test_data[4:0]} <= {test_data[0], test_data[15:6], test_data[4:1]};
-		/*test_data[15:11] <= test_data[10:6];
-		test_data[10:5] <= {test_data[4:0], 1'b0};
-		test_data[4:0] <= test_data[15:11];*/
+			test_y <= test_y + 1;
 	end
+
+logic [9:0] test_x_offset, test_y_offset;
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset) begin
+		test_x_offset <= 0;
+		test_y_offset <= 0;
+	end else if (test_x == width - 1 && test_y == height - 1) begin
+		test_x_offset <= test_x_offset + 1;
+		test_y_offset <= test_y_offset + 1;
+	end
+
+logic [9:0] test_x_out;
+assign test_x_out = test_x + test_x_offset;
+logic [9:0] test_y_out;
+assign test_y_out = test_y + test_y_offset;
+
+logic [15:0] test_data;
+//assign test_data = {{5{test_addr[0]}}, test_x[7:2], {5{test_y[0]}}};
+assign test_data = {test_x_out[7:3], test_y_out[7:2], test_x_out[9:8], 3'h0};
 
 assign tft_we = test_en;
 assign tft_addr = {4'hf, test_addr};
@@ -203,19 +230,24 @@ assign cache_addr = arb_addr[arb_sel[1]];
 assign cache_we = arb_we[arb_sel[1]];
 */
 // System
+logic ppu_we;
 logic [23:0] ppu_addr, ppu_rgb;
 logic [15:0] ppu_data;
 assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
 
-system sys0 (.n_reset_in(n_reset), .*);
+/*assign tft_we = ppu_we;
+assign tft_addr = {4'hf, ppu_addr};
+assign tft_data = ppu_data;*/
+
+//system sys0 (.n_reset_in(n_reset), .*);
 
 // Debug LEDs
 logic latch_underrun;
-flag_keeper flag0 (.n_reset(n_reset), .clk(clkSYS), .clk_s(clkSYS),
+flag_keeper flag0 (.n_reset(n_reset), .clk(clkSDRAM), .clk_s(clkSDRAM),
 	.flag(tft_underrun), .clr(~KEY[0]), .out(latch_underrun));
 
 logic latch_overrun;
-flag_keeper flag1 (.n_reset(n_reset), .clk(clkSYS), .clk_s(clkSYS),
+flag_keeper flag1 (.n_reset(n_reset), .clk(clkSDRAM), .clk_s(clkSDRAM),
 	.flag(tft_overrun), .clr(~KEY[0]), .out(latch_overrun));
 
 assign LED[7:0] = {/*cache_req & cache_miss, req, rdy*/3'h0, aout,

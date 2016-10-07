@@ -1,7 +1,7 @@
 module system (
 	// Clock and reset
 	input logic clkCPU, clkPPU, n_reset_in,
-	output logic fetch, dbg,
+	output logic fetch,
 	// GPIO
 	inout wire [7:0] io[2],
 	output logic [7:0] iodir[2],
@@ -12,7 +12,8 @@ module system (
 	output logic [7:0] audio,
 	// Graphics
 	output logic [23:0] ppu_addr,
-	output logic [23:0] ppu_rgb
+	output logic [23:0] ppu_rgb,
+	output logic ppu_we
 );
 
 // Graphic output test
@@ -20,15 +21,21 @@ module system (
 always_ff @(posedge clkPPU, negedge n_reset_in)
 	if (~n_reset_in) begin
 		ppu_addr <= 24'hf00000;
-		ppu_rgb <= 24'h0000ff;
+		ppu_rgb <= 24'h000000;
 	end else if (ppu_addr == 24'hf1fdff) begin
 		ppu_addr <= 24'hf00000;
-		ppu_rgb <= {ppu_rgb[15:0], ppu_rgb[23:16]};
+		ppu_rgb[23:16] <= ppu_rgb[23:16] + 1;
+		ppu_rgb[15:8] <= ppu_rgb[15:8] + 1;
+		ppu_rgb[7:0] <= ppu_rgb[7:0] + 1;
 	end else begin
 		ppu_addr <= ppu_addr + 24'h1;
 	end
 
-assign dbg = 1'b0;
+always_ff @(posedge clkPPU, negedge n_reset_in)
+	if (~n_reset_in)
+		ppu_we <= 1'b0;
+	else if (ppu_addr == 24'hf1fdff)
+		ppu_we <= 1'b1;
 
 sys_if sys (.clk(clkCPU), .nclk(~clkCPU), .*);
 

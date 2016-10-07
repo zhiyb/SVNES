@@ -19,11 +19,6 @@ module sdram #(parameter logic [2:0] CAS = 2, BURST = 3'b010,
 	output logic rdy_out
 );
 
-// SDRAM clock, half frequency
-logic clkSDRAM;
-always_ff @(posedge clk)
-	clkSDRAM <= ~clkSDRAM;
-
 // Input registers
 logic [40:0] reg_out;
 always_ff @(posedge clk, negedge n_reset)
@@ -45,7 +40,7 @@ logic [40:0] fifo_out;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		fifo_out <= 41'h0;
-	else if (clkSDRAM)
+	else
 		fifo_out <= reg_out;
 
 logic fifo_we;
@@ -79,8 +74,8 @@ generate
 	for (i = 0; i < 4; i++) begin: gen_bank
 		sdram_bank #(.TRC(TRC), .TRAS(TRAS), .TRP(TRP), .TRCD(TRCD), .TDPL(TDPL))
 			bank0 (.sel(bank[i].sel),
-			.cmd_pre(command == PRE || command == PALL),
-			.cmd_act(command == ACT), .cmd_write(command == WRITE),
+			.cmd_pre(command_execute == PRE || command == PALL),
+			.cmd_act(command_execute == ACT), .cmd_write(command_execute == WRITE),
 			.cmd_row(reg_row), .active(bank[i].active), .match(bank[i].match),
 			.pre(bank[i].pre), .act(bank[i].act), .rw(bank[i].rw), .*);
 	end
@@ -89,11 +84,11 @@ endgenerate
 // Burst counter
 logic [2 ** BURST + CAS:0] burst;
 logic burst_wait;
-assign burst_wait = burst[1 + CAS];
+assign burst_wait = burst[2 + CAS];
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		burst <= 0;
-	else if (~clkSDRAM) begin
+	else begin
 		if (command == READ)
 			burst[2 ** BURST + CAS -: 2 ** BURST - 1] <= {2 ** BURST - 1{1'b1}};
 		else
@@ -111,7 +106,7 @@ generate
 		always_ff @(posedge clk, negedge n_reset)
 			if (~n_reset)
 				addr_reg[i + 1] <= 24'h0;
-			else if (clkSDRAM)
+			else
 				addr_reg[i + 1] <= addr_reg[i];
 	end
 endgenerate
@@ -119,8 +114,8 @@ endgenerate
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		addr_out <= 24'h0;
-	else if (~clkSDRAM) begin
-		if (burst[0]) begin
+	else begin
+		if (burst[1]) begin
 			addr_out[23:BURST] <= addr_out[23:BURST];
 			addr_out[BURST - 1:0] <= addr_out[BURST - 1:0] + 1;
 		end else begin
@@ -138,10 +133,8 @@ always_ff @(posedge clk, negedge n_reset)
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		rdy_out <= 1'b0;
-	else if (clkSDRAM)
-		rdy_out <= burst[1] | burst[0];
 	else
-		rdy_out <= 1'b0;
+		rdy_out <= burst[2] | burst[1];
 
 // Write delay counter
 logic [3:0] wrdelay;
@@ -150,7 +143,7 @@ always_ff @(posedge clk, negedge n_reset)
 		wrdelay <= 3'h0;
 	else if (command == READ)
 		wrdelay <= CAS + (2 ** BURST) + 2 - 1;
-	else if (~clkSDRAM && wrdelay != 0)
+	else if (wrdelay != 0)
 		wrdelay <= wrdelay - 1;
 
 // State delay counter
@@ -158,7 +151,7 @@ logic [15:0] cnt, cnt_load;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		cnt <= 0;
-	else if (clkSDRAM) begin
+	else begin
 		if (cnt == 0)
 			cnt <= cnt_load;
 		else
@@ -177,18 +170,17 @@ enum int unsigned {Reset, Init, InitPALL, Execute, Active, Precharge, Refresh} s
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		state <= Reset;
-	else if (clkSDRAM)
-		if (update)
-			state <= state_next;
+	else if (update)
+		state <= state_next;
 
 // Command to execute
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		command <= NOP;
-	else if (clkSDRAM) begin
+	else begin
 		if (update)
 			command <= command_state;
-		else if (state == Execute && ~burst_wait)
+		else if (state == Execute)
 			command <= command_execute;
 		else
 			command <= NOP;
@@ -199,7 +191,7 @@ enum int unsigned {CIdle, CRegistered, CPrecharge, CActive, CExecute} cstate;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		cstate <= CIdle;
-	else if (state != Execute) begin
+	else if (update || state != Execute || burst_wait) begin
 		if (req || cstate != CIdle)
 			cstate <= CRegistered;
 	end else
@@ -216,13 +208,13 @@ always_ff @(posedge clk, negedge n_reset)
 				cstate <= CExecute;
 		end
 		CActive:
-			if (command == ACT)
+			if (command_execute == ACT)
 				cstate <= CExecute;
 		CPrecharge:
-			if (command == PRE)
+			if (command_execute == PRE)
 				cstate <= CActive;
 		CExecute:
-			if (command == READ || command == WRITE)
+			if (command_execute == READ || command_execute == WRITE)
 				cstate <= CIdle;
 		endcase
 
@@ -311,7 +303,7 @@ logic [15:0] dram_out;
 assign DRAM_DQ = dram_we ? dram_out : 16'bz;
 
 // Interface logic
-assign DRAM_CLK = clkSDRAM;
+assign DRAM_CLK = clk;
 assign DRAM_CS_N = ~en;
 
 logic [12:0] DRAM_ADDR_n;
@@ -330,7 +322,7 @@ always_ff @(posedge clk, negedge n_reset)
 		DRAM_DQM <= 2'b00;
 		dram_we <= 1'b0;
 		dram_out <= 16'h0;
-	end else if (clkSDRAM) begin
+	end else begin
 		DRAM_CKE <= DRAM_CKE_n;
 		DRAM_RAS_N <= DRAM_RAS_N_n;
 		DRAM_CAS_N <= DRAM_CAS_N_n;

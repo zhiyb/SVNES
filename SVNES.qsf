@@ -142,6 +142,7 @@ set_global_assignment -name QIP_FILE memory/ramdual16x16.qip
 set_global_assignment -name QIP_FILE memory/ramdual32x16.qip
 set_global_assignment -name QIP_FILE memory/ramdual256x32.qip
 set_global_assignment -name QIP_FILE memory/ramdual1kx32.qip
+set_global_assignment -name QIP_FILE memory/ramdual8x40.qip
 set_global_assignment -name QIP_FILE memory/ramdual8x41.qip
 set_global_assignment -name QIP_FILE memory/ramdual256x80.qip
 set_global_assignment -name SOURCE_FILE memory/rom/rom.s
@@ -152,6 +153,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE peripheral/gpio.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/spi.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_fetch.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_write.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_bank.sv
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu.sv
@@ -186,7 +188,5 @@ set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_ntsc.qip
 set_global_assignment -name MIF_FILE apu/rom/apu_rom_dmc_pal.mif
 set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_pal.qip
 set_global_assignment -name SYSTEMVERILOG_FILE ppu/ppu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_write.sv
-set_global_assignment -name QIP_FILE memory/ramdual8x40.qip
 set_global_assignment -name SLD_FILE db/SVNES_auto_stripped.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

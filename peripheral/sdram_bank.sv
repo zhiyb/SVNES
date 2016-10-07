@@ -1,5 +1,5 @@
 module sdram_bank #(parameter TRC, TRAS, TRP, TRCD, TDPL) (
-	input logic n_reset, clk, clkSDRAM, sel,
+	input logic n_reset, clk, sel,
 	input logic cmd_pre, cmd_act, cmd_write,
 	input logic [12:0] cmd_row,
 	output logic active, match,
@@ -34,7 +34,7 @@ always_ff @(posedge clk, negedge n_reset)
 		precnt <= TRAS - 1;
 	else if ((sel & cmd_write) && precnt > TDPL)
 		precnt <= TDPL - 1;
-	else if (~clkSDRAM && precnt != 0)
+	else if (precnt != 0)
 		precnt <= precnt - 1;
 
 always_ff @(posedge clk, negedge n_reset)
@@ -44,7 +44,7 @@ always_ff @(posedge clk, negedge n_reset)
 		actcnt <= TRC - 1;
 	else if (sel & cmd_pre)
 		actcnt <= TRP - 1;
-	else if (~clkSDRAM && actcnt != 0)
+	else if (actcnt != 0)
 		actcnt <= actcnt - 1;
 
 always_ff @(posedge clk, negedge n_reset)
@@ -52,7 +52,7 @@ always_ff @(posedge clk, negedge n_reset)
 		rwcnt <= 0;
 	else if (sel & cmd_act)
 		rwcnt <= TRCD - 1;
-	else if (~clkSDRAM && rwcnt != 0)
+	else if (rwcnt != 0)
 		rwcnt <= rwcnt - 1;
 
 endmodule

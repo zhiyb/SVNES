@@ -231,6 +231,7 @@ assign cache_we = arb_we[arb_sel[1]];
 */
 // System
 logic ppu_we;
+logic [8:0] ppu_x, ppu_y;
 logic [23:0] ppu_addr, ppu_rgb;
 logic [15:0] ppu_data;
 assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
@@ -239,7 +240,7 @@ assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
 assign tft_addr = {4'hf, ppu_addr};
 assign tft_data = ppu_data;*/
 
-//system sys0 (.n_reset_in(n_reset), .*);
+system sys0 (.n_reset_in(n_reset), .*);
 
 // Debug LEDs
 logic latch_underrun;

@@ -11,31 +11,10 @@ module system (
 	// Audio
 	output logic [7:0] audio,
 	// Graphics
-	output logic [23:0] ppu_addr,
+	output logic [8:0] ppu_x, ppu_y,
 	output logic [23:0] ppu_rgb,
 	output logic ppu_we
 );
-
-// Graphic output test
-//logic [1:0] cnt;
-always_ff @(posedge clkPPU, negedge n_reset_in)
-	if (~n_reset_in) begin
-		ppu_addr <= 24'hf00000;
-		ppu_rgb <= 24'h000000;
-	end else if (ppu_addr == 24'hf1fdff) begin
-		ppu_addr <= 24'hf00000;
-		ppu_rgb[23:16] <= ppu_rgb[23:16] + 1;
-		ppu_rgb[15:8] <= ppu_rgb[15:8] + 1;
-		ppu_rgb[7:0] <= ppu_rgb[7:0] + 1;
-	end else begin
-		ppu_addr <= ppu_addr + 24'h1;
-	end
-
-always_ff @(posedge clkPPU, negedge n_reset_in)
-	if (~n_reset_in)
-		ppu_we <= 1'b0;
-	else if (ppu_addr == 24'hf1fdff)
-		ppu_we <= 1'b1;
 
 sys_if sys (.clk(clkCPU), .nclk(~clkCPU), .*);
 
@@ -52,6 +31,33 @@ wire [15:0] addr, addr_sel[ARBN];
 wire [7:0] data;
 sysbus_if sysbus (.*);
 
+// PPU bus
+logic [13:0] ppu_addr;
+wire [7:0] ppu_data;
+logic ppu_bus_we;
+
+// PPU
+logic ppu_nmi;
+ppu ppu0 (.nmi(ppu_nmi), .ppu_we(ppu_bus_we),
+	.out_x(ppu_x), .out_y(ppu_y), .out_rgb(ppu_rgb), .out_we(ppu_we), .*);
+
+// PPU pattern table RAM
+logic [7:0] ppu_ram0q;
+assign ppu_data = ~ppu_bus_we && ppu_addr[13] == 1'b0 ? ppu_ram0q : 8'bz;
+ram8k ppu_ram0 (
+	.aclr(~sys.n_reset), .clock(clkPPU),
+	.address(ppu_addr[12:0]), .data(ppu_data),
+	.wren(ppu_bus_we && ppu_addr[13] == 1'b0), .q(ppu_ram0q));
+
+// PPU nametable RAM
+logic [7:0] ppu_ram1q;
+assign ppu_data = ~ppu_bus_we && ppu_addr[13] == 1'b1 ? ppu_ram1q : 8'bz;
+ram8k ppu_ram1 (
+	.aclr(~sys.n_reset), .clock(clkPPU),
+	.address(ppu_addr[12:0]), .data(ppu_data),
+	.wren(ppu_bus_we && ppu_addr[13] == 1'b1), .q(ppu_ram1q));
+
+// CPU bus arbiter
 genvar i;
 generate
 for (i = 0; i != ARBN; i++) begin: gensel
@@ -63,18 +69,14 @@ endgenerate
 arbiter #(.N(ARBN)) arb0 (.n_reset(sys.n_reset), .clk(sys.clk),
 	.ifrdy(rdy), .ifreq(), .ifswap(1'b0), .req(req), .sel(sel), .rdy(rdy_sel));
 
-logic ppu_nmi;
-logic ppu_req;
-assign ppu_req = 1'b0;
-ppu ppu0 (.nmi(ppu_nmi), .*);
-
+// CPU and peripherals attached to CPU bus
 logic apu_irq;
 assign we_sel[1] = 1'b0;
 apu apu0 (
 	.bus_req(req[1]), .bus_rdy(rdy_sel[1]), .bus_addr(addr_sel[1]),
 	.irq(apu_irq), .out(audio), .*);
 
-assign req[0] = ~ppu_req;
+assign req[0] = 1'b1;
 cpu cpu0 (.irq(apu_irq), .nmi(ppu_nmi),
 	.addr(addr_sel[0]), .we(we_sel[0]), .rdy(rdy_sel[0]), .*);
 

@@ -2,8 +2,8 @@
 
 module test_system;
 
-logic n_reset_in, n_reset, fetch, dbg;
-logic clk_CPU, clk_PPU;
+logic n_reset_in, fetch;
+logic clkCPU, clkPPU;
 
 logic irq, nmi;
 
@@ -15,6 +15,10 @@ logic cs, miso;
 logic mosi, sck;
 // Audio
 logic [7:0] audio;
+// Graphics
+logic [8:0] ppu_x, ppu_y;
+logic [23:0] ppu_rgb;
+logic ppu_we;
 
 system sys0 (.*);
 
@@ -40,14 +44,14 @@ end
 
 initial
 begin
-	clk_CPU = 1'b0;
-	forever #500ns clk_CPU = ~clk_CPU;
+	clkCPU = 1'b0;
+	forever #500ns clkCPU = ~clkCPU;
 end
 
 initial
 begin
-	clk_PPU = 1'b0;
-	forever #125ns clk_PPU = ~clk_PPU;
+	clkPPU = 1'b0;
+	forever #125ns clkPPU = ~clkPPU;
 end
 
 endmodule

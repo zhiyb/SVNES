@@ -140,6 +140,7 @@ set_global_assignment -name QIP_FILE memory/ram32.qip
 set_global_assignment -name QIP_FILE memory/ram256.qip
 set_global_assignment -name QIP_FILE memory/ram2k.qip
 set_global_assignment -name QIP_FILE memory/ram8k.qip
+set_global_assignment -name QIP_FILE memory/ramdual32.qip
 set_global_assignment -name QIP_FILE memory/ramdual16x16.qip
 set_global_assignment -name QIP_FILE memory/ramdual32x16.qip
 set_global_assignment -name QIP_FILE memory/ramdual256x32.qip

@@ -11,7 +11,7 @@ module system (
 	// Audio
 	output logic [7:0] audio,
 	// Graphics
-	output logic [8:0] ppu_x, ppu_y,
+	output logic [9:0] ppu_x, ppu_y,
 	output logic [23:0] ppu_rgb,
 	output logic ppu_we
 );
@@ -34,11 +34,11 @@ sysbus_if sysbus (.*);
 // PPU bus
 logic [13:0] ppu_addr;
 wire [7:0] ppu_data;
-logic ppu_bus_we;
+logic ppu_bus_rd, ppu_bus_we;
 
 // PPU
 logic ppu_nmi;
-ppu ppu0 (.nmi(ppu_nmi), .ppu_we(ppu_bus_we),
+ppu ppu0 (.nmi(ppu_nmi), .ppu_we(ppu_bus_we), .ppu_rd(ppu_bus_rd),
 	.out_x(ppu_x), .out_y(ppu_y), .out_rgb(ppu_rgb), .out_we(ppu_we), .*);
 
 // PPU pattern table RAM

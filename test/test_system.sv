@@ -16,7 +16,7 @@ logic mosi, sck;
 // Audio
 logic [7:0] audio;
 // Graphics
-logic [8:0] ppu_x, ppu_y;
+logic [9:0] ppu_x, ppu_y;
 logic [23:0] ppu_rgb;
 logic ppu_we;
 

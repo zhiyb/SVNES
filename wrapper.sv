@@ -78,6 +78,8 @@ assign GPIO_1[25] = SW[1] & aout;
 apu_pwm #(.N(8)) pwm0 (.clk(clkAudio), .cmp(audio), .q(aout), .en(1'b1), .*);
 
 // TFT
+parameter width = 800, height = 480;
+
 logic [23:0] tft_out;
 assign GPIO_0[23:0] = tft_out;
 logic [9:0] tft_x, tft_y;
@@ -126,7 +128,7 @@ tft_fetch tft_fetch0 (.clk(clkSDRAM), .out(tft_out),
 assign arb0_data[0] = 16'h0;
 assign arb0_we[0] = 1'b0;
 
-// TFT pixel data buffer (SDRAM arbiter interface 1)
+// TFT pixel data output buffer (SDRAM arbiter interface 1)
 logic tft_we, tft_overrun;
 logic [23:0] tft_addr;
 logic [15:0] tft_data;
@@ -136,74 +138,18 @@ tft_write tft_write0 (.clk(clkSDRAM), .clkData(clkPPU),
 
 assign arb0_we[1] = 1'b1;
 
-// Test data generator
-//parameter width = 480, height = 272;
-parameter width = 800, height = 480;
-logic test_frame;
-logic [19:0] test_addr;
-always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset)
-		test_addr <= 0;
-	else if (test_frame)
-		test_addr <= 0;
-	else
-		test_addr <= test_addr + 1;
+// PPU pixel output
+logic ppu_we;
+logic [9:0] ppu_x, ppu_y;
+logic [19:0] ppu_addr;
+assign ppu_addr = width * ppu_y + ppu_x;
+logic [23:0] ppu_rgb;
+logic [15:0] ppu_data;
+assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
 
-always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset)
-		test_frame <= 1'b0;
-	else
-		test_frame <= test_addr == width * height - 2;
-
-logic test_en;
-always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset)
-		test_en <= 1'b0;
-	else if (test_frame)
-		test_en <= SW[2];
-
-logic [9:0] test_x;
-always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset)
-		test_x <= 0;
-	else if (test_x == width - 1)
-		test_x <= 0;
-	else
-		test_x <= test_x + 1;
-
-logic [9:0] test_y;
-always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset)
-		test_y <= 0;
-	else if (test_x == width - 1) begin
-		if (test_y == height - 1)
-			test_y <= 0;
-		else
-			test_y <= test_y + 1;
-	end
-
-logic [9:0] test_x_offset, test_y_offset;
-always_ff @(posedge clkPPU, negedge n_reset)
-	if (~n_reset) begin
-		test_x_offset <= 0;
-		test_y_offset <= 0;
-	end else if (test_x == width - 1 && test_y == height - 1) begin
-		test_x_offset <= test_x_offset + 1;
-		test_y_offset <= test_y_offset + 1;
-	end
-
-logic [9:0] test_x_out;
-assign test_x_out = test_x + test_x_offset;
-logic [9:0] test_y_out;
-assign test_y_out = test_y + test_y_offset;
-
-logic [15:0] test_data;
-//assign test_data = {{5{test_addr[0]}}, test_x[7:2], {5{test_y[0]}}};
-assign test_data = {test_x_out[7:3], test_y_out[7:2], test_x_out[9:8], 3'h0};
-
-assign tft_we = test_en;
-assign tft_addr = {4'hf, test_addr};
-assign tft_data = test_data;
+assign tft_we = ppu_we;
+assign tft_addr = {4'hf, ppu_addr};
+assign tft_data = ppu_data;
 /*
 // SDRAM cache
 logic cache_we, cache_req;
@@ -230,16 +176,6 @@ assign cache_addr = arb_addr[arb_sel[1]];
 assign cache_we = arb_we[arb_sel[1]];
 */
 // System
-logic ppu_we;
-logic [8:0] ppu_x, ppu_y;
-logic [23:0] ppu_addr, ppu_rgb;
-logic [15:0] ppu_data;
-assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
-
-/*assign tft_we = ppu_we;
-assign tft_addr = {4'hf, ppu_addr};
-assign tft_data = ppu_data;*/
-
 system sys0 (.n_reset_in(n_reset), .*);
 
 // Debug LEDs

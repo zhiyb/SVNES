@@ -24,7 +24,29 @@ test:	.byte	0
 	lda	#$09	; Enable noise and pulse channels
 	sta	apu_status
 
-	;	PASS and FAIL notification sounds
+	; Wait for PPU warm up
+	bit	ppu_status
+@ppuw0:	bit	ppu_status
+	bpl	@ppuw0
+@ppuw1:	bit	ppu_status
+	bpl	@ppuw1
+
+	; PPU memory initialisation
+	bit	ppu_status
+	lda	#$3f
+	sta	ppu_addr
+	lda	#$00
+	sta	ppu_addr
+	ldx	#$00
+@loop:	cmp	#$20
+	beq	@done
+	lda	data_palette, X
+	sta	ppu_data
+	inx
+	jmp	@loop
+@done:
+
+	; PASS and FAIL notification sounds
 	ldx	#$00
 	stx	test
 	cpx	test
@@ -35,12 +57,12 @@ test:	.byte	0
 	jsr	notify
 
 	lda	#30
-	jsr	delay
+	;jsr	delay
 
-	;	PPU RAM test
+	; PPU RAM test
 	bit	ppu_status	; Reset address latch
 
-	;	Sequential write from $0000
+	; Sequential write from $0000
 	lda	#$00
 	sta	ppu_addr
 	sta	ppu_addr
@@ -54,7 +76,7 @@ test:	.byte	0
 	cmp	#$28
 	bne	@testw
 
-test0:	;	Sequential read from $0000
+test0:	; Sequential read from $0000
 	lda	#$00
 	sta	ppu_addr
 	sta	ppu_addr
@@ -74,7 +96,7 @@ test0:	;	Sequential read from $0000
 @fail:	lda	#80
 	jsr	notify
 
-test1:	;	Sequential read from $007f
+test1:	; Sequential read from $007f
 	lda	#$00
 	sta	ppu_addr
 	lda	#$7f
@@ -97,7 +119,22 @@ test1:	;	Sequential read from $007f
 @fail:	lda	#80
 	jsr	notify
 
-done:	lda	#$9f	; Duty 2, no halt, constant
+done:	; Tests all done
+
+	; Wait for PPU vblank
+	bit	ppu_status
+@ppuw0:	bit	ppu_status
+	bpl	@ppuw0
+	; Enable PPU rendering
+	lda	#$00
+	sta	ppu_ctrl
+	lda	#$1e
+	sta	ppu_mask
+	lda	#$00
+	sta	ppu_scroll
+	sta	ppu_scroll
+
+	lda	#$9f	; Duty 2, no halt, constant
 	sta	apu_pulse1_ctrl
 	lda	#$00	; Disable sweep
 	sta	apu_pulse1_sweep
@@ -109,6 +146,7 @@ done:	lda	#$9f	; Duty 2, no halt, constant
 .endproc
 
 .proc	notify
+	rts
 	pha
 	bne	@fail
 	lda	#$9f	; Duty 2, no halt, constant
@@ -156,3 +194,16 @@ done:	lda	#$9f	; Duty 2, no halt, constant
 .endproc
 
 	.segment "DMC"
+
+	.rodata
+	.reloc
+
+data_palette:
+	.byte	$92, $e0, $1c, $03
+	.byte	$49, $60, $0c, $01
+	.byte	$24, $20, $04, $00
+	.byte	$db, $c0, $18, $03
+	.byte	$92, $e0, $1c, $03
+	.byte	$49, $60, $0c, $01
+	.byte	$24, $20, $04, $00
+	.byte	$db, $c0, $18, $03

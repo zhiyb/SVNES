@@ -76,49 +76,6 @@ test:	.byte	0
 	cmp	#$28
 	bne	@testw
 
-test0:	; Sequential read from $0000
-	lda	#$00
-	sta	ppu_addr
-	sta	ppu_addr
-
-	ldx	#$00
-@testr:	cpx	ppu_data
-	bne	@fail
-	inx
-	bne	@testr
-	adc	#$01
-	cmp	#$28
-	bne	@testr
-	lda	#$00
-	jsr	notify
-	jmp	test1
-
-@fail:	lda	#80
-	jsr	notify
-
-test1:	; Sequential read from $007f
-	lda	#$00
-	sta	ppu_addr
-	lda	#$7f
-	sta	ppu_addr
-
-	tax
-	lda	#$00
-	;ldx	#$00
-@testr:	cpx	ppu_data
-	bne	@fail
-	inx
-	bne	@testr
-	adc	#$01
-	cmp	#$28
-	bne	@testr
-	lda	#$00
-	jsr	notify
-	jmp	done
-
-@fail:	lda	#80
-	jsr	notify
-
 done:	; Tests all done
 
 	; Wait for PPU vblank

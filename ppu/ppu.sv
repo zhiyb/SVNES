@@ -282,7 +282,7 @@ always_ff @(posedge clkPPU)
 	if (~x[0]) begin
 		case (addr_sel)
 		0: nt_data <= data;
-		1: at_bit <= data[2 * {coarse_y[0], coarse_x[0]} +: 2];
+		1: at_bit <= data[2 * {coarse_y[1], coarse_x[1]} +: 2];
 		2: pt_data[0] <= data;
 		3: pt_data[1] <= data;
 		endcase

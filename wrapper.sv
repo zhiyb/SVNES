@@ -32,7 +32,7 @@ assign n_reset = KEY[1];
 // Clocks
 logic clk50M, clkTFT, clkSDRAM;//, clkSYS;
 assign clk50M = CLOCK_50;
-// 10MHz; 20MHz; 33.125MHz; 120MHz
+// 10MHz; 20MHz; 33.125MHz; 116MHz
 pll pll0 (.areset(1'b0), .inclk0(clk50M), .locked(),
 	.c0(clkAudio), .c1(), .c2(clkTFT), .c3(clkSDRAM));
 
@@ -102,7 +102,7 @@ logic [23:0] addr_out;
 logic [15:0] data_out;
 logic rdy_out;
 
-sdram #(.TINIT(12000), .TREFC(937)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
+sdram #(.TINIT(11600), .TREFC(906)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
 
 // SDRAM arbiter
 parameter ARB0N = 2;

@@ -32,3 +32,5 @@ apu_RES0:		.byte	0
 apu_status:		.byte	0
 apu_RES1:		.byte	0
 apu_fc:			.byte	0
+
+	.reloc

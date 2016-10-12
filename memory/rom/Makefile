@@ -1,4 +1,4 @@
-SRC	= rom.s
+SRC	= rom.s data.s
 TRG	= rom
 LDFILE	= linker.ld
 CPU	= 6502

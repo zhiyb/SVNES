@@ -2,9 +2,9 @@
 
 	.include "apu.inc"
 	.include "ppu.inc"
+	.include "data.inc"
 
 	.bss
-	.reloc
 irqcnt:	.byte	0
 test:	.byte	0
 
@@ -14,7 +14,6 @@ test:	.byte	0
 	.word	irq	; IRQ
 
 	.code
-	.reloc
 
 .proc	main
 	lda	#$ff
@@ -24,7 +23,7 @@ test:	.byte	0
 	lda	#$09	; Enable noise and pulse channels
 	sta	apu_status
 
-	; Wait for PPU warm up
+	; Wait for PPU startup
 	bit	ppu_status
 @ppuw0:	bit	ppu_status
 	bpl	@ppuw0
@@ -32,53 +31,22 @@ test:	.byte	0
 	bpl	@ppuw1
 
 	; PPU memory initialisation
-	bit	ppu_status
-	lda	#$3f
-	sta	ppu_addr
-	lda	#$00
-	sta	ppu_addr
-	ldx	#$00
-@loop:	cmp	#$20
-	beq	@done
-	lda	data_palette, X
-	sta	ppu_data
-	inx
-	jmp	@loop
-@done:
+	jsr	ppu_data_init
 
 	; PASS and FAIL notification sounds
-	ldx	#$00
+sounds:	ldx	#$00
 	stx	test
 	cpx	test
-	jsr	notify
+	;jsr	notify
 
 	ldx	#$80
 	cpx	test
-	jsr	notify
+	;jsr	notify
 
 	lda	#30
 	;jsr	delay
 
-	; PPU RAM test
-	bit	ppu_status	; Reset address latch
-
-	; Sequential write from $0000
-	lda	#$00
-	sta	ppu_addr
-	sta	ppu_addr
-
-	ldx	#$00
-@testw:	stx	ppu_data
-	inx
-	bne	@testw
-	clc
-	adc	#$01
-	cmp	#$28
-	bne	@testw
-
-done:	; Tests all done
-
-	; Wait for PPU vblank
+	; Waiting for PPU vblank
 	bit	ppu_status
 @ppuw0:	bit	ppu_status
 	bpl	@ppuw0
@@ -103,7 +71,6 @@ done:	; Tests all done
 .endproc
 
 .proc	notify
-	rts
 	pha
 	bne	@fail
 	lda	#$9f	; Duty 2, no halt, constant
@@ -153,14 +120,3 @@ done:	; Tests all done
 	.segment "DMC"
 
 	.rodata
-	.reloc
-
-data_palette:
-	.byte	$92, $e0, $1c, $03
-	.byte	$49, $60, $0c, $01
-	.byte	$24, $20, $04, $00
-	.byte	$db, $c0, $18, $03
-	.byte	$92, $e0, $1c, $03
-	.byte	$49, $60, $0c, $01
-	.byte	$24, $20, $04, $00
-	.byte	$db, $c0, $18, $03

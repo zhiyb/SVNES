@@ -15,3 +15,5 @@ ppu_data:	.byte	0
 	.org	$4014
 
 oam_mda:	.byte	0
+
+	.reloc

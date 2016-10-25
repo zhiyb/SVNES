@@ -5,8 +5,10 @@
 	.include "data.inc"
 
 	.bss
+nmicnt:	.byte	0
 irqcnt:	.byte	0
 test:	.byte	0
+cnt:	.byte	0
 
 	.segment "VECT"	; Interrupt vectors
 	.word	nmi	; NMI
@@ -51,7 +53,7 @@ sounds:	ldx	#$00
 @ppuw0:	bit	ppu_status
 	bpl	@ppuw0
 	; Enable PPU rendering
-	lda	#$00
+	lda	#$80	; NMI on
 	sta	ppu_ctrl
 	lda	#$1e
 	sta	ppu_mask
@@ -59,6 +61,7 @@ sounds:	ldx	#$00
 	sta	ppu_scroll
 	sta	ppu_scroll
 
+	; APU pulse 1
 	lda	#$9f	; Duty 2, no halt, constant
 	sta	apu_pulse1_ctrl
 	lda	#$00	; Disable sweep
@@ -67,7 +70,72 @@ sounds:	ldx	#$00
 	sta	apu_pulse1_tmrl
 	lda	#$30
 	sta	apu_pulse1_lc
+
+	; PPU counter
+	lda	#$00
+	sta	cnt
+
+count:	lda	#15
+	sta	nmicnt
+	ldx	cnt
+	jsr	num16
+@loop:	lda	nmicnt
+	bne	@loop
+
+	; Render number
+	lda	#$20
+	sta	ppu_addr
+	lda	#$62
+	sta	ppu_addr
+	tya
+	sta	ppu_data
+	txa
+	sta	ppu_data
+
+	; Reset scrolling
+	lda	#$00
+	sta	ppu_scroll
+	sta	ppu_scroll
+
+	inc	cnt
+	lda	#$10
+	sta	apu_pulse1_lc
+	jmp	count
+
 	jmp	*
+.endproc
+
+.proc	num16	; Convert a number {X} to a string {Y, X} (base 16)
+	pha
+
+	; Higher digit
+	txa
+	lsr
+	lsr
+	lsr
+	lsr
+	jsr	digit16
+	tay
+
+	; Lower digit
+	txa
+	and	#$0f
+	jsr	digit16
+	tax
+
+	pla
+	rts
+.endproc
+
+.proc	digit16	; Convert a single digit {A} to a character {A} (base 16)
+	cmp	#$0a
+	bmi	@mi
+	clc
+	adc	#('A' - $0a)
+	rts
+@mi:	clc
+	adc	#('0')
+	rts
 .endproc
 
 .proc	notify
@@ -96,7 +164,7 @@ sounds:	ldx	#$00
 	rts
 .endproc
 
-.proc	delay	; Delay, time unit: 1/60 s, length: A
+.proc	delay	; Delay, time unit: 1/60 s, length: {A}
 	pha		; Push A
 	sta	irqcnt
 	cli		; Waiting for 60Hz APU IRQ
@@ -114,9 +182,10 @@ sounds:	ldx	#$00
 .endproc
 
 .proc	nmi
-	jmp	nmi
+	dec	nmicnt
+	rti
 .endproc
 
-	.segment "DMC"
+	;.segment "DMC"
 
 	.rodata

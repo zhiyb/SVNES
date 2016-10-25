@@ -191,6 +191,44 @@ set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_ntsc.qip
 set_global_assignment -name MIF_FILE apu/rom/apu_rom_dmc_pal.mif
 set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_pal.qip
 set_global_assignment -name SYSTEMVERILOG_FILE ppu/ppu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE ppu/ppu_renderer.sv
-set_global_assignment -name SLD_FILE db/SVNES_auto_stripped.stp
+set_global_assignment -name QIP_FILE memory/ramdual64x16.qip
+set_global_assignment -name QIP_FILE memory/ram4k.qip
+set_global_assignment -name QIP_FILE memory/rom4k.qip
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[33]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[32]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[31]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[30]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[29]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[28]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[27]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[26]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[25]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[24]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[23]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[22]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[21]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[20]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[19]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[18]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[17]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[16]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[0]
+set_global_assignment -name MIF_FILE ppu/ppu_rom_palette.mif
+set_global_assignment -name QIP_FILE ppu/ppu_rom_palette.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name SLD_FILE db/SVNES_auto_stripped.stp

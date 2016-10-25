@@ -16,6 +16,10 @@ module ppu (
 // Reset signal
 logic reset;
 
+// EXT pins
+logic [3:0] ext;
+assign ext = 4'h0;
+
 // Registers
 logic [7:0] regs[8], oam_dma;
 
@@ -51,13 +55,13 @@ begin
 end
 
 // Separation of register fields
-logic nmi_en, ms, sp_size, bg_pt, sp_pt, vram_inc;
+logic nmi_en, bg_ms, sp_size, bg_pt, sp_pt, vram_inc;
 logic [1:0] nt_addr_set;
-assign {nmi_en, ms, sp_size, bg_pt, sp_pt, vram_inc, nt_addr_set} = regs[0];
+assign {nmi_en, bg_ms, sp_size, bg_pt, sp_pt, vram_inc, nt_addr_set} = regs[0];
 
 logic [2:0] emph;
-logic sp_en, bg_en, sp_left, bg_left, gray;
-assign {emph, sp_en, bg_en, sp_left, bg_left, gray} = regs[1];
+logic sp_en, bg_en, sp_left, bg_left, grayscale;
+assign {emph, sp_en, bg_en, sp_left, bg_left, grayscale} = regs[1];
 
 logic vblank_cpu, sp_hit0, sp_ovf;
 assign reg_status = {vblank_cpu, sp_hit0, sp_ovf, 5'bx};
@@ -111,10 +115,12 @@ logic pal_sel;
 assign pal_sel = ppu_addr[13:8] == {6{1'b1}};
 logic [4:0] pal_bus_addr, pal_addr;
 assign pal_bus_addr = {ppu_addr[1:0] == 0 ? 1'b0 : ppu_addr[4], ppu_addr[3:0]};
+logic [7:0] pal_qa, pal_qb;
 logic [7:0] pal_bus_data, pal_data;
+assign pal_bus_data = {2'h0, pal_qa[5:0]}, pal_data = {2'h0, pal_qb[5:0]};
 ramdual32 ram0 (.aclr(reset), .clock(clkPPU),
-	.address_a(pal_bus_addr), .data_a(data_out), .q_a(pal_bus_data), .wren_a(we & pal_sel),
-	.address_b(pal_addr), .data_b(8'h0), .q_b(pal_data), .wren_b(1'b0));
+	.wren_a(we & pal_sel), .address_a(pal_bus_addr), .data_a(data_out), .q_a(pal_qa),
+	.wren_b(1'b0), .address_b(pal_addr), .data_b(8'h0), .q_b(pal_qb));
 
 // Unified bus
 assign ppu_addr = addr;
@@ -279,7 +285,7 @@ logic [1:0] at_bit;
 logic [7:0] nt_data, pt_data[2];
 
 always_ff @(posedge clkPPU)
-	if (~x[0]) begin
+	if (~x[0] && x != 0) begin
 		case (addr_sel)
 		0: nt_data <= data;
 		1: at_bit <= data[2 * {coarse_y[1], coarse_x[1]} +: 2];
@@ -306,21 +312,27 @@ always_ff @(posedge clkPPU)
 
 always_ff @(posedge clkPPU)
 	if (x <= 337 && x > 1) begin
-		shift_a[0] <= {shift_a[0][6:0], shift_b[0][7]};
-		shift_a[1] <= {shift_a[1][6:0], shift_b[1][7]};
-		shift_p[0] <= {shift_p[0][6:0], shift_p_bit[0]};
-		shift_p[1] <= {shift_p[1][6:0], shift_p_bit[1]};
+		shift_a[0] <= {shift_b[0][7], shift_a[0][7:1]};
+		shift_a[1] <= {shift_b[1][7], shift_a[1][7:1]};
+		shift_p[0] <= {shift_p_bit[0], shift_p[0][7:1]};
+		shift_p[1] <= {shift_p_bit[1], shift_p[1][7:1]};
 	end
 
 // Pixel output
 logic [1:0] pixel, palette;
 assign pixel = {shift_a[1][fine_x], shift_a[0][fine_x]};
 assign palette = {shift_p[1][fine_x], shift_p[0][fine_x]};
-assign pal_addr = {1'b0, pixel == 2'b0 ? 2'b0 : palette, pixel};
+assign pal_addr = {1'b0, pixel == 2'b0 ? ext : {palette, pixel}};
 
-assign out_x = x + 128, out_y = y + 128;
-assign out_we = bg_en && sp_en &&  x < 256 && y < 240;
-assign out_rgb = {pal_data[7:5], 5'b0, pal_data[4:2], 5'b0, pal_data[1:0], 6'b0};
+always_ff @(posedge clkPPU)
+begin
+	out_x <= x + 128;
+	out_y <= y + 128;
+	out_we <= bg_en && sp_en && x > 2 && x < 259 && y < 240;
+end
+
+ppu_rom_palette rom0 (.aclr(reset), .clock(clkPPU),
+	.address({pal_data[5:4], {4{~grayscale}} & pal_data[3:0]}), .q(out_rgb));
 
 // vblank flag
 logic vblank;
@@ -337,6 +349,13 @@ always_ff @(posedge clkPPU)
 always_ff @(posedge sys.clk)
 	vblank_cpu <= vblank;
 
+// NMI generation
+always_ff @(posedge clkPPU)
+	if (nmi_en)
+		nmi <= ~vblank;
+	else
+		nmi <= 1'b1;
+
 // Reset signal
 always_ff @(posedge clkPPU, negedge sys.n_reset)
 	if (~sys.n_reset)
@@ -347,6 +366,5 @@ always_ff @(posedge clkPPU, negedge sys.n_reset)
 // TODO
 assign sp_hit0 = 1'b0, sp_ovf = 1'b0;
 assign reg_oam_data = 8'h0;
-assign nmi = 1'b0;
 
 endmodule

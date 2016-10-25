@@ -52,9 +52,9 @@ ram8k ppu_ram0 (
 // PPU nametable RAM
 logic [7:0] ppu_ram1q;
 assign ppu_data = ~ppu_bus_we && ppu_addr[13] == 1'b1 ? ppu_ram1q : 8'bz;
-ram8k ppu_ram1 (
+ram4k ppu_ram1 (
 	.aclr(~sys.n_reset), .clock(clkPPU),
-	.address(ppu_addr[12:0]), .data(ppu_data),
+	.address(ppu_addr[11:0]), .data(ppu_data),
 	.wren(ppu_bus_we && ppu_addr[13] == 1'b1), .q(ppu_ram1q));
 
 // CPU bus arbiter
@@ -109,9 +109,9 @@ logic rom0sel;
 assign rom0sel = (sysbus.addr & ~16'h7fff) == 16'h8000;
 assign rdy = rom0sel ? 1'b1 : 1'bz;
 logic [7:0] rom0q;
-rom32k rom0 (
+rom4k rom0 (
 	.clock(sys.nclk), .aclr(~sys.n_reset),
-	.address(sysbus.addr[14:0]), .q(rom0q));
+	.address(sysbus.addr[11:0]), .q(rom0q));
 assign sysbus.data = (rom0sel & ~sysbus.we) ? rom0q : 8'bz;
 
 endmodule

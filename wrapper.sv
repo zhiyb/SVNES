@@ -30,11 +30,11 @@ logic n_reset, fetch, dbg;
 assign n_reset = KEY[1];
 
 // Clocks
-logic clk50M, clkTFT, clkSDRAM;//, clkSYS;
+logic clk50M, clkAudio, clkTFT, clkSDRAM, clkTap;
 assign clk50M = CLOCK_50;
-// 10MHz; 20MHz; 33.125MHz; 116MHz
+// 10MHz; 20MHz; 23.89MHz; 95.6MHz; 215MHz
 pll pll0 (.areset(1'b0), .inclk0(clk50M), .locked(),
-	.c0(clkAudio), .c1(), .c2(clkTFT), .c3(clkSDRAM));
+	.c0(clkAudio), .c1(), .c2(clkTFT), .c3(clkSDRAM), .c4(clkTap));
 
 `define NTSC	0
 `define PAL		1
@@ -102,7 +102,9 @@ logic [23:0] addr_out;
 logic [15:0] data_out;
 logic rdy_out;
 
-sdram #(.TINIT(11600), .TREFC(906)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
+//sdram #(.TINIT(11600), .TREFC(906)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
+//sdram #(.TINIT(9600), .TREFC(750), .TWAIT(8)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
+sdram #(.TINIT(9566), .TREFC(747), .TWAIT(8)) sdram0 (.clk(clkSDRAM), .en(1'b1), .*);
 
 // SDRAM arbiter
 parameter ARB0N = 2;
@@ -147,7 +149,7 @@ logic [23:0] ppu_rgb;
 logic [15:0] ppu_data;
 assign ppu_data = {ppu_rgb[23:19], ppu_rgb[15:10], ppu_rgb[7:3]};
 
-assign tft_we = ppu_we;
+assign tft_we = ppu_we & SW[2];
 assign tft_addr = {4'hf, ppu_addr};
 assign tft_data = ppu_data;
 /*

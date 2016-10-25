@@ -18,7 +18,7 @@ always_ff @(posedge clk, negedge n_reset)
 		clkTFT_reg <= 1'b0;
 		clkTFT_delayed <= 1'b1;
 	end else begin
-		clkTFT_reg <= clkTFT;
+		clkTFT_reg <= ~clkTFT;
 		clkTFT_delayed <= ~clkTFT_reg;
 	end
 
@@ -42,19 +42,19 @@ always_ff @(posedge clk, negedge n_reset)
 
 // FIFO controller
 logic empty, full, overrun;
-logic [4:0] head, tail;
-fifo_sync #(.DEPTH_N(5)) fifo0 (.flush(reset),
+logic [5:0] head, tail;
+fifo_sync #(.DEPTH_N(6)) fifo0 (.flush(reset),
 	.wrreq(ifrdy), .rdack(update), .*);
 
 // FIFO level counter
-logic [4:0] level;
+logic [5:0] level;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
-		level <= 5'h0;
+		level <= 0;
 	else if (reset)
-		level <= 5'h0;
+		level <= 0;
 	else if (req & rdy)
-		level <= level + 4 - (update ? 1 : 0);
+		level <= level + 8 - (update ? 1 : 0);
 	else if (update && level != 0)
 		level <= level - 1;
 
@@ -63,7 +63,7 @@ always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		req <= 1'b0;
 	else
-		req <= ~reset & ~(level[4] & level[3]);
+		req <= ~reset & ~(level[5] & level[4]);
 
 // Address counter
 assign addr[23:20] = 4'hf;
@@ -74,11 +74,11 @@ always_ff @(posedge clk, negedge n_reset)
 	else if (reset)
 		addr[19:0] <= 20'h0;
 	else if (req & rdy)
-		addr[19:0] <= addr[19:0] + 20'h4;
+		addr[19:0] <= addr[19:0] + 20'h8;
 
 // FIFO data RAM
 logic [15:0] fifo;
-ramdual32x16 ram0 (.aclr(~n_reset), .clock(clk), .data(data), .q(fifo),
+ramdual64x16 ram0 (.aclr(~n_reset), .clock(clk), .data(data), .q(fifo),
 	.rdaddress(tail), .wraddress(head), .wren(ifrdy));
 
 // Pixel output

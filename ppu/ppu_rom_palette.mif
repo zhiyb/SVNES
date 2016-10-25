@@ -1,0 +1,83 @@
+-- Copyright (C) 1991-2016 Altera Corporation. All rights reserved.
+-- Your use of Altera Corporation's design tools, logic functions 
+-- and other software and tools, and its AMPP partner logic 
+-- functions, and any output files from any of the foregoing 
+-- (including device programming or simulation files), and any 
+-- associated documentation or information are expressly subject 
+-- to the terms and conditions of the Altera Program License 
+-- Subscription Agreement, the Altera Quartus Prime License Agreement,
+-- the Altera MegaCore Function License Agreement, or other 
+-- applicable license agreement, including, without limitation, 
+-- that your use is for the sole purpose of programming logic 
+-- devices manufactured by Altera and sold by Altera or its 
+-- authorized distributors.  Please refer to the applicable 
+-- agreement for further details.
+
+-- Quartus Prime generated Memory Initialization File (.mif)
+
+WIDTH=24;
+DEPTH=64;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+	00  :   545454;
+	01  :   001E74;
+	02  :   081090;
+	03  :   300088;
+	04  :   440064;
+	05  :   5C0030;
+	06  :   540400;
+	07  :   3C1800;
+	08  :   202A00;
+	09  :   083A00;
+	0A  :   004000;
+	0B  :   003C00;
+	0C  :   00323C;
+	[0D..0F]  :   000000;
+	10  :   989698;
+	11  :   084CC4;
+	12  :   3032EC;
+	13  :   5C1EE4;
+	14  :   8814B0;
+	15  :   A01464;
+	16  :   982220;
+	17  :   783C00;
+	18  :   545A00;
+	19  :   287200;
+	1A  :   087C00;
+	1B  :   007628;
+	1C  :   006678;
+	[1D..1F]  :   000000;
+	20  :   ECEEEC;
+	21  :   4C9AEC;
+	22  :   787CEC;
+	23  :   B062EC;
+	24  :   E454EC;
+	25  :   EC58B4;
+	26  :   EC6A64;
+	27  :   D48820;
+	28  :   A0AA00;
+	29  :   74C400;
+	2A  :   4CD020;
+	2B  :   38CC6C;
+	2C  :   38B4CC;
+	2D  :   3C3C3C;
+	[2E..2F]  :   000000;
+	30  :   ECEEEC;
+	31  :   A8CCEC;
+	32  :   BCBCEC;
+	33  :   D4B2EC;
+	34  :   ECAEEC;
+	35  :   ECAED4;
+	36  :   ECB4B0;
+	37  :   E4C490;
+	38  :   CCD278;
+	39  :   B4DE78;
+	3A  :   A8E290;
+	3B  :   98E2B4;
+	3C  :   A0D6E4;
+	3D  :   A0A2A0;
+	[3E..3F]  :   000000;
+END;

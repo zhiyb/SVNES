@@ -1,4 +1,4 @@
-module sdram #(parameter logic [2:0] CAS = 2, BURST = 3'b010,
+module sdram #(parameter logic [2:0] CAS = 2, BURST = 3'b011,
 	int TRC = 8, TRAS = 6, TRP = CAS, TMRD = 2, TRCD = CAS, TDPL = 2,
 	int TINIT = 13300, TREFC = 1039, TWAIT = 6 /* max(TRAS, 2 ** BURST, TDPL) */) (
 	input logic n_reset, clk, en,
@@ -140,7 +140,7 @@ always_ff @(posedge clk, negedge n_reset)
 logic [3:0] wrdelay;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
-		wrdelay <= 3'h0;
+		wrdelay <= 0;
 	else if (command == READ)
 		wrdelay <= CAS + (2 ** BURST) + 2 - 1;
 	else if (wrdelay != 0)

@@ -40,23 +40,33 @@ always_ff @(posedge clkSYS, posedge aclr)
 	else if (req_ready)
 		req_addr <= req_addr + BURST;
 
-logic rdreq_sys[4];
+logic [4:0] empty_req;
+logic [2:0] empty_level;
+always_ff @(posedge clkTFT, posedge aclr)
+	if (aclr) begin
+		empty_req[0] <= 1'b0;
+		empty_level <= 3'h0;
+	end else if (rdreq) begin
+		empty_level <= empty_level + 3'h1;
+		empty_req[0] <= empty_level == 3'h7;
+	end else
+		empty_req[0] <= 1'b0;
+
 always_ff @(posedge clkSYS)
 begin
-	rdreq_sys[0] <= rdreq & clkTFT;
-	rdreq_sys[1] <= rdreq_sys[0];
-	rdreq_sys[2] <= rdreq_sys[1];
-	rdreq_sys[3] <= rdreq_sys[1] && ~rdreq_sys[2];
+	empty_req[3:1] <= empty_req[2:0];
+	empty_req[4] <= empty_req[2] & ~empty_req[3];
 end
 
 logic [5:0] fill_level;
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
 		fill_level <= 5'h0;
-	else if (req_ready)
-		fill_level <= fill_level + BURST;
-	else if (rdreq_sys[3])
-		fill_level <= fill_level - 1;
+	else if (req_ready) begin
+		if (!empty_req[4])
+			fill_level <= fill_level + BURST;
+	end else if (empty_req[4])
+		fill_level <= fill_level - BURST;
 
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)

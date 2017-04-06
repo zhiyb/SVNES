@@ -40,10 +40,12 @@ assign clkTFT = clk32M;
 // Reset control
 logic n_reset;
 logic n_reset_ext, n_reset_mem;
-assign n_reset_ext = KEY[0];
 
 always_ff @(posedge clk50M)
-	n_reset = n_reset_ext;
+begin
+	n_reset_ext <= KEY[0];
+	n_reset <= n_reset_ext & n_reset_mem;
+end
 
 // Memory interface
 parameter AN = 22, DN = 16, BURST = 8;
@@ -78,33 +80,14 @@ begin
 	tft_ready <= request && req_ready && req_id == 2'b11;
 end
 
-// Memory tests
-logic [2:0] burst;
-always_ff @(posedge clkSYS, negedge n_reset)
-	if (~n_reset) begin
-		mem_data <= 0;
-		mem_valid <= 1'b0;
-		mem_id <= 2'h0;
-		burst <= 0;
-		req_ready <= 1'b0;
-	end else if (request && req_ready) begin
-		mem_data <= req_addr[15:0];
-		mem_valid <= 1'b1;
-		mem_id <= req_id;
-		burst <= BURST - 1;
-		req_ready <= 1'b0;
-	end else if (burst == 0) begin
-		mem_valid <= 1'b0;
-		req_ready <= 1'b1;
-	end else begin
-		mem_data <= mem_data + 1;
-		mem_valid <= 1'b1;
-		burst <= burst - 1;
-		req_ready <= 1'b0;
-	end
-
 // SDRAM
-//sdram #(AN, DN) sdram0 (.clkSYS(clkSYS), .clkSDRAM(clkSDRAM));
+sdram #(AN, DN, BURST) sdram0 (
+	clkSYS, clkSDRAM, n_reset_ext, n_reset_mem,
+	mem_data, mem_id, mem_valid,
+	req_addr, 16'h0, req_id, request, req_ready,
+	DRAM_ADDR, DRAM_BA, DRAM_DQM, DRAM_CKE, DRAM_CLK,
+	DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N,
+	DRAM_DQ);
 
 // TFT
 logic [5:0] tft_level;

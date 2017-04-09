@@ -13,7 +13,7 @@ module tft #(
 
 	output logic [AN - 1:0] req_addr,
 	output logic request,
-	input logic req_ready,
+	input logic req_ack,
 
 	// Hardware interface
 	output logic disp, de, dclk, vsync, hsync,
@@ -37,7 +37,7 @@ tft_fifo fifo0 (.aclr(aclr), .data(mem_data),
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
 		req_addr <= BASE;
-	else if (req_ready)
+	else if (req_ack)
 		req_addr <= req_addr + BURST;
 
 logic [4:0] empty_req;
@@ -62,7 +62,7 @@ logic [5:0] fill_level;
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
 		fill_level <= 5'h0;
-	else if (req_ready) begin
+	else if (req_ack) begin
 		if (!empty_req[4])
 			fill_level <= fill_level + BURST;
 	end else if (empty_req[4])
@@ -71,14 +71,16 @@ always_ff @(posedge clkSYS, posedge aclr)
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
 		request <= 1'b0;
+	else if (req_ack)
+		request <= 1'b0;
 	else
-		request <= fill_level[5:4] != 2'b11;
+		request <= fill_level[5:3] != 3'b111;
 
 assign wrreq = mem_valid;
 
 // Hardware logics
 assign dclk = clkTFT;
-assign disp = 1'b1;
+assign disp = n_reset;
 assign de = 1'b0;
 
 // Horizontal control

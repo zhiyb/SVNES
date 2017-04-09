@@ -42,4 +42,13 @@ begin
 	forever #10ns CLOCK_50 = ~CLOCK_50;
 end
 
+logic [15:0] DRAM_DQ_q;
+assign DRAM_DQ = DRAM_DQ_q;
+
+always_ff @(posedge DRAM_CLK, negedge KEY[0])
+	if (~KEY[0])
+		DRAM_DQ_q <= 16'h0;
+	else
+		DRAM_DQ_q <= DRAM_DQ_q + 1;
+
 endmodule

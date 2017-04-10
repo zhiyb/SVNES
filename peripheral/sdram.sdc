@@ -40,7 +40,7 @@ set_time_format -unit ns -decimal_places 3
 #**************************************************************
 
 create_clock -name {clk50M} -period 20.000 -waveform { 0.000 10.000 } [get_ports {CLOCK_50}]
-create_clock -name {clkSDRAM} -period 10.417 -waveform { 0.000 5.208 } 
+create_clock -name {clkSDRAM} -period 11.111 -waveform { 0.000 5.556 } 
 
 
 #**************************************************************

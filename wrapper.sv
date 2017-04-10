@@ -145,11 +145,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 // SDRAM
 logic [1:0] sdram_level;
 logic sdram_empty, sdram_full;
-`ifdef MODEL_TECH
-sdram #(.AN(AN), .DN(DN), .BURST(BURST), .tINIT(10)) sdram0
-`else
 sdram #(.AN(AN), .DN(DN), .BURST(BURST)) sdram0
-`endif
 	(clkSYS, clkSDRAM, n_reset_ext, n_reset_mem,
 	mem_data, mem_id, mem_valid,
 	mem.addr, mem.data, mem.id, mem.req, mem.wr, mem.ack,

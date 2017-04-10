@@ -177,7 +177,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset) begin
 		fifo_in.ba <= 2'h0;
-		fifo_in.d <= 26'h0;
+		fifo_in.d <= 25'h0;
 	end else if (~stall) begin
 		if (state == Read) begin
 			fifo_in.ba <= req_ba;
@@ -190,7 +190,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		end else if (state == Active) begin
 			fifo_in.ba <= req_ba;
 			fifo_in.d.column <= 'x;
-			fifo_in.d.data <= {4'bx, req_row};
+			fifo_in.d.data <= {3'bx, req_row};
 		end else if (state == Precharge) begin
 			fifo_in.ba <= req_ba;
 			fifo_in.d <= 'x;

@@ -70,84 +70,28 @@ assign sys[3] = clk270M;
 assign clkSYS = sys[clk];
 `endif
 
-// Memory interface
+// Memory interface and arbiter
 parameter AN = 24, DN = 16, BURST = 8;
 
 logic [DN - 1:0] mem_data;
 logic [1:0] mem_id;
-logic mem_valid;
 
-struct {
-	logic [AN - 1:0] addr;
-	logic [DN - 1:0] data, mem;
-	logic [1:0] id;
-	logic req, wr, ack, valid;
-} mem, tft, test;
+arbiter_if #(AN, DN, 2) mem ();
+arbiter_if #(AN, DN, 2) arb[4] ();
+arbiter_sync_pri #(AN, DN, 2) arb0 (clkSYS, n_reset,
+	mem, mem_data, mem_id, arb);
 
-logic mem_ack_latch;
-always_ff @(posedge clkSYS)
-	mem_ack_latch <= mem.ack;
-
-always_ff @(posedge clkSYS, negedge n_reset)
-	if (~n_reset) begin
-		mem.req <= 1'b0;
-		mem.addr <= 0;
-		mem.data <= 0;
-		mem.id <= 2'b00;
-		mem.wr <= 1'b0;
-	end else if (mem.ack || mem_ack_latch) begin
-		mem.req <= 1'b0;
-		mem.addr <= 'x;
-		mem.data <= 'x;
-		mem.id <= 'x;
-		mem.wr <= 'x;
-	end else if (~mem.req) begin
-		// Priority
-		if (tft.req) begin
-			mem.req <= 1'b1;
-			mem.addr <= tft.addr;
-			mem.data <= tft.data;
-			mem.id <= tft.id;
-			mem.wr <= tft.wr;
-		end else if (test.req) begin
-			mem.req <= 1'b1;
-			mem.addr <= test.addr;
-			mem.data <= test.data;
-			mem.id <= test.id;
-			mem.wr <= test.wr;
-		end else begin
-			mem.req <= 1'b0;
-			mem.addr <= 'x;
-			mem.data <= 'x;
-			mem.id <= 'x;
-			mem.wr <= 'x;
-		end
-	end
-
-always_ff @(posedge clkSYS)
-begin
-	tft.ack <= mem.ack && mem.id == tft.id;
-	test.ack <= mem.ack && mem.id == test.id;
-	tft.mem <= mem_data;
-	test.mem <= mem_data;
-end
-
-always_ff @(posedge clkSYS, negedge n_reset)
-	if (~n_reset) begin
-		tft.valid <= 1'b0;
-		test.valid <= 1'b0;
-	end else if (mem_id == tft.id) begin
-		tft.valid <= mem_valid;
-	end else if (mem_id == test.id) begin
-		test.valid <= mem_valid;
-	end
+assign arb[0].req = 0;
+assign arb[1].req = 0;
+`define tft arb[2]
+`define test arb[3]
 
 // SDRAM
 logic [1:0] sdram_level;
 logic sdram_empty, sdram_full;
 sdram #(.AN(AN), .DN(DN), .BURST(BURST)) sdram0
 	(clkSYS, clkSDRAM, n_reset_ext, n_reset_mem,
-	mem_data, mem_id, mem_valid,
+	mem_data, mem_id, mem.valid,
 	mem.addr, mem.data, mem.id, mem.req, mem.wr, mem.ack,
 	DRAM_DQ, DRAM_ADDR, DRAM_BA, DRAM_DQM,
 	DRAM_CLK, DRAM_CKE, DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N,
@@ -162,16 +106,15 @@ tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 1, 256, 1}, 10, '{1, 1, 128, 1}) tft0
 tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 43, 799, 15}, 10, '{1, 20, 479, 6}) tft0
 `endif
 	(.clkSYS(clkSYS), .clkTFT(clkTFT), .n_reset(n_reset),
-	.mem_data(tft.mem), .mem_valid(tft.valid),
-	.req_addr(tft.addr), .req_ack(tft.ack), .req(tft.req),
+	.mem_data(`tft.mem), .mem_valid(`tft.valid),
+	.req_addr(`tft.addr), .req_ack(`tft.ack), .req(`tft.req),
 	.disp(GPIO_0[26]), .de(GPIO_0[29]), .dclk(GPIO_0[25]),
 	.vsync(GPIO_0[28]), .hsync(GPIO_0[27]),
 	.out({GPIO_0[7:0], GPIO_0[15:8], GPIO_0[23:16]}),
 	.level(tft_level), .empty(tft_empty), .full(tft_full));
 
-assign tft.data = 'x;
-assign tft.wr = 0;
-assign tft.id = 2'b10;
+assign `tft.data = 'x;
+assign `tft.wr = 0;
 
 logic tft_pwm;
 assign GPIO_0[24] = tft_pwm;
@@ -180,14 +123,12 @@ assign tft_pwm = n_reset;
 // Memory RW test client
 logic test_fail;
 `ifdef MODEL_TECH
-mem_test #(BURST, 24'hfb0000, 24'h000010) test0 (clkSYS, n_reset, test.mem, test.valid,
-	test.addr, test.data, test.req, test.wr, test.ack, test_fail, ~KEY[1], SW[3]);
+mem_test #(BURST, 24'hfb0000, 24'h000010) test0 (clkSYS, n_reset, `test.mem, `test.valid,
+	`test.addr, `test.data, `test.req, `test.wr, `test.ack, test_fail, ~KEY[1], SW[3]);
 `else
-mem_test #(BURST, 24'hfb0000, 24'h040000) test0 (clkSYS, n_reset, test.mem, test.valid,
-	test.addr, test.data, test.req, test.wr, test.ack, test_fail, ~KEY[1], SW[3]);
+mem_test #(BURST, 24'hfb0000, 24'h040000) test0 (clkSYS, n_reset, `test.mem, `test.valid,
+	`test.addr, `test.data, `test.req, `test.wr, `test.ack, test_fail, ~KEY[1], SW[3]);
 `endif
-
-assign test.id = 2'b11;
 
 // Debugging LEDs
 assign LED[7:0] = {clk, test_fail, sdram_empty, sdram_level[1], tft_empty, tft_level[5:4]};

@@ -12,7 +12,7 @@ module tft #(
 	input logic mem_valid,
 
 	output logic [AN - 1:0] req_addr,
-	output logic request,
+	output logic req,
 	input logic req_ack,
 
 	// Hardware interface
@@ -70,11 +70,11 @@ always_ff @(posedge clkSYS, posedge aclr)
 
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
-		request <= 1'b0;
+		req <= 1'b0;
+	else if (fill_level[5:4] != 2'b11)
+		req <= 1'b1;
 	else if (req_ack)
-		request <= 1'b0;
-	else
-		request <= fill_level[5:3] != 3'b111;
+		req <= 1'b0;
 
 assign wrreq = mem_valid;
 

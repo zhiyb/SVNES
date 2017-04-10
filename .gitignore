@@ -20,4 +20,5 @@ output_files
 *.stp
 *.xml
 *.srf
+*.json
 wlft*

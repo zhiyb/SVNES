@@ -1,8 +1,9 @@
 module sdram #(
 	// Address bus size, data bus size
 	parameter AN = 24, DN = 16, BURST = 8,
-	tRP = 2, tRC = 8, tRRD_tMRD = 2, tRAS = 6, tRCD = 2, tDPL = 2,
-	tINIT = 9600, tREF = 750,
+	tRC = 8, tRAS = 6, tRP = 2, tRCD = 2,
+	tRRD_tMRD = 2, tDPL = 2, tQMD = 2,
+	tINIT = 9000, tREF = 704,
 	logic [2:0] CAS = 2
 ) (
 	input logic clkSYS, clkSDRAM, n_reset,
@@ -17,7 +18,7 @@ module sdram #(
 	input logic [AN - 1:0] req_addr,
 	input logic [DN - 1:0] req_data,
 	input logic [1:0] req_id,
-	input logic request, req_wr,
+	input logic req, req_wr,
 	output logic req_ack,
 
 	// Hardware interface
@@ -55,7 +56,7 @@ assign DRAM_CLK = clkSDRAM;
 
 // Tri-state DQ
 logic DRAM_DQ_out;
-logic [16:0] DRAM_DQ_q, DRAM_DQ_d;
+logic [15:0] DRAM_DQ_q, DRAM_DQ_d;
 assign DRAM_DQ = DRAM_DQ_out ? DRAM_DQ_q : 16'bz;
 
 always_ff @(posedge clkSDRAM)
@@ -83,18 +84,18 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 			DRAM_RAS_N <= 1'b0;
 			DRAM_CAS_N <= 1'b1;
 			DRAM_WE_N <= 1'b0;
-			DRAM_BA <= 2'b0;
-			DRAM_ADDR <= {2'b0, 1'b1, 10'b0};
-			DRAM_DQ_q <= 16'b0;
+			DRAM_BA <= 2'bx;
+			DRAM_ADDR <= {2'bx, 1'b1, 10'bx};
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		REF: begin	// CBR auto-refresh
 			DRAM_RAS_N <= 1'b0;
 			DRAM_CAS_N <= 1'b0;
 			DRAM_WE_N <= 1'b1;
-			DRAM_BA <= 2'b0;
-			DRAM_ADDR <= 13'b0;
-			DRAM_DQ_q <= 16'b0;
+			DRAM_BA <= 2'bx;
+			DRAM_ADDR <= 13'bx;
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		MRS: begin	// Mode register set
@@ -104,7 +105,7 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 			DRAM_BA <= 2'b0;
 			// Reserved, no write burst, standard, CAS, sequential, burst length 8
 			DRAM_ADDR <= {3'b0, 1'b1, 2'b0, CAS, 1'b0, 3'h3};
-			DRAM_DQ_q <= 16'b0;
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		ACT: begin	// Bank activate
@@ -113,7 +114,7 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 			DRAM_WE_N <= 1'b1;
 			DRAM_BA <= dram.ba;
 			DRAM_ADDR <= dram_row;
-			DRAM_DQ_q <= 16'b0;
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		PRE: begin	// Precharge select bank
@@ -121,8 +122,8 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 			DRAM_CAS_N <= 1'b1;
 			DRAM_WE_N <= 1'b0;
 			DRAM_BA <= dram.ba;
-			DRAM_ADDR <= 13'b0;
-			DRAM_DQ_q <= 16'b0;
+			DRAM_ADDR <= {2'bx, 1'b0, 10'bx};
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		READ: begin	// Read
@@ -131,7 +132,7 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 			DRAM_WE_N <= 1'b1;
 			DRAM_BA <= dram.ba;
 			DRAM_ADDR <= dram.d.column;
-			DRAM_DQ_q <= 16'b0;
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		WRITE: begin	// Write
@@ -147,9 +148,9 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 			DRAM_RAS_N <= 1'b1;
 			DRAM_CAS_N <= 1'b1;
 			DRAM_WE_N <= 1'b1;
-			DRAM_BA <= 2'b0;
-			DRAM_ADDR <= 13'b0;
-			DRAM_DQ_q <= 16'b0;
+			DRAM_BA <= 2'bx;
+			DRAM_ADDR <= 13'bx;
+			DRAM_DQ_q <= 16'bx;
 			DRAM_DQ_out <= 1'b0;
 		end
 		endcase
@@ -174,16 +175,13 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 always_ff @(posedge clkSYS)
 	icnt_ovf_latch[3:1] <= icnt_ovf_latch[2:0];
 
-logic stall;
-assign stall = full;
-
-logic icnt_ovf;
+logic icnt_ovf, icnt_ovf_clr;
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		icnt_ovf <= 1'b0;
 	else if (icnt_ovf_latch[2] && ~icnt_ovf_latch[3])
 		icnt_ovf <= 1'b1;
-	else if (~stall)
+	else if (icnt_ovf_clr)
 		icnt_ovf <= 1'b0;
 
 always_ff @(posedge clkSYS, negedge n_reset)
@@ -210,6 +208,9 @@ sdram_fifo fifo0 (~n_reset, fifo_in,
 enum int unsigned {Powerup, IPrecharge, IRefresh, IRefresh2, IMode,
 	Idle, PrechargeAll, Refresh,
 	Request, Active, Precharge, Read, Write} state;
+
+logic stall;
+assign stall = full;
 
 // Request interpret
 logic [1:0] req_ba;
@@ -251,6 +252,15 @@ always_ff @(posedge clkSYS, negedge n_reset)
 			match[i] <= active[i] && req_row == bank_row[i];
 	end
 
+// Periodic refresh clear
+always_ff @(posedge clkSYS, negedge n_reset)
+	if (~n_reset)
+		icnt_ovf_clr <= 1'b0;
+	else if (~stall && (state == Powerup || state == Idle))
+		icnt_ovf_clr <= 1'b1;
+	else
+		icnt_ovf_clr <= 1'b0;
+
 // Command sequencer
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset) begin
@@ -286,20 +296,18 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		end else if (state == Refresh) begin
 			fifo_in.cmd <= REF;
 			wrreq <= 1'b1;
-			state <= request ? Request : Idle;
+			state <= req ? Request : Idle;
 		end else if (state == Idle) begin
 			fifo_in.cmd <= NOP;
 			wrreq <= 1'b0;
 			if (icnt_ovf)
 				state <= PrechargeAll;
-			else if (request)
+			else if (req && ~req_ack)
 				state <= Request;
 		end else if (state == Request) begin
 			fifo_in.cmd <= NOP;
 			wrreq <= 1'b0;
-			if (~request)
-				state <= Idle;
-			else if (match[req_ba])
+			if (match[req_ba])
 				state <= req_wr ? Write : Read;
 			else if (active[req_ba])
 				state <= Precharge;
@@ -500,7 +508,7 @@ end
 cnt_t ready;
 sdram_cnt #(4, BURST) cnt_tBURST (clkSDRAM, n_reset,
 	~estall && reload.tBURST, ready.tBURST);
-sdram_cnt #(4, BURST + CAS) cnt_tBURSTW (clkSDRAM, n_reset,
+sdram_cnt #(4, BURST + CAS + tQMD) cnt_tBURSTW (clkSDRAM, n_reset,
 	~estall && reload.tBURSTW, ready.tBURSTW);
 sdram_cnt #(2, tRCD) cnt_tRCD (clkSDRAM, n_reset,
 	~estall && reload.tRCD, ready.tRCD);

@@ -115,21 +115,21 @@ module pll (
 		altpll_component.clk0_duty_cycle = 50,
 		altpll_component.clk0_multiply_by = 1,
 		altpll_component.clk0_phase_shift = "0",
-		altpll_component.clk1_divide_by = 25,
+		altpll_component.clk1_divide_by = 5,
 		altpll_component.clk1_duty_cycle = 50,
-		altpll_component.clk1_multiply_by = 16,
+		altpll_component.clk1_multiply_by = 3,
 		altpll_component.clk1_phase_shift = "0",
-		altpll_component.clk2_divide_by = 25,
+		altpll_component.clk2_divide_by = 5,
 		altpll_component.clk2_duty_cycle = 50,
-		altpll_component.clk2_multiply_by = 48,
+		altpll_component.clk2_multiply_by = 9,
 		altpll_component.clk2_phase_shift = "0",
-		altpll_component.clk3_divide_by = 25,
+		altpll_component.clk3_divide_by = 5,
 		altpll_component.clk3_duty_cycle = 50,
-		altpll_component.clk3_multiply_by = 96,
+		altpll_component.clk3_multiply_by = 27,
 		altpll_component.clk3_phase_shift = "0",
 		altpll_component.clk4_divide_by = 5,
 		altpll_component.clk4_duty_cycle = 50,
-		altpll_component.clk4_multiply_by = 24,
+		altpll_component.clk4_multiply_by = 36,
 		altpll_component.clk4_phase_shift = "0",
 		altpll_component.compensate_clock = "CLK0",
 		altpll_component.inclk0_input_frequency = 20000,
@@ -204,21 +204,21 @@ endmodule
 // Retrieval info: PRIVATE: CUR_DEDICATED_CLK STRING "c0"
 // Retrieval info: PRIVATE: CUR_FBIN_CLK STRING "c0"
 // Retrieval info: PRIVATE: DEVICE_SPEED_GRADE STRING "Any"
-// Retrieval info: PRIVATE: DIV_FACTOR0 NUMERIC "1"
-// Retrieval info: PRIVATE: DIV_FACTOR1 NUMERIC "1"
-// Retrieval info: PRIVATE: DIV_FACTOR2 NUMERIC "1"
-// Retrieval info: PRIVATE: DIV_FACTOR3 NUMERIC "25"
-// Retrieval info: PRIVATE: DIV_FACTOR4 NUMERIC "1"
+// Retrieval info: PRIVATE: DIV_FACTOR0 NUMERIC "25"
+// Retrieval info: PRIVATE: DIV_FACTOR1 NUMERIC "25"
+// Retrieval info: PRIVATE: DIV_FACTOR2 NUMERIC "25"
+// Retrieval info: PRIVATE: DIV_FACTOR3 NUMERIC "5"
+// Retrieval info: PRIVATE: DIV_FACTOR4 NUMERIC "5"
 // Retrieval info: PRIVATE: DUTY_CYCLE0 STRING "50.00000000"
 // Retrieval info: PRIVATE: DUTY_CYCLE1 STRING "50.00000000"
 // Retrieval info: PRIVATE: DUTY_CYCLE2 STRING "50.00000000"
 // Retrieval info: PRIVATE: DUTY_CYCLE3 STRING "50.00000000"
 // Retrieval info: PRIVATE: DUTY_CYCLE4 STRING "50.00000000"
 // Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE0 STRING "10.000000"
-// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE1 STRING "32.000000"
-// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE2 STRING "96.000000"
-// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE3 STRING "192.000000"
-// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE4 STRING "240.000000"
+// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE1 STRING "30.000000"
+// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE2 STRING "90.000000"
+// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE3 STRING "270.000000"
+// Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE4 STRING "360.000000"
 // Retrieval info: PRIVATE: EXPLICIT_SWITCHOVER_COUNTER STRING "0"
 // Retrieval info: PRIVATE: EXT_FEEDBACK_RADIO STRING "0"
 // Retrieval info: PRIVATE: GLOCKED_COUNTER_EDIT_CHANGED STRING "1"
@@ -249,22 +249,22 @@ endmodule
 // Retrieval info: PRIVATE: MIRROR_CLK2 STRING "0"
 // Retrieval info: PRIVATE: MIRROR_CLK3 STRING "0"
 // Retrieval info: PRIVATE: MIRROR_CLK4 STRING "0"
-// Retrieval info: PRIVATE: MULT_FACTOR0 NUMERIC "1"
-// Retrieval info: PRIVATE: MULT_FACTOR1 NUMERIC "1"
-// Retrieval info: PRIVATE: MULT_FACTOR2 NUMERIC "1"
-// Retrieval info: PRIVATE: MULT_FACTOR3 NUMERIC "120"
-// Retrieval info: PRIVATE: MULT_FACTOR4 NUMERIC "1"
+// Retrieval info: PRIVATE: MULT_FACTOR0 NUMERIC "5"
+// Retrieval info: PRIVATE: MULT_FACTOR1 NUMERIC "15"
+// Retrieval info: PRIVATE: MULT_FACTOR2 NUMERIC "45"
+// Retrieval info: PRIVATE: MULT_FACTOR3 NUMERIC "27"
+// Retrieval info: PRIVATE: MULT_FACTOR4 NUMERIC "36"
 // Retrieval info: PRIVATE: NORMAL_MODE_RADIO STRING "1"
 // Retrieval info: PRIVATE: OUTPUT_FREQ0 STRING "10.00000000"
 // Retrieval info: PRIVATE: OUTPUT_FREQ1 STRING "32.00000000"
 // Retrieval info: PRIVATE: OUTPUT_FREQ2 STRING "96.00000000"
-// Retrieval info: PRIVATE: OUTPUT_FREQ3 STRING "192.00000000"
-// Retrieval info: PRIVATE: OUTPUT_FREQ4 STRING "240.00000000"
-// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE0 STRING "1"
-// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE1 STRING "1"
-// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE2 STRING "1"
-// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE3 STRING "1"
-// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE4 STRING "1"
+// Retrieval info: PRIVATE: OUTPUT_FREQ3 STRING "220.00000000"
+// Retrieval info: PRIVATE: OUTPUT_FREQ4 STRING "300.00000000"
+// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE0 STRING "0"
+// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE1 STRING "0"
+// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE2 STRING "0"
+// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE3 STRING "0"
+// Retrieval info: PRIVATE: OUTPUT_FREQ_MODE4 STRING "0"
 // Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT0 STRING "MHz"
 // Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT1 STRING "MHz"
 // Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT2 STRING "MHz"
@@ -330,21 +330,21 @@ endmodule
 // Retrieval info: CONSTANT: CLK0_DUTY_CYCLE NUMERIC "50"
 // Retrieval info: CONSTANT: CLK0_MULTIPLY_BY NUMERIC "1"
 // Retrieval info: CONSTANT: CLK0_PHASE_SHIFT STRING "0"
-// Retrieval info: CONSTANT: CLK1_DIVIDE_BY NUMERIC "25"
+// Retrieval info: CONSTANT: CLK1_DIVIDE_BY NUMERIC "5"
 // Retrieval info: CONSTANT: CLK1_DUTY_CYCLE NUMERIC "50"
-// Retrieval info: CONSTANT: CLK1_MULTIPLY_BY NUMERIC "16"
+// Retrieval info: CONSTANT: CLK1_MULTIPLY_BY NUMERIC "3"
 // Retrieval info: CONSTANT: CLK1_PHASE_SHIFT STRING "0"
-// Retrieval info: CONSTANT: CLK2_DIVIDE_BY NUMERIC "25"
+// Retrieval info: CONSTANT: CLK2_DIVIDE_BY NUMERIC "5"
 // Retrieval info: CONSTANT: CLK2_DUTY_CYCLE NUMERIC "50"
-// Retrieval info: CONSTANT: CLK2_MULTIPLY_BY NUMERIC "48"
+// Retrieval info: CONSTANT: CLK2_MULTIPLY_BY NUMERIC "9"
 // Retrieval info: CONSTANT: CLK2_PHASE_SHIFT STRING "0"
-// Retrieval info: CONSTANT: CLK3_DIVIDE_BY NUMERIC "25"
+// Retrieval info: CONSTANT: CLK3_DIVIDE_BY NUMERIC "5"
 // Retrieval info: CONSTANT: CLK3_DUTY_CYCLE NUMERIC "50"
-// Retrieval info: CONSTANT: CLK3_MULTIPLY_BY NUMERIC "96"
+// Retrieval info: CONSTANT: CLK3_MULTIPLY_BY NUMERIC "27"
 // Retrieval info: CONSTANT: CLK3_PHASE_SHIFT STRING "0"
 // Retrieval info: CONSTANT: CLK4_DIVIDE_BY NUMERIC "5"
 // Retrieval info: CONSTANT: CLK4_DUTY_CYCLE NUMERIC "50"
-// Retrieval info: CONSTANT: CLK4_MULTIPLY_BY NUMERIC "24"
+// Retrieval info: CONSTANT: CLK4_MULTIPLY_BY NUMERIC "36"
 // Retrieval info: CONSTANT: CLK4_PHASE_SHIFT STRING "0"
 // Retrieval info: CONSTANT: COMPENSATE_CLOCK STRING "CLK0"
 // Retrieval info: CONSTANT: INCLK0_INPUT_FREQUENCY NUMERIC "20000"

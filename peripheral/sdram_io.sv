@@ -1,7 +1,7 @@
 import sdram_types::*;
 
 module sdram_io #(
-	parameter BURST = 8,
+	parameter IN, BURST,
 	tRC = 8, tRAS = 6, tRP = 2, tRCD = 2,
 	tRRD_tMRD = 2, tDPL = 2, tQMD = 2,
 `ifdef MODEL_TECH
@@ -23,7 +23,7 @@ module sdram_io #(
 
 	// Data output interface
 	output logic data_valid_io,
-	output logic [1:0] data_id_io,
+	output logic [IN - 1:0] data_id_io,
 	output logic [15:0] data_io,
 
 	// Hardware interface
@@ -54,8 +54,8 @@ always_ff @(posedge clkSDRAM, negedge n_reset)
 data_t dram;
 logic [12:0] dram_row;
 assign dram_row = dram.d.data[12:0];
-logic [1:0] dram_id;
-assign dram_id = dram.d.data[1:0];
+logic [IN - 1:0] dram_id;
+assign dram_id = dram.d.data[IN - 1:0];
 
 // {{{ Logic IO operations
 assign DRAM_CLK = clkSDRAM;
@@ -336,7 +336,7 @@ assign estall = !(!(~ready & check));
 parameter tLATCH = BURST + CAS + 1;
 struct packed {
 	logic valid;
-	logic [1:0] id;
+	logic [IN - 1:0] id;
 } data_latch[tLATCH];
 
 generate

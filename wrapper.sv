@@ -63,39 +63,40 @@ always_ff @(posedge clk10M)
 		cnt <= cnt - 1;
 
 logic sys[4];
-assign sys[0] = clk360M;
-assign sys[1] = clk270M;
-assign sys[2] = clk90M;
-assign sys[3] = clk270M;
+assign sys[0] = clk270M;
+assign sys[1] = clk90M;
+assign sys[2] = clk270M;
+assign sys[3] = clk360M;
 assign clkSYS = sys[clk];
 `endif
 
-// Memory interface and arbiter
-parameter AN = 24, DN = 16, BURST = 8;
+// Memory subsystem with arbiter
+localparam AN = 24, DN = 16, IN = 4, BURST = 8;
 
-logic [DN - 1:0] mem_data;
-logic [1:0] mem_id;
+logic [AN - 1:0] arb_addr[IN];
+logic [DN - 1:0] arb_data[IN];
+logic arb_wr[IN];
+logic [IN - 1:0] arb_req, arb_grant, arb_ack;
 
-arbiter_if #(AN, DN, 2) mem ();
-arbiter_if #(AN, DN, 2) arb[4] ();
-arbiter_sync_pri #(AN, DN, 2) arb0 (clkSYS, n_reset,
-	mem, mem_data, mem_id, arb);
+logic [DN - 1:0] mem_data_out;
+logic [IN - 1:0] arb_valid;
 
-assign arb[0].req = 0;
-assign arb[1].req = 0;
-`define tft arb[2]
-`define test arb[3]
-
-// SDRAM
 logic [1:0] sdram_level;
 logic sdram_empty, sdram_full;
-sdram #(.AN(AN), .DN(DN), .BURST(BURST)) sdram0
-	(clkSYS, clkSDRAM, n_reset_ext, n_reset_mem,
-	mem_data, mem_id, mem.valid,
-	mem.addr, mem.data, mem.id, mem.req, mem.wr, mem.ack,
-	DRAM_DQ, DRAM_ADDR, DRAM_BA, DRAM_DQM,
-	DRAM_CLK, DRAM_CKE, DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N,
-	sdram_empty, sdram_full, sdram_level);
+memory #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
+
+// Memory access arbiter assignments
+localparam tft = 0, test = 3;
+
+assign arb_req[1] = 1'b0;
+assign arb_wr[1] = 1'bx;
+assign arb_addr[1] = 'bx;
+assign arb_data[1] = 'bx;
+
+assign arb_req[2] = 1'b0;
+assign arb_wr[2] = 1'bx;
+assign arb_addr[2] = 'bx;
+assign arb_data[2] = 'bx;
 
 // TFT
 logic [5:0] tft_level;
@@ -106,15 +107,14 @@ tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 1, 256, 1}, 10, '{1, 1, 128, 1}) tft0
 tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 43, 799, 15}, 10, '{1, 20, 479, 6}) tft0
 `endif
 	(.clkSYS(clkSYS), .clkTFT(clkTFT), .n_reset(n_reset),
-	.mem_data(`tft.mem), .mem_valid(`tft.valid),
-	.req_addr(`tft.addr), .req_ack(`tft.ack), .req(`tft.req),
+	.mem_data(mem_data_out), .mem_valid(arb_valid[tft]),
+	.req_addr(arb_addr[tft]), .req_ack(arb_ack[tft]), .req(arb_req[tft]),
 	.disp(GPIO_0[26]), .de(GPIO_0[29]), .dclk(GPIO_0[25]),
 	.vsync(GPIO_0[28]), .hsync(GPIO_0[27]),
 	.out({GPIO_0[7:0], GPIO_0[15:8], GPIO_0[23:16]}),
 	.level(tft_level), .empty(tft_empty), .full(tft_full));
-
-assign `tft.data = 'x;
-assign `tft.wr = 0;
+assign arb_wr[tft] = 1'b0;
+assign arb_data[tft] = 'bx;
 
 logic tft_pwm;
 assign GPIO_0[24] = tft_pwm;
@@ -123,11 +123,13 @@ assign tft_pwm = n_reset;
 // Memory RW test client
 logic test_fail;
 `ifdef MODEL_TECH
-mem_test #(BURST, 24'hfb0000, 24'h000010) test0 (clkSYS, n_reset, `test.mem, `test.valid,
-	`test.addr, `test.data, `test.req, `test.wr, `test.ack, test_fail, ~KEY[1], SW[3]);
+mem_test #(BURST, 24'hfb0000, 24'h000010) test0 (clkSYS, n_reset,
+	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
+	arb_req[test], arb_wr[test], arb_ack[test], test_fail, ~KEY[1], SW[3]);
 `else
-mem_test #(BURST, 24'hfb0000, 24'h040000) test0 (clkSYS, n_reset, `test.mem, `test.valid,
-	`test.addr, `test.data, `test.req, `test.wr, `test.ack, test_fail, ~KEY[1], SW[3]);
+mem_test #(BURST, 24'hfb0000, 24'h040000) test0 (clkSYS, n_reset,
+	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
+	arb_req[test], arb_wr[test], arb_ack[test], test_fail, ~KEY[1], SW[3]);
 `endif
 
 // Debugging LEDs

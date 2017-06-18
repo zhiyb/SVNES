@@ -2,7 +2,7 @@ import sdram_types::*;
 
 module sdram_sys #(
 	// Address bus size, data bus size
-	parameter AN = 24, DN = 16, BURST = 8
+	parameter AN, DN, IN, BURST
 ) (
 	input logic clkSYS, n_reset,
 	output logic n_reset_mem,
@@ -18,7 +18,7 @@ module sdram_sys #(
 	// System bus request interface
 	input logic [AN - 1:0] req_addr,
 	input logic [DN - 1:0] req_data,
-	input logic [1:0] req_id,
+	input logic [IN - 1:0] req_id,
 	input logic req, req_wr,
 	output logic req_ack
 );
@@ -182,7 +182,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		if (state == Read) begin
 			fifo_in.ba <= req_ba;
 			fifo_in.d.column <= req_column;
-			fifo_in.d.data <= {14'bx, req_id};
+			fifo_in.d.data <= {{DN - IN{1'bx}}, req_id};
 		end else if (state == Write) begin
 			fifo_in.ba <= req_ba;
 			fifo_in.d.column <= req_column;

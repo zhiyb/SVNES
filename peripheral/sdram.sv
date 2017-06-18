@@ -2,20 +2,20 @@ import sdram_types::*;
 
 module sdram #(
 	// Address bus size, data bus size
-	parameter AN = 24, DN = 16, BURST = 8
+	parameter AN = 24, DN = 16, IN = 2, BURST = 8
 ) (
 	input logic clkSYS, clkSDRAM, n_reset,
 	output logic n_reset_mem,
 
 	// Memory interface
 	output logic [DN - 1:0] mem_data,
-	output logic [1:0] mem_id,
+	output logic [IN - 1:0] mem_id,
 	output logic mem_valid,
 
 	// System bus request interface
 	input logic [AN - 1:0] req_addr,
 	input logic [DN - 1:0] req_data,
-	input logic [1:0] req_id,
+	input logic [IN - 1:0] req_id,
 	input logic req, req_wr,
 	output logic req_ack,
 
@@ -48,13 +48,13 @@ sdram_fifo fifo0 (~n_reset, fifo_in,
 	fifo_out, empty, full, level);
 
 // Command generation
-sdram_sys #(AN, DN, BURST) sys0 (.*);
+sdram_sys #(AN, DN, IN, BURST) sys0 (.*);
 
 // Command execution
 logic data_valid_io;
-logic [1:0] data_id_io;
+logic [IN - 1:0] data_id_io;
 logic [15:0] data_io;
-sdram_io #(BURST) io0 (.icnt_ovf(icnt_ovf[0]), .*);
+sdram_io #(IN, BURST) io0 (.icnt_ovf(icnt_ovf[0]), .*);
 
 // {{{ Data output
 logic [1:0] data_valid_latch;
@@ -78,7 +78,7 @@ always_ff @(posedge clkSYS, negedge n_reset) begin
 	end
 end
 
-logic [1:0] data_id[2];
+logic [IN - 1:0] data_id[2];
 logic [15:0] data[2];
 always_ff @(posedge clkSYS) begin
 	data_id[0] <= data_id_io;

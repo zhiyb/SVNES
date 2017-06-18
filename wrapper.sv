@@ -1,4 +1,55 @@
+// {{{ Clocks and reset control
+module clk_reset (
+	input logic CLOCK_50,
+	output logic clkSYS, clkSDRAM, clkTFT,
+	input logic KEY,
+	output logic [1:0] clk,
+	input logic n_reset_mem,
+	output logic n_reset, n_reset_ext
+);
+
+// Reset control
+always_ff @(posedge CLOCK_50)
+begin
+	n_reset_ext <= KEY;
+	n_reset <= n_reset_ext & n_reset_mem;
+end
+
+// Clocks
+logic clk10M, clk30M, clk50M, clk90M, clk270M, clk360M;
+assign clk50M = CLOCK_50;
+pll pll0 (.inclk0(clk50M), .locked(),
+	.c0(clk10M), .c1(clk30M), .c2(clk90M), .c3(clk270M), .c4(clk360M));
+
+// System interface clock switch for debugging
+`ifdef MODEL_TECH
+assign clk = 0;
+assign clkSYS = clk360M;
+`else
+logic [23:0] cnt;
+always_ff @(posedge clk10M)
+	if (cnt == 0) begin
+		cnt <= 10000000;
+		clk <= KEY ? clk : clk + 1;
+	end else
+		cnt <= cnt - 1;
+
+logic sys[4];
+assign sys[0] = clk270M;
+assign sys[1] = clk90M;
+assign sys[2] = clk270M;
+assign sys[3] = clk360M;
+assign clkSYS = sys[clk];
+`endif
+
+assign clkSDRAM = clk90M;
+assign clkTFT = clk30M;
+
+endmodule
+// }}}
+
 module wrapper (
+	// {{{ Inputs & outputs
 	input logic CLOCK_50,
 	input logic [1:0] KEY,
 	input logic [3:0] SW,
@@ -24,51 +75,14 @@ module wrapper (
 	input logic [1:0] GPIO_1_IN,
 	inout wire [12:0] GPIO_2,
 	input logic [2:0] GPIO_2_IN
+	// }}}
 );
 
-// Clocks
-logic clk10M, clk30M, clk50M, clk90M, clk270M, clk360M;
-assign clk50M = CLOCK_50;
-pll pll0 (.inclk0(clk50M), .locked(),
-	.c0(clk10M), .c1(clk30M), .c2(clk90M), .c3(clk270M), .c4(clk360M));
-
+// Clocks and reset control
 logic clkSYS, clkSDRAM, clkTFT;
-//assign clkSYS = clk360M;
-assign clkSDRAM = clk90M;
-assign clkTFT = clk30M;
-
-// Reset control
-logic n_reset;
-logic n_reset_ext, n_reset_mem;
-
-always_ff @(posedge clk50M)
-begin
-	n_reset_ext <= KEY[0];
-	n_reset <= n_reset_ext & n_reset_mem;
-end
-
-// System interface clock switch for debugging
-`ifdef MODEL_TECH
 logic [1:0] clk;
-assign clk = 0;
-assign clkSYS = clk360M;
-`else
-logic [1:0] clk;
-logic [23:0] cnt;
-always_ff @(posedge clk10M)
-	if (cnt == 0) begin
-		cnt <= 10000000;
-		clk <= KEY[1] ? clk : clk + 1;
-	end else
-		cnt <= cnt - 1;
-
-logic sys[4];
-assign sys[0] = clk270M;
-assign sys[1] = clk90M;
-assign sys[2] = clk270M;
-assign sys[3] = clk360M;
-assign clkSYS = sys[clk];
-`endif
+logic n_reset, n_reset_ext, n_reset_mem;
+clk_reset cr0 (.KEY(KEY[1]), .*);
 
 // Memory subsystem with arbiter
 localparam AN = 24, DN = 16, IN = 4, BURST = 8;

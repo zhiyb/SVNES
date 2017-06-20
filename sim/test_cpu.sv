@@ -44,11 +44,12 @@ always_ff @(posedge clk4, negedge n_reset_async)
 	else
 		n_reset <= n_reset_async;
 
-logic [7:0] ram[31] = '{
+logic [7:0] ram[33] = '{
+	'ha2, 'h03,		// LDX #i
+	'ha1, 'h04,		// LDA (d, x)
 	'ha0, 'h04,		// LDY #i
 	'hb9, 'h21, 'h43,	// LDA a, y
 	'hbe, 'hfe, 'h12,	// LDA a, y
-	'ha2, 'h03,		// LDX #i
 	'had, 'h34, 'h12,	// LDA a
 	'hb6, 'h05,		// LDX d, y
 	'ha2, 'h02,		// LDX #i

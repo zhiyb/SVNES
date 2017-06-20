@@ -17,15 +17,15 @@ typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
 typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5} SB_t;
-typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_ADH = 3'h7} AD_t;
+typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_ADL = 3'h6, AD_ADH = 3'h7} AD_t;
 typedef enum logic       {PC_PC = 1'h0, PC_AD = 1'h1} PC_t;
 typedef enum logic [1:0] {P_MASK = 2'h0, P_SP = 2'h1, P_CLR = 2'h2, P_SET = 2'h3} Pop_t;
 typedef enum logic [1:0] {P_NONE = 2'h0, P_NZ = 2'h1, P_NZC = 2'h2, P_NVZC = 2'h3} P_t;
-typedef enum logic [1:0] {P_POP = 2'h0, P_BIT = 2'h1, P_BRK = 2'h2} Psp_t;
+typedef enum logic [1:0] {P_PUSH = 2'h0, P_POP = 2'h1, P_BIT = 2'h2, P_BRK = 2'h3} Psp_t;
 typedef enum logic [1:0] {P_C = 2'h0, P_D = 2'h1, P_I = 2'h2, P_V = 2'h3} Pf0_t;
 typedef enum logic [1:0] {P_Z = 2'h1, P_N = 2'h2} Pf1_t;
 typedef enum logic	 {READ = 1'h0, WRITE = 1'h1} WR_t;
-typedef enum logic       {SEQ_0 = 1'h0, SEQ = 1'h1} SEQ_t;
+typedef enum logic [1:0] {SEQ_0 = 2'h0, SEQ = 2'h1} SEQ_t;
 
 struct packed {
 	ALUop_t alu;	// 3
@@ -33,7 +33,6 @@ struct packed {
 	ALUAI_t ai;	// 1
 	ALUBI_t bi;	// 2
 	DB_t db;	// 3
-	logic db_p;
 	SB_t sb;	// 3
 	logic sb_a, sb_x, sb_y, sb_sp;
 	AD_t ad;	// 3
@@ -56,8 +55,8 @@ assign mop = rom_mop[31:0];
 logic rom_rden;
 logic [31:0] rom_dispatch;
 rom_mop_dispatch rom1 (~n_reset, data, dclk, rom_rden, rom_dispatch);
-logic [9:0] rom_addr[2];
-assign {rom_addr[1], rom_addr[0]} = rom_dispatch[19:0];
+logic [9:0] rom_addr[3];
+assign {rom_addr[2], rom_addr[1], rom_addr[0]} = rom_dispatch[29:0];
 
 always_comb
 	if (mop.p_chk & br)
@@ -110,6 +109,7 @@ always_comb
 	AD_SP:	{bus_adh, bus_adl} = {8'h1, sp};
 	AD_ABS:	{bus_adh, bus_adl} = {dl, alu};
 	AD_ADH:	{bus_adh, bus_adl} = {bus_sb, alu};
+	AD_ADL:	{bus_adh, bus_adl} = {bus_sb, alu};
 	default: {bus_adh, bus_adl} = 'bx;
 	endcase
 
@@ -119,7 +119,8 @@ always_ff @(posedge clk, negedge n_reset)
 	else if (mop.ad_ab) begin
 		if (mop.ad != AD_ADH)
 			abl <= bus_adl;
-		abh <= bus_adh;
+		if (mop.ad != AD_ADL)
+			abh <= bus_adh;
 	end
 assign addr = {abh, abl};
 
@@ -179,6 +180,7 @@ always_ff @(posedge dclk, negedge n_reset)
 			P_NVZC:	{pmask[S_N:S_V], pmask[S_Z:S_C]} <= 4'b1111;
 			endcase
 		P_SP:	case (mop.p)
+			P_PUSH:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
 			P_POP:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
 			P_BIT:	{pmask[S_N:S_V], pmask[S_Z]} <= 3'b111;
 			P_BRK:	{pmask[S_B], pmask[S_I]} <= 2'b11;

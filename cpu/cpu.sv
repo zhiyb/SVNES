@@ -295,7 +295,7 @@ begin
 	BI_DB:	bi = bus_db;
 	BI_nDB:	bi = ~bus_db;
 	BI_ADL:	bi = bus_adl;
-	BI_HLD:	bi = bi_reg;
+	BI_HLD:	bi = dl;
 	default: bi = 'bx;
 	endcase
 	if (mop.bi == BI_HLD && mop.ai == AI_SB)

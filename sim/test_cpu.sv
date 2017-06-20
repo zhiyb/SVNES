@@ -45,15 +45,18 @@ always_ff @(posedge clk4, negedge n_reset_async)
 		n_reset <= n_reset_async;
 
 logic [7:0] ram[72] = '{
+	'ha9, 'h12,		// LDA #i
 	'ha0, 'h04,		// LDY #i
-	'h99, 'h34, 'h12,	// STA a, y
+	'h91, 'h0b,		// STA (d), y
 	'ha0, 'hee,		// LDY #i
-	'h99, 'hde, 'hbc,	// STA a, y
+	'h91, 'h0b,		// STA (d), y
+	'h99, 'h34, 'h12,	// STA a, y
+	'h81, 'h05,		// STA (d, x)
 	'ha2, 'h02,		// LDX #i
+	'h99, 'hde, 'hbc,	// STA a, y
 	'h9d, 'hde, 'hbc,	// STA a, x
 	'ha2, 'ha5,		// LDX #i
 	'h9d, 'hde, 'hbc,	// STA a, x
-	'ha9, 'h12,		// LDA #i
 	'h8c, 'h56, 'h34,	// STY a
 	'h8e, 'h9a, 'h78,	// STX a
 	'h8d, 'hde, 'hbc,	// STA a
@@ -64,7 +67,6 @@ logic [7:0] ram[72] = '{
 	'h86, 'h06,		// STX d
 	'h85, 'h07,		// STA d
 	'hb1, 'h0d,		// LDA (d), y
-	'hb1, 'h0d,		// LDA (d), y
 	'ha2, 'h03,		// LDX #i
 	'ha1, 'h04,		// LDA (d, x)
 	'hb9, 'h21, 'h43,	// LDA a, y
@@ -73,9 +75,7 @@ logic [7:0] ram[72] = '{
 	'hb6, 'h05,		// LDX d, y
 	'hb5, 'h03,		// LDA d, x
 	'hb4, 'h04,		// LDY d, x
-	'ha4, 'h00,		// LDY d
-	'ha5, 'h03,		// LDA d
-	'ha6, 'h05		// LDX d
+	'ha5, 'h03		// LDA d
 };
 
 logic [7:0] ram_out;

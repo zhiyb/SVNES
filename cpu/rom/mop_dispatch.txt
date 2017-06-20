@@ -2,6 +2,7 @@
 84:	25,	28,	0,	# STY d		3c
 85:	27,	28,	0,	# STA d		3c
 86:	26,	28,	0,	# STX d		3c
+8a:	59,	0,	0,	# TXA		2c
 8c:	35,	28,	0,	# STY a		4c
 8d:	39,	28,	0,	# STA a		4c
 8e:	37,	28,	0,	# STX a		4c
@@ -9,7 +10,9 @@
 94:	29,	28,	0,	# STY d, x	4c
 95:	31,	28,	0,	# STA d, x	4c
 96:	33,	28,	0,	# STX d, y	4c
+98:	61,	0,	0,	# TYA		2c
 99:	45,	28,	0,	# STA a, y	5c
+9a:	63,	0,	0,	# TXS		2c
 9d:	41,	28,	0,	# STA a, x	5c
 a0:	1,	0,	0,	# LDY #i	2c
 a1:	17,	3,	0,	# LDA (d, x)	6c
@@ -17,7 +20,9 @@ a2:	2,	0,	0,	# LDX #i	2c
 a4:	4,	1,	0,	# LDY d		3c
 a5:	4,	3,	0,	# LDA d		3c
 a6:	4,	2,	0,	# LDX d		3c
+a8:	60,	0,	0,	# TAY		2c
 a9:	3,	0,	0,	# LDA #i	2c
+aa:	58,	0,	0,	# TAX		2c
 ac:	9,	1,	0,	# LDY a		4c
 ad:	9,	3,	0,	# LDA a		4c
 ae:	9,	2,	0,	# LDX a		4c
@@ -26,6 +31,7 @@ b4:	5,	1,	0,	# LDY d, x	4c
 b5:	5,	3,	0,	# LDA d, x	4c
 b6:	7,	2,	0,	# LDX d, y	4c
 b9:	14,	3,	0,	# LDA a, y	4+c
+ba:	62,	0,	0,	# TSX		2c
 bc:	11,	1,	0,	# LDY a, x	4+c
 bd:	11,	3,	0,	# LDA a, x	4+c
 be:	14,	2,	0,	# LDX a, y	4+c

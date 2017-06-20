@@ -14,7 +14,7 @@ logic avr, acr, hc, br;
 // {{{ Microcode controller
 typedef enum logic [2:0] {ALU_ADD = 3'b000, ALU_SUB = 3'b001, ALU_SL = 3'b100, ALU_SR = 3'b101} ALUop_t;
 typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
-typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2} ALUBI_t;
+typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2, BI_HLD = 2'h3} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
 typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5} SB_t;
 typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_ADL = 3'h6, AD_ADH = 3'h7} AD_t;
@@ -272,6 +272,16 @@ always_ff @(posedge dclk, negedge n_reset)
 		endcase
 	end
 
+logic [7:0] ai_reg, bi_reg;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset) begin
+		ai_reg <= 0;
+		bi_reg <= 0;
+	end else begin
+		ai_reg <= ai;
+		bi_reg <= bi;
+	end
+
 always_comb
 begin
 	case (mop.ai)
@@ -285,6 +295,10 @@ begin
 	BI_ADL:	bi = bus_adl;
 	default: bi = 'bx;
 	endcase
+	if (mop.bi == BI_HLD) begin
+		ai = ai_reg;
+		bi = bi_reg;
+	end
 end
 // }}}
 

@@ -2,7 +2,7 @@
 subst='	s/#.*//;
 	s/ALU_ADD/000/; s/ALU_SUB/001/; s/ALU_SL/100/; s/ALU_SR/101/;
 	s/AI_0/0/; s/AI_SB/1/;
-	s/BI_DB/00/; s/BI_nDB/01/; s/BI_ADL/10/;
+	s/BI_DB/00/; s/BI_nDB/01/; s/BI_ADL/10/; s/BI_HLD/11/;
 	s/DB_DL/000/; s/DB_PCL/001/; s/DB_PCH/010/; s/DB_SB/011/; s/DB_A/100/; s/DB_P/101/;
 	s/SB_ALU/000/; s/SB_SP/001/; s/SB_X/010/; s/SB_Y/011/; s/SB_A/100/; s/SB_DB/101/;
 	s/AD_PC/000/; s/\<AD_ZP\>/001/; s/AD_ZPA/010/; s/AD_SP/011/;

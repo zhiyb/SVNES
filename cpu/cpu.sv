@@ -207,8 +207,8 @@ always_ff @(posedge clk, negedge n_reset)
 		p[S_R] <= 1'b1;
 	end else if (!mop.p_chk) begin
 		case (mop.pop)
-		P_MASK:	p <= pn & pmask;
-		P_SP:	p <= pspn & pmask;
+		P_MASK:	p <= (p & ~pmask) | (pn & pmask);
+		P_SP:	p <= (p & ~pmask) | (pspn & pmask);
 		P_SET:	p <= p | pmask;
 		P_CLR:	p <= p & ~pmask;
 		endcase

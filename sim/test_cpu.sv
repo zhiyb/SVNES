@@ -45,6 +45,14 @@ always_ff @(posedge clk4, negedge n_reset_async)
 		n_reset <= n_reset_async;
 
 logic [7:0] ram[72] = '{
+	'h38,			// SEC
+	'hf8,			// SED
+	'h78,			// SEI
+	'hb8,			// CLV
+	'h58,			// CLI
+	'h18,			// CLC
+	'hd8,			// CLD
+	'hea,			// NOP
 	'ha9, 'h12,		// LDA #i
 	'haa,			// TAX
 	'ha8,			// TAY
@@ -75,10 +83,7 @@ logic [7:0] ram[72] = '{
 	'h85, 'h07,		// STA d
 	'hb1, 'h0d,		// LDA (d), y
 	'ha1, 'h04,		// LDA (d, x)
-	'hb9, 'h21, 'h43,	// LDA a, y
-	'hbe, 'hfe, 'h12,	// LDA a, y
-	'had, 'h34, 'h12,	// LDA a
-	'hb6, 'h05		// LDX d, y
+	'hb9, 'h21, 'h43	// LDA a, y
 };
 
 logic [7:0] ram_out;

@@ -6,15 +6,16 @@ module cpu (
 );
 
 logic [7:0] bus_db, bus_sb, bus_adh, bus_adl;
-logic [7:0] abh, abl, alu;
-logic [7:0] y, x, sp, a, p, pch, pcl, dl;
+logic [7:0] abh, abl, dl, dout, alu;
+logic [7:0] y, x, sp, a, p, pch, pcl;
 
+// {{{ Microcode controller
 typedef enum logic [2:0] {ALU_ADD = 3'h0} ALUop_t;
 typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
-typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4} SB_t;
-typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_SP = 3'h2, AD_ABS = 3'h3} AD_t;
+typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5} SB_t;
+typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4} AD_t;
 typedef enum logic       {PC_PC = 1'h0, PC_AD = 1'h1} PC_t;
 typedef enum logic [1:0] {P_MASK = 2'h0, P_SP = 2'h1, P_CLR = 2'h2, P_SET = 2'h3} Pop_t;
 typedef enum logic [1:0] {P_NONE = 2'h0, P_NZ = 2'h1, P_NZC = 2'h2, P_NVZC = 2'h3} P_t;
@@ -71,17 +72,21 @@ always_ff @(posedge clk, negedge n_reset)
 		rom_rden <= mop_addr == 0;
 		mop_addrn <= mop_addr + 1;
 	end
+// }}}
 
+// {{{ Buses
 always_comb
-begin
 	case (mop.sb)
 	SB_ALU:	bus_sb = alu;
 	SB_SP:	bus_sb = sp;
 	SB_X:	bus_sb = x;
 	SB_Y:	bus_sb = y;
 	SB_A:	bus_sb = a;
+	SB_DB:	bus_sb = bus_db;
 	default: bus_sb = 'bx;
 	endcase
+
+always_comb
 	case (mop.db)
 	DB_DL:	bus_db = dl;
 	DB_PCL:	bus_db = pcl;
@@ -91,14 +96,16 @@ begin
 	DB_P:	bus_db = p;
 	default: bus_db = 'bx;
 	endcase
+
+always_comb
 	case (mop.ad)
 	AD_PC:	{bus_adh, bus_adl} = {pch, pcl};
-	AD_ZP:	{bus_adh, bus_adl} = {8'h0, alu};
+	AD_ZP:	{bus_adh, bus_adl} = {8'h0, dl};
+	AD_ZPA:	{bus_adh, bus_adl} = {8'h0, alu};
 	AD_SP:	{bus_adh, bus_adl} = {8'h1, sp};
 	AD_ABS:	{bus_adh, bus_adl} = {bus_sb, dl};
 	default: {bus_adh, bus_adl} = 'bx;
 	endcase
-end
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
@@ -106,14 +113,26 @@ always_ff @(posedge clk, negedge n_reset)
 	else if (mop.ad_ab)
 		{abh, abl} <= {bus_adh, bus_adl};
 assign addr = {abh, abl};
-assign rw = mop.wr == READ ? 1 : 0;
 
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		dout <= 0;
+	else
+		dout <= bus_db;
+assign rw = mop.wr == READ ? 1 : 0;
+assign data = rw ? 8'bz : dout;
+// }}}
+
+// {{{ ALU
 logic [7:0] ai, bi;
-always_comb
-	case (mop.alu)
-	ALU_ADD:	alu <= ai + bi;
-	default:	alu <= 'bx;
-	endcase
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset)
+		alu <= 0;
+	else
+		case (mop.alu)
+		ALU_ADD:	alu = ai + bi;
+		default:	alu = 'bx;
+		endcase
 
 always_comb
 begin
@@ -122,20 +141,30 @@ begin
 	AI_SB:	ai = bus_sb;
 	default: ai = 'bx;
 	endcase
-	case (mop.sb)
+	case (mop.bi)
 	BI_DB:	bi = bus_db;
 	BI_nDB:	bi = ~bus_db;
 	BI_ADL:	bi = bus_adl;
 	default: bi = 'bx;
 	endcase
 end
+// }}}
 
+// {{{ Status register
 typedef enum {
 	S_N = 7, S_V = 6, S_R = 5, S_B = 4, S_D = 3, S_I = 2, S_Z = 1, S_C = 0
 } Pf_t;
 
-logic [7:0] pn;
+logic [7:0] pn, pspn;
 assign pn = {bus_db[7], 1'b0, 1'b1, 1'b0, 1'b0, 1'b0, bus_db == 0, 1'b0};
+always_comb
+begin
+	pspn = bus_db;
+	case (mop.p)
+	P_BIT:	pspn[S_Z] = 1'b0;
+	P_BRK:	{pspn[S_B], pspn[S_I]} = 2'b11;
+	endcase
+end
 
 logic [7:0] pmask;
 always_ff @(posedge dclk, negedge n_reset)
@@ -149,6 +178,22 @@ always_ff @(posedge dclk, negedge n_reset)
 			P_NZC:	{pmask[S_N], pmask[S_Z:S_C]} <= 3'b111;
 			P_NVZC:	{pmask[S_N:S_V], pmask[S_Z:S_C]} <= 4'b1111;
 			endcase
+		P_SP:	case (mop.p)
+			P_POP:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
+			P_BIT:	{pmask[S_N:S_V], pmask[S_Z]} <= 3'b111;
+			P_BRK:	{pmask[S_B], pmask[S_I]} <= 2'b11;
+			endcase
+		P_CLR:	case (mop.p)
+			P_C:	pmask[S_C] <= 1'b1;
+			P_D:	pmask[S_D] <= 1'b1;
+			P_I:	pmask[S_I] <= 1'b1;
+			P_V:	pmask[S_V] <= 1'b1;
+			endcase
+		P_SET:	case (mop.p)
+			P_C:	pmask[S_C] <= 1'b1;
+			P_D:	pmask[S_D] <= 1'b1;
+			P_I:	pmask[S_I] <= 1'b1;
+			endcase
 		endcase
 	end
 
@@ -156,13 +201,18 @@ always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin
 		p <= 0;
 		p[S_R] <= 1'b1;
-	end else begin
+	end else if (!mop.p_chk) begin
 		case (mop.pop)
-		P_MASK:	p <= pmask & pn;
+		P_MASK:	p <= pn & pmask;
+		P_SP:	p <= pspn & pmask;
+		P_SET:	p <= p | pmask;
+		P_CLR:	p <= p & ~pmask;
 		endcase
 		p[5] <= 1'b1;
 	end
+// }}}
 
+// {{{ Program counter & registers
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		{pch, pcl} <= 0;
@@ -193,5 +243,6 @@ always_ff @(posedge clk, negedge n_reset)
 		if (mop.sb_a)
 			a <= bus_sb;
 	end
+// }}}
 
 endmodule

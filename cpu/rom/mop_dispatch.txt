@@ -4,3 +4,6 @@ a4:	4,	1,	0,	# LDY d		3c
 a5:	4,	3,	0,	# LDA d		3c
 a6:	4,	2,	0,	# LDX d		3c
 a9:	3,	0,	0,	# LDA #i	2c
+b4:	5,	1,	0,	# LDY d, x	4c
+b5:	5,	3,	0,	# LDA d, x	4c
+b6:	7,	2,	0,	# LDX d, y	4c

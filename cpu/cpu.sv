@@ -8,14 +8,16 @@ module cpu (
 logic [7:0] bus_db, bus_sb, bus_adh, bus_adl;
 logic [7:0] abh, abl, dl, dout, alu;
 logic [7:0] y, x, sp, a, p, pch, pcl;
+// Overflow, carry out, half carry, branch
+logic avr, acr, hc, br;
 
 // {{{ Microcode controller
-typedef enum logic [2:0] {ALU_ADD = 3'h0} ALUop_t;
+typedef enum logic [2:0] {ALU_ADD = 3'b000, ALU_SUB = 3'b001, ALU_SL = 3'b100, ALU_SR = 3'b101} ALUop_t;
 typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
 typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5} SB_t;
-typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4} AD_t;
+typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_ADH = 3'h7} AD_t;
 typedef enum logic       {PC_PC = 1'h0, PC_AD = 1'h1} PC_t;
 typedef enum logic [1:0] {P_MASK = 2'h0, P_SP = 2'h1, P_CLR = 2'h2, P_SET = 2'h3} Pop_t;
 typedef enum logic [1:0] {P_NONE = 2'h0, P_NZ = 2'h1, P_NZC = 2'h2, P_NVZC = 2'h3} P_t;
@@ -23,10 +25,11 @@ typedef enum logic [1:0] {P_POP = 2'h0, P_BIT = 2'h1, P_BRK = 2'h2} Psp_t;
 typedef enum logic [1:0] {P_C = 2'h0, P_D = 2'h1, P_I = 2'h2, P_V = 2'h3} Pf0_t;
 typedef enum logic [1:0] {P_Z = 2'h1, P_N = 2'h2} Pf1_t;
 typedef enum logic	 {READ = 1'h0, WRITE = 1'h1} WR_t;
-typedef enum logic [1:0] {SEQ_0 = 2'h0, SEQ = 2'h1} SEQ_t;
+typedef enum logic       {SEQ_0 = 1'h0, SEQ = 1'h1} SEQ_t;
 
 struct packed {
 	ALUop_t alu;	// 3
+	logic alu_c;
 	ALUAI_t ai;	// 1
 	ALUBI_t bi;	// 2
 	DB_t db;	// 3
@@ -42,7 +45,7 @@ struct packed {
 	P_t p;		// 2
 	WR_t wr;
 	logic seq_rom;
-	SEQ_t seq;	// 2
+	SEQ_t seq;	// 1
 } mop;
 
 logic [9:0] mop_addr, mop_addrn;
@@ -53,11 +56,13 @@ assign mop = rom_mop[31:0];
 logic rom_rden;
 logic [31:0] rom_dispatch;
 rom_mop_dispatch rom1 (~n_reset, data, dclk, rom_rden, rom_dispatch);
-logic [9:0] rom_addr[3];
-assign {rom_addr[2], rom_addr[1], rom_addr[0]} = rom_dispatch;
+logic [9:0] rom_addr[2];
+assign {rom_addr[1], rom_addr[0]} = rom_dispatch[19:0];
 
 always_comb
-	if (mop.seq_rom)
+	if (mop.p_chk & br)
+		mop_addr = mop_addrn;
+	else if (mop.seq_rom)
 		mop_addr = rom_addr[mop.seq];
 	else if (mop.seq == SEQ)
 		mop_addr = mop_addrn;
@@ -103,15 +108,19 @@ always_comb
 	AD_ZP:	{bus_adh, bus_adl} = {8'h0, dl};
 	AD_ZPA:	{bus_adh, bus_adl} = {8'h0, alu};
 	AD_SP:	{bus_adh, bus_adl} = {8'h1, sp};
-	AD_ABS:	{bus_adh, bus_adl} = {bus_sb, dl};
+	AD_ABS:	{bus_adh, bus_adl} = {dl, alu};
+	AD_ADH:	{bus_adh, bus_adl} = {bus_sb, alu};
 	default: {bus_adh, bus_adl} = 'bx;
 	endcase
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		{abh, abl} <= 0;
-	else if (mop.ad_ab)
-		{abh, abl} <= {bus_adh, bus_adl};
+	else if (mop.ad_ab) begin
+		if (mop.ad != AD_ADH)
+			abl <= bus_adl;
+		abh <= bus_adh;
+	end
 assign addr = {abh, abl};
 
 always_ff @(posedge clk, negedge n_reset)
@@ -123,40 +132,31 @@ assign rw = mop.wr == READ ? 1 : 0;
 assign data = rw ? 8'bz : dout;
 // }}}
 
-// {{{ ALU
-logic [7:0] ai, bi;
-always_ff @(posedge dclk, negedge n_reset)
-	if (~n_reset)
-		alu <= 0;
-	else
-		case (mop.alu)
-		ALU_ADD:	alu = ai + bi;
-		default:	alu = 'bx;
-		endcase
-
-always_comb
-begin
-	case (mop.ai)
-	AI_0:	ai = 0;
-	AI_SB:	ai = bus_sb;
-	default: ai = 'bx;
-	endcase
-	case (mop.bi)
-	BI_DB:	bi = bus_db;
-	BI_nDB:	bi = ~bus_db;
-	BI_ADL:	bi = bus_adl;
-	default: bi = 'bx;
-	endcase
-end
-// }}}
-
 // {{{ Status register
 typedef enum {
 	S_N = 7, S_V = 6, S_R = 5, S_B = 4, S_D = 3, S_I = 2, S_Z = 1, S_C = 0
 } Pf_t;
 
-logic [7:0] pn, pspn;
-assign pn = {bus_db[7], 1'b0, 1'b1, 1'b0, 1'b0, 1'b0, bus_db == 0, 1'b0};
+logic [7:0] pn;
+assign pn = {bus_db[7], avr, 1'b1, p[S_B], p[S_D], p[S_I], bus_db == 0, acr};
+
+logic [7:0] pbr;
+always_comb
+begin
+	pbr = p;
+	if (~mop.pop[1])
+		pbr[S_C] = pn[S_C];
+	br = 1'b0;
+	case (mop.p)
+	P_N:	br = pbr[S_N];
+	P_V:	br = pbr[S_V];
+	P_C:	br = pbr[S_C];
+	P_Z:	br = pbr[S_Z];
+	endcase
+	br = br ^ mop.pop[0];
+end
+
+logic [7:0] pspn;
 always_comb
 begin
 	pspn = bus_db;
@@ -243,6 +243,47 @@ always_ff @(posedge clk, negedge n_reset)
 		if (mop.sb_a)
 			a <= bus_sb;
 	end
+// }}}
+
+// {{{ ALU
+logic ac;
+assign ac = mop.alu[0] ^ (mop.alu_c & p[S_C]);
+
+logic [7:0] ai, bi;
+logic [8:0] alu_sum, alu_sr, alu_sl;
+logic [7:0] alu_and, alu_or, alu_eor;
+assign alu_sum = ai + bi + (ac ? 1 : 0);
+assign alu_and = ai & bi;
+assign alu_or = ai | bi;
+assign alu_eor = ai ^ bi;
+assign alu_sr = {mop.alu_c & p[S_C], ai[7:0]};
+assign alu_sl = {ai[7:0], mop.alu_c & p[S_C]};
+
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset)
+		{acr, alu} <= 0;
+	else begin
+		{acr, alu} <= alu_sum;
+		case (mop.alu)
+		ALU_SL:		{acr, alu} <= alu_sl;
+		ALU_SR:		{acr, alu} <= alu_sr;
+		endcase
+	end
+
+always_comb
+begin
+	case (mop.ai)
+	AI_0:	ai = 0;
+	AI_SB:	ai = bus_sb;
+	default: ai = 'bx;
+	endcase
+	case (mop.bi)
+	BI_DB:	bi = bus_db;
+	BI_nDB:	bi = ~bus_db;
+	BI_ADL:	bi = bus_adl;
+	default: bi = 'bx;
+	endcase
+end
 // }}}
 
 endmodule

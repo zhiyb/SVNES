@@ -10,3 +10,7 @@ ae:	9,	2,	0,	# LDX a		4c
 b4:	5,	1,	0,	# LDY d, x	4c
 b5:	5,	3,	0,	# LDA d, x	4c
 b6:	7,	2,	0,	# LDX d, y	4c
+b9:	14,	3,	0,	# LDA a, y	4+c
+bc:	11,	1,	0,	# LDY a, x	4+c
+bd:	11,	3,	0,	# LDA a, x	4+c
+be:	14,	2,	0,	# LDX a, y	4+c

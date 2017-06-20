@@ -25,7 +25,7 @@ typedef enum logic [1:0] {P_PUSH = 2'h0, P_POP = 2'h1, P_BIT = 2'h2, P_BRK = 2'h
 typedef enum logic [1:0] {P_C = 2'h0, P_D = 2'h1, P_I = 2'h2, P_V = 2'h3} Pf0_t;
 typedef enum logic [1:0] {P_Z = 2'h1, P_N = 2'h2} Pf1_t;
 typedef enum logic	 {READ = 1'h0, WRITE = 1'h1} WR_t;
-typedef enum logic [1:0] {SEQ_0 = 2'h0, SEQ = 2'h1} SEQ_t;
+typedef enum logic [1:0] {SEQ_0 = 2'h0, SEQ = 2'h1, SEQ_2 = 2'h2} SEQ_t;
 
 struct packed {
 	ALUop_t alu;	// 3
@@ -65,6 +65,8 @@ always_comb
 		mop_addr = rom_addr[mop.seq];
 	else if (mop.seq == SEQ)
 		mop_addr = mop_addrn;
+	else if (mop.seq == SEQ_2)
+		mop_addr = mop_addrn + 1;
 	else
 		mop_addr = 0;
 
@@ -293,12 +295,11 @@ begin
 	BI_DB:	bi = bus_db;
 	BI_nDB:	bi = ~bus_db;
 	BI_ADL:	bi = bus_adl;
+	BI_HLD:	bi = bi_reg;
 	default: bi = 'bx;
 	endcase
-	if (mop.bi == BI_HLD) begin
+	if (mop.bi == BI_HLD && mop.ai == AI_SB)
 		ai = ai_reg;
-		bi = bi_reg;
-	end
 end
 // }}}
 

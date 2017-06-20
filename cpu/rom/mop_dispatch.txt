@@ -1,0 +1,6 @@
+a0:	1,	0,	0,	# LDY #i	2c
+a2:	2,	0,	0,	# LDX #i	2c
+a4:	4,	1,	0,	# LDY d		3c
+a5:	4,	3,	0,	# LDA d		3c
+a6:	4,	2,	0,	# LDX d		3c
+a9:	3,	0,	0,	# LDA #i	2c

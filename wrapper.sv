@@ -112,6 +112,9 @@ assign arb_wr[2] = 1'bx;
 assign arb_addr[2] = 'bx;
 assign arb_data[2] = 'bx;
 
+// System
+cpu cpu0 (clk10M, ~clk10M, n_reset, , , );
+
 // TFT
 logic [5:0] tft_level;
 logic tft_empty, tft_full;

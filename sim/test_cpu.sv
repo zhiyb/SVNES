@@ -44,10 +44,15 @@ always_ff @(posedge clk4, negedge n_reset_async)
 	else
 		n_reset <= n_reset_async;
 
-logic [7:0] ram[39] = '{
+logic [7:0] ram[45] = '{
+	'ha0, 'hee,		// LDY #i
+	'ha2, 'h02,		// LDX #i
+	'ha9, 'h12,		// LDA #i
+	'h84, 'h05,		// STY d
+	'h86, 'h06,		// STX d
+	'h85, 'h07,		// STA d
 	'ha0, 'h04,		// LDY #i
 	'hb1, 'h0d,		// LDA (d), y
-	'ha0, 'hee,		// LDY #i
 	'hb1, 'h0d,		// LDA (d), y
 	'ha2, 'h03,		// LDX #i
 	'ha1, 'h04,		// LDA (d, x)
@@ -55,13 +60,11 @@ logic [7:0] ram[39] = '{
 	'hbe, 'hfe, 'h12,	// LDA a, y
 	'had, 'h34, 'h12,	// LDA a
 	'hb6, 'h05,		// LDX d, y
-	'ha2, 'h02,		// LDX #i
 	'hb5, 'h03,		// LDA d, x
 	'hb4, 'h04,		// LDY d, x
 	'ha4, 'h00,		// LDY d
 	'ha5, 'h03,		// LDA d
 	'ha6, 'h05,		// LDX d
-	'ha9, 'h12,		// LDA #i
 	'ha2, 'h23		// LDX #i
 };
 
@@ -72,7 +75,7 @@ always_ff @(posedge qclk[0])
 begin
 	ram_out <= ram[addr];
 	if (~rw)
-		ram[addr] <= ram_out;
+		ram[addr] <= data;
 end
 
 endmodule

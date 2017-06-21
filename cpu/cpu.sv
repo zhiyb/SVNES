@@ -5,25 +5,25 @@ module cpu (
 	output logic rw
 );
 
-logic [7:0] bus_db, bus_sb, bus_adh, bus_adl;
+logic [7:0] bus_db, bus_sb, bus_adh, bus_adl, int_addr;
 logic [7:0] abh, abl, dl, dout, alu;
 logic [7:0] y, x, sp, a, p, pch, pcl;
 // Overflow, carry out, half carry, branch
 logic avr, acr, hc, br;
 
 // {{{ Microcode controller
-typedef enum logic [2:0] {ALU_ADD = 3'b000, ALU_SUB = 3'b001, ALU_SL = 3'b100, ALU_SR = 3'b101} ALUop_t;
+typedef enum logic [2:0] {ALU_ADD = 3'h0, ALU_SUB = 3'h1, ALU_SL = 3'h2, ALU_SR = 3'h3, ALU_AND = 3'h4, ALU_OR = 3'h5, ALU_EOR = 3'h6, ALU_DEC = 3'h7} ALUop_t;
 typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2, BI_HLD = 2'h3} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
-typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5} SB_t;
-typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_ADL = 3'h6, AD_ADH = 3'h7} AD_t;
+typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5, SB_FUL = 3'h7} SB_t;
+typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_INT = 3'h5, AD_ADL = 3'h6, AD_ADH = 3'h7} AD_t;
 typedef enum logic       {PC_PC = 1'h0, PC_AD = 1'h1} PC_t;
 typedef enum logic [1:0] {P_MASK = 2'h0, P_SP = 2'h1, P_CLR = 2'h2, P_SET = 2'h3} Pop_t;
 typedef enum logic [1:0] {P_NONE = 2'h0, P_NZ = 2'h1, P_NZC = 2'h2, P_NVZC = 2'h3} P_t;
-typedef enum logic [1:0] {P_PUSH = 2'h0, P_POP = 2'h1, P_BIT = 2'h2, P_BRK = 2'h3} Psp_t;
+typedef enum logic [1:0] {P_PUSH = 2'h0, P_POP = 2'h1, P_BIT = 2'h2} Psp_t;
 typedef enum logic [1:0] {P_C = 2'h0, P_D = 2'h1, P_I = 2'h2, P_V = 2'h3} Pf0_t;
-typedef enum logic [1:0] {P_Z = 2'h1, P_N = 2'h2} Pf1_t;
+typedef enum logic [1:0] {P_Z = 2'h1, P_N = 2'h2, P_B = 2'h3} Pf1_t;
 typedef enum logic	 {READ = 1'h0, WRITE = 1'h1} WR_t;
 typedef enum logic [1:0] {SEQ_0 = 2'h0, SEQ = 2'h1, SEQ_2 = 2'h2} SEQ_t;
 
@@ -89,6 +89,7 @@ always_comb
 	SB_Y:	bus_sb = y;
 	SB_A:	bus_sb = a;
 	SB_DB:	bus_sb = bus_db;
+	SB_FUL:	bus_sb = 8'hff;
 	default: bus_sb = 'bx;
 	endcase
 
@@ -110,6 +111,7 @@ always_comb
 	AD_ZPA:	{bus_adh, bus_adl} = {8'h0, alu};
 	AD_SP:	{bus_adh, bus_adl} = {8'h1, sp};
 	AD_ABS:	{bus_adh, bus_adl} = {dl, alu};
+	AD_INT:	{bus_adh, bus_adl} = {8'hff, int_addr};
 	AD_ADH:	{bus_adh, bus_adl} = {bus_sb, alu};
 	AD_ADL:	{bus_adh, bus_adl} = {bus_sb, alu};
 	default: {bus_adh, bus_adl} = 'bx;
@@ -165,7 +167,6 @@ begin
 	pspn = bus_db;
 	case (mop.p)
 	P_BIT:	pspn[S_Z] = 1'b0;
-	P_BRK:	{pspn[S_B], pspn[S_I]} = 2'b11;
 	endcase
 end
 
@@ -185,7 +186,6 @@ always_ff @(posedge dclk, negedge n_reset)
 			P_PUSH:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
 			P_POP:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
 			P_BIT:	{pmask[S_N:S_V], pmask[S_Z]} <= 3'b111;
-			P_BRK:	{pmask[S_B], pmask[S_I]} <= 2'b11;
 			endcase
 		P_CLR:	case (mop.p)
 			P_C:	pmask[S_C] <= 1'b1;
@@ -197,6 +197,7 @@ always_ff @(posedge dclk, negedge n_reset)
 			P_C:	pmask[S_C] <= 1'b1;
 			P_D:	pmask[S_D] <= 1'b1;
 			P_I:	pmask[S_I] <= 1'b1;
+			P_B:	pmask[S_B] <= 1'b1;
 			endcase
 		endcase
 	end
@@ -216,12 +217,22 @@ always_ff @(posedge clk, negedge n_reset)
 	end
 // }}}
 
-// {{{ Program counter & registers
+// {{{ Interrupts, program counter & registers
+always_comb
+	int_addr <= 8'hfe;
+
+logic load_pc;
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset)
+		load_pc <= 1'b0;
+	else
+		load_pc <= mop.pc == PC_AD;
+
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		{pch, pcl} <= 0;
-	else if (mop.pc == PC_AD)
-		{pch, pcl} <= {bus_adh, bus_adl} + (mop.pc_inc ? 1 : 0);
+	else if (load_pc)
+		{pch, pcl} <= {addr} + 1;
 	else
 		{pch, pcl} <= {pch, pcl} + (mop.pc_inc ? 1 : 0);
 
@@ -271,6 +282,10 @@ always_ff @(posedge dclk, negedge n_reset)
 		case (mop.alu)
 		ALU_SL:		{acr, alu} <= alu_sl;
 		ALU_SR:		{acr, alu} <= alu_sr;
+		ALU_AND:	alu <= alu_and;
+		ALU_OR:		alu <= alu_or;
+		ALU_EOR:	alu <= alu_eor;
+		ALU_DEC:	alu <= bi - 1;
 		endcase
 	end
 

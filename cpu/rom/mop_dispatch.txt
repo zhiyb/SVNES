@@ -1,3 +1,4 @@
+# Move instructions
 a9:	3,	0,	0,	# LDA #i	2c
 a5:	4,	3,	0,	# LDA d		3c
 b5:	5,	3,	0,	# LDA d, x	4c
@@ -38,6 +39,9 @@ a8:	60,	0,	0,	# TAY		2c
 98:	61,	0,	0,	# TYA		2c
 ba:	62,	0,	0,	# TSX		2c
 9a:	63,	0,	0,	# TXS		2c
+
+# Jump/flag instructions
+00:	72,	0,	0,	# BRK		7c
 
 18:	64,	0,	0,	# CLC		2c
 38:	65,	0,	0,	# SEC		2c

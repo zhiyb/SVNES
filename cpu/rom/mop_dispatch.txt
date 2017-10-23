@@ -1,9 +1,14 @@
 # Logical and arithmetic commands
-69:	78,	79,	0,	# ADC #i	2c
-e9:	78,	80,	0,	# SBC #i	2c
-29:	78,	81,	0,	# AND #i	2c
-09:	78,	82,	0,	# ORA #i	2c
-49:	78,	83,	0,	# EOR #i	2c
+69:	84,	78,	0,	# ADC #i	2c
+65:	83,	78,	0,	# ADC d		3c
+e9:	84,	79,	0,	# SBC #i	2c
+e5:	83,	79,	0,	# SBC #i	2c
+29:	84,	80,	0,	# AND #i	2c
+25:	83,	80,	0,	# AND #i	2c
+09:	84,	81,	0,	# ORA #i	2c
+05:	83,	81,	0,	# ORA #i	2c
+49:	84,	82,	0,	# EOR #i	2c
+45:	83,	82,	0,	# EOR #i	2c
 
 # Move instructions
 a9:	3,	0,	0,	# LDA #i	2c

@@ -150,7 +150,7 @@ ALU_OR, L, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MAS
 # 82	EOR, Fetch
 ALU_EOR, L, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, H, 00
 
-# 83	Zero page
+# 83	d
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_ZP, H, PC_PC, L, L, P_MASK, P_NONE, READ, L, SEQ
-# 84	A -> ADD
+# 84	#i
 ALU_ADD, L, AI_0, BI_DB, DB_A, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 01

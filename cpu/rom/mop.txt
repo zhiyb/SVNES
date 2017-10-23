@@ -17,11 +17,11 @@
 # 0	Fetch
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 00
 
-# 1	LDY #
+# 1	LDY #i
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_DB, L, L, H, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, L, SEQ_0
-# 2	LDX #
+# 2	LDX #i
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_DB, L, H, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, L, SEQ_0
-# 3	LDA #
+# 3	LDA #i
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_DB, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, L, SEQ_0
 # 4	LDx d
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_DB, L, L, L, L, AD_ZP, H, PC_PC, L, L, P_MASK, P_NONE, READ, H, 01
@@ -139,25 +139,15 @@ ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_INT, H, PC_AD, H, L, P_MA
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, L, L, P_SET, P_I, READ, L, SEQ
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_ABS, H, PC_AD, L, L, P_SET, P_I, READ, L, SEQ_0
 
-# 78	ADC, Fetch
-ALU_ADD, H, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NVZC, READ, H, 00
-# 79	SBC, Fetch
-ALU_SUB, H, AI_SB, BI_nDB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NVZC, READ, H, 00
+# 78	#i
+ALU_ADD, L, AI_0, BI_DB, DB_A, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 10
+# 79	ORA, Fetch
+ALU_OR, L, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, H, 00
 # 80	AND, Fetch
 ALU_AND, L, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, H, 00
-# 81	ORA, Fetch
-ALU_OR, L, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, H, 00
-# 82	EOR, Fetch
+# 81	EOR, Fetch
 ALU_EOR, L, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, H, 00
-
-# 83	d
-ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_ZP, H, PC_PC, L, L, P_MASK, P_NONE, READ, L, SEQ
-# 84	#i
-ALU_ADD, L, AI_0, BI_DB, DB_A, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 01
-# 85	d, x
-ALU_ADD, L, AI_SB, BI_DB, DB_DL, SB_X, L, L, L, L, AD_PC, L, PC_PC, L, L, P_MASK, P_NONE, READ, L, SEQ
-ALU_ADD, L, AI_SB, BI_HLD, DB_SB, SB_A, L, L, L, L, AD_ZPA, H, PC_PC, L, L, P_MASK, P_NONE, READ, L, SEQ
-ALU_ADD, L, AI_0, BI_DB, DB_A, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 01
-
-# 88	LDA, Fetch
-ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NZ, READ, H, 00
+# 82	ADC, Fetch
+ALU_ADD, H, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NVZC, READ, H, 00
+# 83	SBC, Fetch
+ALU_SUB, H, AI_SB, BI_nDB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NVZC, READ, H, 00

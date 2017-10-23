@@ -1,36 +1,65 @@
 # Logical and arithmetic commands
-69:	84,	78,	0,	# ADC #i	2c
-65:	83,	78,	0,	# ADC d		3c
-75:	85,	78,	0,	# ADC d, x	4c
-e9:	84,	79,	0,	# SBC #i	2c
-e5:	83,	79,	0,	# SBC d		3c
-f5:	85,	79,	0,	# SBC d, x	4c
-29:	84,	80,	0,	# AND #i	2c
-25:	83,	80,	0,	# AND d		3c
-35:	85,	80,	0,	# AND d, x	4c
-09:	84,	81,	0,	# ORA #i	2c
-05:	83,	81,	0,	# ORA d		3c
-15:	85,	81,	0,	# ORA d, x	4c
-49:	84,	82,	0,	# EOR #i	2c
-45:	83,	82,	0,	# EOR d		3c
-55:	85,	82,	0,	# EOR d, x	4c
+09:	78,	0,	79,	# ORA #i	2c
+05:	4,	78,	79,	# ORA d		3c
+15:	5,	78,	79,	# ORA d, x	4c
+01:	17,	78,	79,	# ORA (d, x)	6c
+11:	21,	78,	79,	# ORA (d), y	5+c
+0d:	9,	78,	79,	# ORA a		4c
+1d:	11,	78,	79,	# ORA a, x	4+c
+19:	14,	78,	79,	# ORA a, y	4+c
+
+29:	78,	0,	80,	# AND #i	2c
+25:	4,	78,	80,	# AND d		3c
+35:	5,	78,	80,	# AND d, x	4c
+21:	17,	78,	80,	# AND (d, x)	6c
+31:	21,	78,	80,	# AND (d), y	5+c
+2d:	9,	78,	80,	# AND a		4c
+3d:	11,	78,	80,	# AND a, x	4+c
+39:	14,	78,	80,	# AND a, y	4+c
+
+49:	78,	0,	81,	# EOR #i	2c
+45:	4,	78,	81,	# EOR d		3c
+55:	5,	78,	81,	# EOR d, x	4c
+41:	17,	78,	81,	# EOR (d, x)	6c
+51:	21,	78,	81,	# EOR (d), y	5+c
+4d:	9,	78,	81,	# EOR a		4c
+4d:	11,	78,	81,	# EOR a, x	4+c
+59:	14,	78,	81,	# EOR a, y	4+c
+
+69:	78,	0,	82,	# ADC #i	2c
+65:	4,	78,	82,	# ADC d		3c
+75:	5,	78,	82,	# ADC d, x	4c
+61:	17,	78,	82,	# ADC (d, x)	6c
+71:	21,	78,	82,	# ADC (d), y	5+c
+6d:	9,	78,	82,	# ADC a		4c
+7d:	11,	78,	82,	# ADC a, x	4+c
+79:	14,	78,	82,	# ADC a, y	4+c
+
+e9:	78,	0,	83,	# SBC #i	2c
+e5:	4,	78,	83,	# SBC d		3c
+f5:	5,	78,	83,	# SBC d, x	4c
+e1:	17,	78,	83,	# SBC (d, x)	6c
+f1:	21,	78,	83,	# SBC (d), y	5+c
+ed:	9,	78,	83,	# SBC a		4c
+fd:	11,	78,	83,	# SBC a, x	4+c
+f9:	14,	78,	83,	# SBC a, y	4+c
 
 # Move instructions
-a9:	84,	88,	0,	# LDA #i	2c
-a5:	83,	88,	0,	# LDA d		3c
-b5:	85,	88,	0,	# LDA d, x	4c
+a9:	3,	0,	0,	# LDA #i	2c
+a5:	4,	3,	0,	# LDA d		3c
+b5:	5,	3,	0,	# LDA d, x	4c
+a1:	17,	3,	0,	# LDA (d, x)	6c
+b1:	21,	3,	0,	# LDA (d), y	5+c
 ad:	9,	3,	0,	# LDA a		4c
 bd:	11,	3,	0,	# LDA a, x	4+c
 b9:	14,	3,	0,	# LDA a, y	4+c
-a1:	17,	3,	0,	# LDA (d, x)	6c
-b1:	21,	3,	0,	# LDA (d), y	5+c
 85:	27,	28,	0,	# STA d		3c
 95:	31,	28,	0,	# STA d, x	4c
+81:	49,	28,	0,	# STA (d, x)	6c
+91:	53,	28,	0,	# STA (d), y	6c
 8d:	39,	28,	0,	# STA a		4c
 9d:	41,	28,	0,	# STA a, x	5c
 99:	45,	28,	0,	# STA a, y	5c
-81:	49,	28,	0,	# STA (d, x)	6c
-91:	53,	28,	0,	# STA (d), y	6c
 
 a2:	2,	0,	0,	# LDX #i	2c
 a6:	4,	2,	0,	# LDX d		3c

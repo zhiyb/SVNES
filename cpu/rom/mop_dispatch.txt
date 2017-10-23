@@ -1,3 +1,7 @@
+# Logical and arithmetic commands
+69:	78,	79,	0,	# ADC #i	2c
+e9:	78,	80,	0,	# SBC #i	2c
+
 # Move instructions
 a9:	3,	0,	0,	# LDA #i	2c
 a5:	4,	3,	0,	# LDA d		3c

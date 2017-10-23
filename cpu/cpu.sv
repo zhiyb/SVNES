@@ -57,6 +57,7 @@ logic [31:0] rom_dispatch;
 rom_mop_dispatch rom1 (~n_reset, data, dclk, rom_rden, rom_dispatch);
 logic [9:0] rom_addr[3];
 assign {rom_addr[2], rom_addr[1], rom_addr[0]} = rom_dispatch[29:0];
+assign rom_rden = mop.seq_rom && mop.seq == 0;
 
 always_comb
 	if (mop.p_chk & br)
@@ -71,13 +72,10 @@ always_comb
 		mop_addr = 0;
 
 always_ff @(posedge clk, negedge n_reset)
-	if (~n_reset) begin
-		rom_rden <= 1'b0;
+	if (~n_reset)
 		mop_addrn <= 0;
-	end else begin
-		rom_rden <= mop_addr == 0;
+	else
 		mop_addrn <= mop_addr + 1;
-	end
 // }}}
 
 // {{{ Buses
@@ -276,9 +274,10 @@ assign alu_sl = {ai[7:0], mop.alu_c & p[S_C]};
 
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
-		{acr, alu} <= 0;
+		{avr, acr, alu} <= 0;
 	else begin
 		{acr, alu} <= alu_sum;
+		avr = ~(ai[7] ^ bi[7]) & (ai[7] ^ alu_sum[7]);
 		case (mop.alu)
 		ALU_SL:		{acr, alu} <= alu_sl;
 		ALU_SR:		{acr, alu} <= alu_sr;

@@ -12,7 +12,7 @@
 # WR_t {READ, WRITE}
 # SEQ_t {SEQ_0, SEQ, SEQ_2}
 
-# ALUop_t, ALUAI_t, ALUBI_t, DB_t, SB_t, sb_a, sb_x, sb_y, sb_sp, AD_t, ad_ab, PC_t, pc_inc, p_chk, Pop_t, P_t, rw, seq_rom, SEQ_t
+# ALUop_t, alu_c, ALUAI_t, ALUBI_t, DB_t, SB_t, sb_a, sb_x, sb_y, sb_sp, AD_t, ad_ab, PC_t, pc_inc, p_chk, Pop_t, P_t, rw, seq_rom, SEQ_t
 
 # 0	Fetch
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 00
@@ -138,3 +138,10 @@ ALU_DEC, L, AI_0, BI_ADL, DB_P, SB_ALU, L, L, L, H, AD_SP, H, PC_PC, L, L, P_MAS
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_INT, H, PC_AD, H, L, P_MASK, P_NONE, WRITE, L, SEQ
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, L, L, P_SET, P_I, READ, L, SEQ
 ALU_ADD, L, AI_0, BI_DB, DB_DL, SB_ALU, L, L, L, L, AD_ABS, H, PC_AD, L, L, P_SET, P_I, READ, L, SEQ_0
+
+# 78	A -> ADD
+ALU_ADD, L, AI_0, BI_DB, DB_A, SB_ALU, L, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NONE, READ, H, 01
+# 79	ADC, Fetch
+ALU_ADD, H, AI_SB, BI_DB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NVZC, READ, H, 00
+# 80	SBC, Fetch
+ALU_SUB, H, AI_SB, BI_nDB, DB_DL, SB_ALU, H, L, L, L, AD_PC, H, PC_PC, H, L, P_MASK, P_NVZC, READ, H, 00

@@ -16,9 +16,9 @@ f5:	85,	79,	0,	# SBC d, x	4c
 55:	85,	82,	0,	# EOR d, x	4c
 
 # Move instructions
-a9:	3,	0,	0,	# LDA #i	2c
-a5:	4,	3,	0,	# LDA d		3c
-b5:	5,	3,	0,	# LDA d, x	4c
+a9:	84,	88,	0,	# LDA #i	2c
+a5:	83,	88,	0,	# LDA d		3c
+b5:	85,	88,	0,	# LDA d, x	4c
 ad:	9,	3,	0,	# LDA a		4c
 bd:	11,	3,	0,	# LDA a, x	4+c
 b9:	14,	3,	0,	# LDA a, y	4+c

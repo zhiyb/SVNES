@@ -14,6 +14,7 @@ logic avr, acr, hc, br;
 // {{{ Microcode controller
 typedef enum logic [2:0] {ALU_ADD = 3'h0, ALU_SUB = 3'h1, ALU_SL = 3'h2, ALU_SR = 3'h3, ALU_AND = 3'h4, ALU_OR = 3'h5, ALU_EOR = 3'h6, ALU_DEC = 3'h7} ALUop_t;
 typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
+typedef enum logic       {AI_HLD = 1'h1} ALUAI1_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2, BI_HLD = 2'h3} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
 typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5, SB_FUL = 3'h7} SB_t;
@@ -309,10 +310,11 @@ begin
 	BI_DB:	bi = bus_db;
 	BI_nDB:	bi = ~bus_db;
 	BI_ADL:	bi = bus_adl;
-	BI_HLD:	bi = dl;
+	// TODO: Check if STA (d, x) breaks
+	BI_HLD:	bi = bi_reg;
 	default: bi = 'bx;
 	endcase
-	if (mop.bi == BI_HLD && mop.ai == AI_SB)
+	if (mop.bi == BI_HLD && mop.ai == AI_HLD)
 		ai = ai_reg;
 end
 // }}}

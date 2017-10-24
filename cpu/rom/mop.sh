@@ -13,7 +13,7 @@ subst='	s/#.*//;
 	s/PC_PC/0/; s/PC_AD/1/;
 	s/P_MASK/00/; s/P_SP/01/; s/P_CLR/10/; s/P_SET/11/;
 	s/P_NONE/00/; s/\<P_NZ\>/01/; s/\<P_NZC\>/10/; s/\<P_NVZC\>/11/;
-	s/P_POP/00/; s/P_BIT/01/; s/P_BRK/10/;
+	s/P_PUSH/00/; s/P_POP/01/; s/P_BIT/10/;
 	s/P_C/00/; s/P_D/01/; s/P_I/10/; s/P_V/11/; s/P_Z/01/; s/P_N/10/; s/P_B/11/;
 	s/SEQ_0/00/; s/\<SEQ\>/01/; s/SEQ_2/10/;
 	s/SEQ_R0/00/; s/SEQ_R1/01/; s/SEQ_R2/10/;

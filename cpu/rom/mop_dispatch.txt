@@ -1,4 +1,4 @@
-# Logical and arithmetic commands
+# Logical and arithmetic instructions
 09:	78,	0,	79,	# ORA #i	2c
 05:	4,	78,	79,	# ORA d		3c
 15:	5,	78,	79,	# ORA d, x	4c
@@ -142,6 +142,11 @@ a8:	60,	0,	0,	# TAY		2c
 98:	61,	0,	0,	# TYA		2c
 ba:	62,	0,	0,	# TSX		2c
 9a:	63,	0,	0,	# TXS		2c
+
+68:	117,	119,	0,	# PLA		4c
+48:	121,	0,	0,	# PHA		3c
+28:	117,	120,	0,	# PLP		4c
+08:	122,	0,	0,	# PHP		3c
 
 # Jump/flag instructions
 00:	72,	0,	0,	# BRK		7c

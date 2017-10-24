@@ -44,6 +44,12 @@ ed:	9,	78,	83,	# SBC a		4c
 fd:	11,	78,	83,	# SBC a, x	4+c
 f9:	14,	78,	83,	# SBC a, y	4+c
 
+ca:	84,	0,	0,	# DEX		2c
+88:	86,	0,	0,	# DEY		2c
+
+e8:	88,	0,	0,	# INX		2c
+c8:	90,	0,	0,	# INY		2c
+
 # Move instructions
 a9:	3,	0,	0,	# LDA #i	2c
 a5:	4,	3,	0,	# LDA d		3c

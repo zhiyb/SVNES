@@ -50,10 +50,10 @@ ca:	84,	0,	0,	# DEX		2c
 e8:	88,	0,	0,	# INX		2c
 c8:	90,	0,	0,	# INY		2c
 
-c6:	4,	92,	28,	# DEC d		5c
-d6:	5,	92,	28,	# DEC d, x	6c
-ce:	0,	0,	0,	# DEC a		6c
-de:	0,	0,	0,	# DEC a, x	7c
+c6:	4,	96,	28,	# DEC d		5c
+d6:	5,	96,	28,	# DEC d, x	6c
+ce:	9,	96,	28,	# DEC a		6c
+de:	92,	96,	28,	# DEC a, x	7c
 
 # Move instructions
 a9:	3,	0,	0,	# LDA #i	2c

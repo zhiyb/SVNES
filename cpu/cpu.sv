@@ -142,7 +142,7 @@ typedef enum {
 } Pf_t;
 
 logic [7:0] pn;
-assign pn = {bus_db[7], avr, 1'b1, p[S_B], p[S_D], p[S_I], bus_db == 0, acr};
+assign pn = {bus_db[7], avr, 1'b1, p[S_B], p[S_D], p[S_I], bus_sb == 0, acr};
 
 logic [7:0] pbr;
 always_comb
@@ -165,7 +165,7 @@ always_comb
 begin
 	pspn = bus_db;
 	case (mop.p)
-	P_BIT:	pspn[S_Z] = 1'b0;
+	P_BIT:	pspn[S_Z] = pn[S_Z];
 	endcase
 end
 

@@ -55,6 +55,11 @@ d6:	5,	96,	28,	# DEC d, x	6c
 ce:	9,	96,	28,	# DEC a		6c
 de:	92,	96,	28,	# DEC a, x	7c
 
+e6:	4,	98,	28,	# INC d		5c
+f6:	5,	98,	28,	# INC d, x	6c
+ee:	9,	98,	28,	# INC a		6c
+fe:	92,	98,	28,	# INC a, x	7c
+
 # Move instructions
 a9:	3,	0,	0,	# LDA #i	2c
 a5:	4,	3,	0,	# LDA d		3c

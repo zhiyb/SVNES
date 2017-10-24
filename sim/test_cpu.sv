@@ -48,7 +48,7 @@ logic [7:0] ram[72] = '{
 	'ha9, 'h34,		// LDA #i
 	'ha2, 'h03,		// LDX #i
 	'h85, 'h04,		// STA d
-	'hde, 'h01, 'h00,	// DEC a
+	'hfe, 'h01, 'h00,	// INC a, x
 	'he8,			// INX
 	'hca,			// DEX
 	'ha0, 'hee,		// LDY #i

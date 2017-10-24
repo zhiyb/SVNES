@@ -281,7 +281,7 @@ always_ff @(posedge dclk, negedge n_reset)
 		avr = ~(ai[7] ^ bi[7]) & (ai[7] ^ alu_sum[7]);
 		case (mop.alu)
 		ALU_SL:		{acr, alu} <= alu_sl;
-		ALU_SR:		{acr, alu} <= alu_sr;
+		ALU_SR:		{alu, acr} <= alu_sr;
 		ALU_AND:	alu <= alu_and;
 		ALU_OR:		alu <= alu_or;
 		ALU_EOR:	alu <= alu_eor;

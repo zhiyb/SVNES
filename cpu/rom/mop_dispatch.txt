@@ -60,6 +60,30 @@ f6:	5,	98,	28,	# INC d, x	6c
 ee:	9,	98,	28,	# INC a		6c
 fe:	92,	98,	28,	# INC a, x	7c
 
+0a:	101,	100,	0,	# ASL		2c
+06:	4,	102,	28,	# ASL d		5c
+16:	5,	102,	28,	# ASL d, x	6c
+0e:	9,	102,	28,	# ASL a		6c
+1e:	92,	102,	28,	# ASL a, x	7c
+
+2a:	104,	100,	0,	# ROL		2c
+26:	4,	105,	28,	# ROL d		5c
+36:	5,	105,	28,	# ROL d, x	6c
+2e:	9,	105,	28,	# ROL a		6c
+3e:	92,	105,	28,	# ROL a, x	7c
+
+4a:	107,	100,	0,	# LSR		2c
+46:	4,	108,	28,	# LSR d		5c
+56:	5,	108,	28,	# LSR d, x	6c
+4e:	9,	108,	28,	# LSR a		6c
+5e:	92,	108,	28,	# LSR a, x	7c
+
+6a:	110,	100,	0,	# ROR		2c
+66:	4,	111,	28,	# ROR d		5c
+76:	5,	111,	28,	# ROR d, x	6c
+6e:	9,	111,	28,	# ROR a		6c
+7e:	92,	111,	28,	# ROR a, x	7c
+
 # Move instructions
 a9:	3,	0,	0,	# LDA #i	2c
 a5:	4,	3,	0,	# LDA d		3c

@@ -25,7 +25,7 @@ subst='	s/#.*//;
 
 cat - <<-DOC
 WIDTH=32;
-DEPTH=1024;
+DEPTH=256;
 
 ADDRESS_RADIX=DEC;
 DATA_RADIX=BIN;

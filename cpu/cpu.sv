@@ -49,7 +49,7 @@ struct packed {
 	SEQ_t seq;	// 2
 } mop;
 
-logic [9:0] mop_addr, mop_addrn;
+logic [7:0] mop_addr, mop_addrn;
 logic [31:0] rom_mop;
 rom_mop rom0 (~n_reset, mop_addr, clk, rom_mop);
 assign mop = rom_mop[31:0];

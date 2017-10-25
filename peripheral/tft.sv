@@ -1,22 +1,94 @@
-// VT & HT:	Sync width, back porch, display, front porch
-module tft #(parameter HN, VN, logic [HN - 1:0] HT[4], logic [VN - 1:0] VT[4]) (
-	input logic n_reset, pixclk, en,
-	output logic dclk, hsync, vsync, disp, de,
-	output logic hblank, vblank,
-	output logic [HN - 1:0] x,
-	output logic [VN - 1:0] y
+module tft #(
+	// Address bus size, data bus size
+	parameter AN = 24, DN = 16, BURST, BASE,
+	// VT & HT: Sync width, back porch, display, front porch
+	int HN, logic [HN - 1:0] HT[4],
+	int VN, logic [VN - 1:0] VT[4]
+) (
+	input logic clkSYS, clkTFT, n_reset,
+
+	// Memory interface
+	input logic [DN - 1:0] mem_data,
+	input logic mem_valid,
+
+	output logic [AN - 1:0] req_addr,
+	output logic req,
+	input logic req_ack,
+
+	// Hardware interface
+	output logic disp, de, dclk, vsync, hsync,
+	output logic [23:0] out,
+
+	// Debugging signals
+	output logic [5:0] level,
+	output logic empty, full
 );
 
-assign dclk = pixclk;
-assign disp = en;
+// FIFO buffer
+logic [15:0] fifo;
+assign out = {fifo[15:11], 3'h0, fifo[10:5], 2'h0, fifo[4:0], 3'h0};
 
+logic aclr, rdreq, wrreq;
+tft_fifo fifo0 (.aclr(aclr), .data(mem_data),
+	.rdclk(clkTFT), .rdreq(rdreq), .q(fifo), .rdempty(empty),
+	.wrclk(clkSYS), .wrreq(wrreq), .wrfull(full), .wrusedw(level));
+
+// Memory request
+always_ff @(posedge clkSYS, posedge aclr)
+	if (aclr)
+		req_addr <= BASE;
+	else if (req_ack)
+		req_addr <= req_addr + BURST;
+
+logic [4:0] empty_req;
+logic [2:0] empty_level;
+always_ff @(posedge clkTFT, posedge aclr)
+	if (aclr) begin
+		empty_req[0] <= 1'b0;
+		empty_level <= 3'h0;
+	end else if (rdreq) begin
+		empty_level <= empty_level + 3'h1;
+		empty_req[0] <= empty_level == 3'h7;
+	end else
+		empty_req[0] <= 1'b0;
+
+always_ff @(posedge clkSYS)
+begin
+	empty_req[3:1] <= empty_req[2:0];
+	empty_req[4] <= empty_req[2] & ~empty_req[3];
+end
+
+logic [5:0] fill_level;
+always_ff @(posedge clkSYS, posedge aclr)
+	if (aclr)
+		fill_level <= 5'h0;
+	else if (req_ack) begin
+		if (!empty_req[4])
+			fill_level <= fill_level + BURST;
+	end else if (empty_req[4])
+		fill_level <= fill_level - BURST;
+
+always_ff @(posedge clkSYS, posedge aclr)
+	if (aclr)
+		req <= 1'b0;
+	else if (fill_level[5:4] != 2'b11)
+		req <= 1'b1;
+	else if (req_ack)
+		req <= 1'b0;
+
+assign wrreq = mem_valid;
+
+// Hardware logics
+assign dclk = clkTFT;
+assign disp = n_reset;
+assign de = 1'b0;
+
+// Horizontal control
 logic [HN - 1:0] hcnt;
-logic [VN - 1:0] vcnt;
-logic [1:0] hstate, vstate;
-logic htick, vtick, hs, vs;
+logic [1:0] hstate;
+logic _hsync, htick, hblank;
 
-// Horizontal timing counter
-always_ff @(posedge pixclk, negedge n_reset)
+always_ff @(posedge clkTFT, negedge n_reset)
 	if (~n_reset) begin
 		hcnt <= {HN{1'b0}};
 		htick <= 1'b0;
@@ -28,31 +100,29 @@ always_ff @(posedge pixclk, negedge n_reset)
 		htick <= 1'b0;
 	end
 
-// x-coordinate counter
-always_ff @(posedge pixclk, negedge n_reset)
-	if (~n_reset)
-		x <= {HN{1'b0}};
-	else if (hblank)
-		x <= {HN{1'b0}};
-	else
-		x <= x + 1;
-
-// Horizontal signal states
 always_ff @(posedge htick, negedge n_reset)
 	if (~n_reset) begin
 		hstate <= 2'h0;
-		hsync <= 1'b0;
+		_hsync <= 1'b0;
 		hblank <= 1'b1;
+		rdreq <= 1'b0;
 	end else begin
 		hstate <= hstate + 2'h1;
-		hsync <= hstate != 2'h0;
+		_hsync <= hstate != 2'h0;
 		hblank <= hstate != 2'h2;
+		rdreq <= hstate == 2'h2 && ~aclr && ~empty;
 	end
 
-assign de = 1'b0;
+always_ff @(posedge clkTFT)
+	hsync <= _hsync;
 
-// Vertical timing counter
-always_ff @(negedge hsync, negedge n_reset)
+// Vertical control
+logic [VN - 1:0] vcnt;
+logic [1:0] vstate;
+logic vtick, vblank;
+assign aclr = vblank;
+
+always_ff @(posedge hsync, negedge n_reset)
 	if (~n_reset) begin
 		vcnt <= {VN{1'b0}};
 		vtick <= 1'b0;
@@ -64,16 +134,6 @@ always_ff @(negedge hsync, negedge n_reset)
 		vtick <= 1'b0;
 	end
 
-// y-coordinate counter
-always_ff @(negedge hsync, negedge n_reset)
-	if (~n_reset)
-		y <= {VN{1'b0}};
-	else if (vblank)
-		y <= {VN{1'b0}};
-	else
-		y <= y + 1;
-
-// Vertical signal states
 always_ff @(posedge vtick, negedge n_reset)
 	if (~n_reset) begin
 		vstate <= 2'h0;

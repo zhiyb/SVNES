@@ -19,4 +19,7 @@ output_files
 *.nb
 *.stp
 *.xml
+*.srf
+*.json
 wlft*
+*.qdf

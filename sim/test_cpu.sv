@@ -44,17 +44,20 @@ always_ff @(posedge clk4, negedge n_reset_async)
 	else
 		n_reset <= n_reset_async;
 
-logic [7:0] ram[72] = '{
-	'h38,			// SEC
+logic [7:0] ram[1024];
+
+logic [7:0] rom[72] = '{
+	'h00,			// BRK
 	'h20, 'h56, 'h78,	// JSR a
+	'h38,			// SEC
+	'h40,			// RTI
+	'h38,			// SEC
 	'h6c, 'h04, 'h00,	// JMP (a)
 	'h4c, 'h12, 'h34,	// JMP a
 	'h18,			// CLC
-	'h00,			// BRK
 	'h90, 'hfe,		// BCC
 	'h18,			// CLC
 	'hb0, 'hfe,		// BCS
-	'h90, 'h01,		// BCC
 	'h38,			// SEC
 	'hb0, 'hf5,		// BCS
 	'ha9, 'h34,		// LDA #i
@@ -89,13 +92,20 @@ assign data = rw ? ram_out : 8'bz;
 
 always_ff @(posedge qclk[0])
 begin
-	ram_out <= ram[addr];
 	if (addr == 16'hfffe)
-		ram_out <= 8'h01;
+		ram_out <= 8'h04;
 	else if (addr == 16'hffff)
 		ram_out <= 8'h00;
-	if (~rw)
-		ram[addr] <= data;
+	else if (addr < $size(rom))
+		ram_out <= rom[addr];
+	else
+		ram_out <= ram[addr];
+	if (~rw) begin
+		if (addr < $size(rom))
+			rom[addr] <= data;
+		else
+			ram[addr] <= data;
+	end
 end
 
 endmodule

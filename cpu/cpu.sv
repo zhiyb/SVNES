@@ -43,9 +43,9 @@ struct packed {
 	logic p_chk;
 	Pop_t pop;	// 2
 	P_t p;		// 2
-	WR_t wr;
+	WR_t wr;	// 1
 	logic seq_rom;
-	SEQ_t seq;	// 1
+	SEQ_t seq;	// 2
 } mop;
 
 logic [9:0] mop_addr, mop_addrn;
@@ -254,10 +254,10 @@ always_ff @(posedge clk, negedge n_reset)
 			y <= bus_sb;
 		if (mop.sb_x)
 			x <= bus_sb;
-		if (mop.sb_sp)
-			sp <= bus_sb;
 		if (mop.sb_a)
 			a <= bus_sb;
+		if (mop.sb_sp)
+			sp <= alu;
 	end
 // }}}
 

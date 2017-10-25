@@ -63,6 +63,9 @@ assign {rom_addr[2], rom_addr[1], rom_addr[0]} = rom_dispatch[29:0];
 assign rom_rden = mop.seq_rom && mop.seq == 0;
 assign rom_op = irq_pending ? 8'h00 : data;
 
+logic mop_rst;
+assign mop_rst = mop.seq_rom && rom_addr[mop.seq] == 0;
+
 always_comb
 	if (mop.p_chk & br)
 		mop_addr = mop_addrn;
@@ -246,7 +249,9 @@ always_ff @(posedge clk, negedge n_reset)
 		irq_pending <= 1'b1;
 		irq_jump <= 1'b0;
 	end else begin
-		if (irq_jump)
+		if (mop_rst)
+			rst_act <= 1'b1;
+		else if (irq_jump)
 			rst_act <= 1'b0;
 		if (nmi_latch[1] & ~nmi_latch[0])
 			nmi_act <= 1'b1;

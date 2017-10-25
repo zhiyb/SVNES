@@ -60,10 +60,11 @@ logic [7:0] vector[6] = '{
 
 logic [7:0] rom[72] = '{
 	'h40,			// RTI
+	'h38,			// SEC
+	'h02, 'haa,		// STP
 	'h00,			// BRK
 	'h20, 'h43, 'h21,	// JSR a
 	'h60,			// RTS
-	'h38,			// SEC
 	'h38,			// SEC
 	'h6c, 'h04, 'h00,	// JMP (a)
 	'h4c, 'h12, 'h34,	// JMP a
@@ -84,7 +85,6 @@ logic [7:0] rom[72] = '{
 	'h85, 'h04,		// STA d
 	'ha0, 'hee,		// LDY #i
 	'h95, 'h01,		// STA d, x
-	'h61, 'h01,		// ADC (d, x)
 	'h09, 'h46,		// ORA #i
 	'he9, 'h12,		// SBC #i
 	'h69, 'h12,		// ADC #i

@@ -46,6 +46,7 @@ always_ff @(posedge clk4, negedge n_reset_async)
 
 logic [7:0] ram[72] = '{
 	'h38,			// SEC
+	'h20, 'h56, 'h78,	// JSR a
 	'h6c, 'h04, 'h00,	// JMP (a)
 	'h4c, 'h12, 'h34,	// JMP a
 	'h18,			// CLC
@@ -76,7 +77,6 @@ logic [7:0] ram[72] = '{
 	'h58,			// CLI
 	'h99, 'hde, 'hbc,	// STA a, y
 	'h8c, 'h56, 'h34,	// STY a
-	'h8e, 'h9a, 'h78,	// STX a
 	'h8d, 'hde, 'hbc,	// STA a
 	'h94, 'h01,		// STY d, x
 	'h86, 'h06,		// STX d

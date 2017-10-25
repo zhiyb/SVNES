@@ -1,5 +1,5 @@
 module cpu (
-	input logic clk, dclk, n_reset,
+	input logic clk, dclk, n_reset, nmi, irq,
 	output logic [15:0] addr,
 	inout wire [7:0] data,
 	output logic rw
@@ -8,8 +8,8 @@ module cpu (
 logic [7:0] bus_db, bus_sb, bus_adh, bus_adl, int_addr;
 logic [7:0] abh, abl, dl, dout, alu;
 logic [7:0] y, x, sp, a, p, pch, pcl;
-// Overflow, carry out, relative carry out, branch
-logic avr, acr, arc, br;
+// Overflow, carry out, relative carry out, branch, IRQ pending
+logic avr, acr, arc, br, irq_pending;
 
 // {{{ Microcode controller
 typedef enum logic [2:0] {ALU_ADD = 3'h0, ALU_SUB = 3'h1, ALU_SL = 3'h2, ALU_SR = 3'h3, ALU_AND = 3'h4, ALU_OR = 3'h5, ALU_EOR = 3'h6, ALU_REL = 3'h7} ALUop_t;
@@ -18,7 +18,8 @@ typedef enum logic       {AI_HLD = 1'h1} ALUAI1_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2, BI_HLD = 2'h3} ALUBI_t;
 typedef enum logic [2:0] {DB_DL = 3'h0, DB_PCL = 3'h1, DB_PCH = 3'h2, DB_SB = 3'h3, DB_A = 3'h4, DB_P = 3'h5} DB_t;
 typedef enum logic [2:0] {SB_ALU = 3'h0, SB_SP = 3'h1, SB_X = 3'h2, SB_Y = 3'h3, SB_A = 3'h4, SB_DB = 3'h5, SB_FUL = 3'h7} SB_t;
-typedef enum logic [2:0] {AD_PC = 3'h0, AD_ZP = 3'h1, AD_ZPA = 3'h2, AD_SP = 3'h3, AD_ABS = 3'h4, AD_INT = 3'h5, AD_ADL = 3'h6, AD_ADH = 3'h7} AD_t;
+typedef enum logic [2:0] {AD_0A = 3'h0, AD_DA = 3'h1, AD_1S = 3'h2, AD_DS = 3'h3, AD_0D = 3'h4, AD_PC = 3'h6, AD_FI = 3'h7} AD_t;
+typedef enum logic [2:0] {AD_HLD = 3'h0, AD_ADL = 3'h1, AD_ADH = 3'h2} AD1_t;
 typedef enum logic       {PC_PC = 1'h0, PC_AD = 1'h1} PC_t;
 typedef enum logic [1:0] {P_MASK = 2'h0, P_SP = 2'h1, P_CLR = 2'h2, P_SET = 2'h3} Pop_t;
 typedef enum logic [1:0] {P_NONE = 2'h0, P_NZ = 2'h1, P_NZC = 2'h2, P_NVZC = 2'h3} P_t;
@@ -36,8 +37,8 @@ struct packed {
 	DB_t db;	// 3
 	SB_t sb;	// 3
 	logic sb_a, sb_x, sb_y, sb_sp;
+	logic ad_sp;
 	AD_t ad;	// 3
-	logic ad_ab;
 	PC_t pc;	// 1
 	logic pc_inc;
 	logic p_chk;
@@ -54,11 +55,13 @@ rom_mop rom0 (~n_reset, mop_addr, clk, rom_mop);
 assign mop = rom_mop[31:0];
 
 logic rom_rden;
+logic [7:0] rom_op;
 logic [31:0] rom_dispatch;
-rom_mop_dispatch rom1 (~n_reset, data, dclk, rom_rden, rom_dispatch);
+rom_mop_dispatch rom1 (~n_reset, rom_op, dclk, rom_rden, rom_dispatch);
 logic [9:0] rom_addr[3];
 assign {rom_addr[2], rom_addr[1], rom_addr[0]} = rom_dispatch[29:0];
 assign rom_rden = mop.seq_rom && mop.seq == 0;
+assign rom_op = irq_pending ? 8'h00 : data;
 
 always_comb
 	if (mop.p_chk & br)
@@ -104,28 +107,32 @@ always_comb
 	endcase
 
 always_comb
+begin
 	case (mop.ad)
+	AD_0A:	{bus_adh, bus_adl} = {8'h0, alu};
+	AD_0D:	{bus_adh, bus_adl} = {8'h0, dl};
+	AD_1S:	{bus_adh, bus_adl} = {8'h1, sp};
+	AD_DS:	{bus_adh, bus_adl} = {dl, sp};
+	AD_DA:	{bus_adh, bus_adl} = {dl, alu};
 	AD_PC:	{bus_adh, bus_adl} = {pch, pcl};
-	AD_ZP:	{bus_adh, bus_adl} = {8'h0, dl};
-	AD_ZPA:	{bus_adh, bus_adl} = {8'h0, alu};
-	AD_SP:	{bus_adh, bus_adl} = {8'h1, sp};
-	AD_ABS:	{bus_adh, bus_adl} = {dl, alu};
-	AD_INT:	{bus_adh, bus_adl} = {8'hff, int_addr};
-	AD_ADH:	{bus_adh, bus_adl} = {bus_sb, alu};
-	AD_ADL:	{bus_adh, bus_adl} = {bus_sb, alu};
+	AD_FI:	{bus_adh, bus_adl} = {8'hff, int_addr};
 	default: {bus_adh, bus_adl} = 'bx;
 	endcase
+	if (~mop.ad_sp)
+		{bus_adh, bus_adl} = {bus_sb, alu};
+end
 
+assign addr = {abh, abl};
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		{abh, abl} <= 0;
-	else if (mop.ad_ab) begin
-		if (mop.ad != AD_ADH)
+	else if (~mop.ad_sp) begin
+		if (mop.ad[0])
 			abl <= bus_adl;
-		if (mop.ad != AD_ADL)
+		if (mop.ad[1])
 			abh <= bus_adh;
-	end
-assign addr = {abh, abl};
+	end else
+		{abh, abl} <= {bus_adh, bus_adl};
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
@@ -198,7 +205,7 @@ always_ff @(posedge dclk, negedge n_reset)
 			P_C:	pmask[S_C] <= 1'b1;
 			P_D:	pmask[S_D] <= 1'b1;
 			P_I:	pmask[S_I] <= 1'b1;
-			P_B:	pmask[S_B] <= 1'b1;
+			P_B:	pmask[S_B] <= ~irq_pending;
 			endcase
 		endcase
 	end
@@ -218,9 +225,49 @@ always_ff @(posedge clk, negedge n_reset)
 	end
 // }}}
 
-// {{{ Interrupts, program counter & registers
+// {{{ Interrupts
+logic [1:0] nmi_latch;
+logic irq_latch;
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset) begin
+		nmi_latch <= 2'b0;
+		irq_latch <= 1'b0;
+	end else begin
+		nmi_latch <= {nmi_latch[0], nmi};
+		irq_latch <= irq;
+	end
+
+logic rst_act, nmi_act, irq_act, irq_jump;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset) begin
+		rst_act <= 1'b1;
+		nmi_act <= 1'b0;
+		irq_act <= 1'b0;
+		irq_pending <= 1'b1;
+		irq_jump <= 1'b0;
+	end else begin
+		if (irq_jump)
+			rst_act <= 1'b0;
+		if (nmi_latch[1] & ~nmi_latch[0])
+			nmi_act <= 1'b1;
+		else if (irq_jump & ~rst_act)
+			nmi_act <= 1'b0;
+		irq_act <= ~irq_latch;
+		irq_pending <= rst_act | nmi_act | (irq_act & ~p[S_I]);
+		irq_jump <= irq_pending && mop.ad_sp && mop.ad == AD_FI;
+	end
+
 always_comb
-	int_addr <= 8'hfe;
+begin
+	int_addr = 8'hfe;
+	if (rst_act)
+		int_addr = 8'hfc;
+	else if (nmi_act)
+		int_addr = 8'hfa;
+end
+// }}}
+
+// {{{ Program counter & registers
 
 logic load_pc;
 always_ff @(posedge dclk, negedge n_reset)
@@ -257,7 +304,7 @@ always_ff @(posedge clk, negedge n_reset)
 		if (mop.sb_a)
 			a <= bus_sb;
 		if (mop.sb_sp)
-			sp <= alu;
+			sp <= bus_sb;
 	end
 // }}}
 

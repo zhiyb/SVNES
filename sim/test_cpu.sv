@@ -2,7 +2,7 @@
 
 module test_cpu;
 
-logic clk, qclk[3], n_reset, n_reset_async;
+logic clk, qclk[3], n_reset, n_reset_async, nmi, irq;
 logic [15:0] addr;
 wire [7:0] data;
 logic rw;
@@ -38,6 +38,12 @@ begin
 	#2ns n_reset_async = 1'b1;
 end
 
+initial
+begin
+	nmi = 1'b1;
+	irq = 1'b1;
+end
+
 always_ff @(posedge clk4, negedge n_reset_async)
 	if (~n_reset_async)
 		n_reset <= 1'b0;
@@ -46,11 +52,17 @@ always_ff @(posedge clk4, negedge n_reset_async)
 
 logic [7:0] ram[1024];
 
+logic [7:0] vector[6] = '{
+	'h12, 'h34,	// NMI (0xfffa)
+	'h01, 'h00,	// RST (0xfffc)
+	'h00, 'h00	// IRQ (0xfffe)
+};
+
 logic [7:0] rom[72] = '{
-	'h20, 'h04, 'h00,	// JSR a
-	'h00,			// BRK
-	'h60,			// RTS
 	'h40,			// RTI
+	'h00,			// BRK
+	'h20, 'h43, 'h21,	// JSR a
+	'h60,			// RTS
 	'h38,			// SEC
 	'h38,			// SEC
 	'h6c, 'h04, 'h00,	// JMP (a)
@@ -60,6 +72,7 @@ logic [7:0] rom[72] = '{
 	'h18,			// CLC
 	'hb0, 'hfe,		// BCS
 	'h38,			// SEC
+	'hc6, 'h01,		// DEC d
 	'hb0, 'hf5,		// BCS
 	'ha9, 'h34,		// LDA #i
 	'h48,			// PHA
@@ -70,7 +83,6 @@ logic [7:0] rom[72] = '{
 	'h06, 'h02,		// ASL d
 	'h85, 'h04,		// STA d
 	'ha0, 'hee,		// LDY #i
-	'ha0, 'h04,		// LDY #i
 	'h95, 'h01,		// STA d, x
 	'h61, 'h01,		// ADC (d, x)
 	'h09, 'h46,		// ORA #i
@@ -92,10 +104,8 @@ assign data = rw ? ram_out : 8'bz;
 
 always_ff @(posedge qclk[0])
 begin
-	if (addr == 16'hfffe)
-		ram_out <= 8'h05;
-	else if (addr == 16'hffff)
-		ram_out <= 8'h00;
+	if (addr >= 16'hfffa)
+		ram_out <= vector[addr - 16'hfffa];
 	else if (addr < $size(rom))
 		ram_out <= rom[addr];
 	else

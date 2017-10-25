@@ -1,6 +1,11 @@
 module apu_triangle (
-	sys_if sys,
-	sysbus_if sysbus,
+	input logic clk, dclk, n_reset,
+
+	input logic [15:0] sys_addr,
+	inout wire [7:0] sys_data,
+	output wire sys_rdy,
+	input logic sys_rw,
+
 	input logic apuclk, qframe, hframe,
 	input logic sel, en,
 	output logic act,
@@ -31,20 +36,20 @@ assign lc_load_reg = regs[3][7:3];
 
 logic timer_clk;
 apu_timer #(.N(11)) t0 (
-	.clk(sys.clk), .n_reset(sys.n_reset), .clkout(timer_clk),
-	.reload(we && sysbus.addr[1:0] == 2'd3), .loop(1'b1),
+	.clk(clk), .n_reset(n_reset), .clkout(timer_clk),
+	.reload(we && sys_addr[1:0] == 2'd3), .loop(1'b1),
 	.load(timer_load_reg), .cnt());
 
 // Linear counter
 
 logic linear_reload;
-flag_keeper flag0 (.n_reset(sys.n_reset),
-	.clk(sys.clk), .flag(we && sysbus.addr[1:0] == 2'd3),
+flag_keeper flag0 (.n_reset(n_reset),
+	.clk(clk), .flag(we && sys_addr[1:0] == 2'd3),
 	.clk_s(qframe), .clr(~flag_ctrl), .out(linear_reload));
 
 logic [6:0] linear_cnt;
 apu_timer #(.N(7)) lt0 (
-	.clk(qframe), .n_reset(sys.n_reset), .clkout(),
+	.clk(qframe), .n_reset(n_reset), .clkout(),
 	.reload(linear_reload), .loop(1'b0),
 	.load(cnt_load_reg), .cnt(linear_cnt));
 
@@ -55,7 +60,7 @@ assign gate_linear = linear_cnt != 7'h0;
 
 logic gate_lc;
 apu_length_counter lc0 (
-	.halt(lc_halt), .load_cpu(we && sysbus.addr[1:0] == 2'd3),
+	.halt(lc_halt), .load_cpu(we && sys_addr[1:0] == 2'd3),
 	.idx(lc_load_reg), .gate(gate_lc), .*);
 
 // Waveform sequencer
@@ -64,8 +69,8 @@ logic seq_clk;
 assign seq_clk = gate_linear & gate_lc & timer_clk;
 
 logic [4:0] seq_cnt;
-always_ff @(posedge seq_clk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge seq_clk, negedge n_reset)
+	if (~n_reset)
 		seq_cnt <= 5'h0;
 	else
 		seq_cnt <= seq_cnt + 5'h1;

@@ -1,9 +1,14 @@
 module apu (
-	sys_if sys,
-	sysbus_if sysbus,
+	input logic clk, dclk, n_reset,
+
+	input logic [15:0] sys_addr,
+	inout wire [7:0] sys_data,
+	output wire sys_rdy,
+	input logic sys_rw,
+
+	output wire [15:0] bus_addr,
 	input logic bus_rdy,
 	output logic bus_req,
-	output wire [15:0] bus_addr,
 	
 	output logic irq,
 	output logic [7:0] out
@@ -11,18 +16,18 @@ module apu (
 
 logic apuclk, qframe, hframe;
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
 		apuclk <= 1'b0;
 	else
 		apuclk <= ~apuclk;
 
 logic en;
-assign en = (sysbus.addr & ~16'h001f) == 16'h4000;
-assign sysbus.rdy = en ? 1'b1 : 1'bz;
+assign en = (sys_addr & ~16'h001f) == 16'h4000;
+assign sys_rdy = en ? 1'b1 : 1'bz;
 
 logic [7:0] sel;
-demux #(.N(3)) demux0 (.oe(en), .sel(sysbus.addr[4:2]), .q(sel));
+demux #(.N(3)) demux0 (.oe(en), .sel(sys_addr[4:2]), .q(sel));
 
 // Registers
 
@@ -48,7 +53,7 @@ apu_noise n0 (.sel(sel[3]), .en(noise_en), .act(noise_act), .out(noise), .*);
 logic [6:0] dmc;
 logic dmc_en, dmc_act, dmc_irq;
 apu_dmc d0 (.sel(sel[4]), .en(dmc_en), .act(dmc_act), .out(dmc), .irq(dmc_irq),
-	.start(we && sysbus.addr[1:0] == 2'h1), .*);
+	.start(we && sys_addr[1:0] == 2'h1), .*);
 
 logic [7:0] mix;
 apu_mixer mix0 (.out(mix), .*);
@@ -63,8 +68,8 @@ logic frame_quarter, frame_half;
 assign qframe = frame_mode ^ frame_quarter, hframe = frame_mode ^ frame_half;
 
 logic frame_write;
-flag_keeper flag0 (.n_reset(sys.n_reset),
-	.clk(sys.clk), .flag(we && sysbus.addr[1:0] == 2'h3),
+flag_keeper flag0 (.n_reset(n_reset),
+	.clk(clk), .flag(we && sys_addr[1:0] == 2'h3),
 	.clk_s(apuclk), .clr(1'b1), .out(frame_write));
 
 enum int unsigned {S0, S1, S2, S3, S4} state;
@@ -86,14 +91,14 @@ end
 
 logic [11:0] frame_cnt;
 apu_timer #(.N(12)) ft0 (
-	.clk(~apuclk), .n_reset(sys.n_reset), .clkout(),
+	.clk(~apuclk), .n_reset(n_reset), .clkout(),
 	.reload(frame_write), .loop(1'b1), .load(frame_load), .cnt(frame_cnt));
 
 logic frame_reload;
 assign frame_reload = frame_cnt == 12'h0;
 
-always_ff @(negedge apuclk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(negedge apuclk, negedge n_reset)
+	if (~n_reset)
 		state <= S0;
 	else if (frame_write)
 		state <= S0;
@@ -107,8 +112,8 @@ always_ff @(negedge apuclk, negedge sys.n_reset)
 		default:	state <= S0;
 		endcase
 
-always_ff @(negedge apuclk, negedge sys.n_reset)
-	if (~sys.n_reset) begin
+always_ff @(negedge apuclk, negedge n_reset)
+	if (~n_reset) begin
 		frame_quarter <= 1'b0;
 		frame_half <= 1'b0;
 	end else if (~frame_write && frame_reload) begin
@@ -129,18 +134,18 @@ always_ff @(negedge apuclk, negedge sys.n_reset)
 assign {dmc_en, noise_en, triangle_en, pulse_en[1], pulse_en[0]} = regs[1][4:0];
 
 logic stat_read;
-assign stat_read = ~sysbus.we && sel[5] && sysbus.addr[1:0] == 2'h1;
+assign stat_read = ~sys_rw && sel[5] && sys_addr[1:0] == 2'h1;
 logic [7:0] stat_out;
 assign stat_out = {dmc_irq, frame_int, 1'b0, dmc_act, noise_act, triangle_act, pulse_act[1], pulse_act[0]};
-assign sysbus.data = stat_read ? stat_out : 8'bz;
+assign sys_data = stat_read ? stat_out : 8'bz;
 
 // IRQ control
 
 logic int_irq;
 assign int_irq = frame_reload && state == S3;
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
 		frame_int <= 1'b0;
 	else if (~frame_mode && ~frame_int_inhibit && int_irq)
 		frame_int <= 1'b1;

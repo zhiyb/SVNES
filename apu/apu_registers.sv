@@ -1,18 +1,23 @@
 module apu_registers (
-	sys_if sys,
-	sysbus_if sysbus,
+	input logic clk, dclk, n_reset,
+
+	input logic [15:0] sys_addr,
+	inout wire [7:0] sys_data,
+	output wire sys_rdy,
+	input logic sys_rw,
+
 	input logic sel,
 	output logic we,
 	output logic [7:0] regs[4]
 );
 
-assign we = sel & sysbus.we;
+assign we = sel & sys_rw;
 
-always_ff @(posedge sys.nclk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset)
 		for (int i = 0; i != 4; i++)
 			regs[i] <= 8'b0;
 	else if (we)
-		regs[sysbus.addr[1:0]] <= sysbus.data;
+		regs[sys_addr[1:0]] <= sys_data;
 
 endmodule

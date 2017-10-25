@@ -1,6 +1,11 @@
 module apu_noise (
-	sys_if sys,
-	sysbus_if sysbus,
+	input logic clk, dclk, n_reset,
+
+	input logic [15:0] sys_addr,
+	inout wire [7:0] sys_data,
+	output wire sys_rdy,
+	input logic sys_rw,
+
 	input logic apuclk, qframe, hframe,
 	input logic sel, en,
 	output logic act,
@@ -37,24 +42,24 @@ assign lc_load = regs[3][7:3];
 
 logic [3:0] env_out;
 apu_envelope e0 (
-	.restart_cpu(we && sysbus.addr[1:0] == 2'd3), .loop(env_loop), 
+	.restart_cpu(we && sys_addr[1:0] == 2'd3), .loop(env_loop), 
 	.period(env_period), .out(env_out), .*);
 
 // Timer
 
 logic [11:0] timer_load;
-apu_rom_noise_ntsc rom0 (.address(period), .aclr(~sys.n_reset), .clock(sys.nclk), .q(timer_load));
+apu_rom_noise_ntsc rom0 (.address(period), .aclr(~n_reset), .clock(dclk), .q(timer_load));
 
 logic timer_clk;
 apu_timer #(.N(12)) t0 (
-	.clk(apuclk), .n_reset(sys.n_reset), .clkout(timer_clk),
+	.clk(apuclk), .n_reset(n_reset), .clkout(timer_clk),
 	.reload(1'b0), .loop(1'b1), .load(timer_load), .cnt());
 
 // LFSR
 
 logic lfsr_fb;
 logic [14:0] lfsr_data;
-lfsr #(.N(15), .RESET(15'h1)) l0 (.clk(timer_clk), .n_reset(sys.n_reset), .fb(lfsr_fb), .data(lfsr_data));
+lfsr #(.N(15), .RESET(15'h1)) l0 (.clk(timer_clk), .n_reset(n_reset), .fb(lfsr_fb), .data(lfsr_data));
 
 assign lfsr_fb = lfsr_data[0] ^ (mode ? lfsr_data[6] : lfsr_data[1]);
 
@@ -65,7 +70,7 @@ assign gate_lfsr = ~lfsr_data[0];
 
 logic gate_lc;
 apu_length_counter lc0 (
-	.halt(lc_halt), .load_cpu(we && sysbus.addr[1:0] == 2'd3),
+	.halt(lc_halt), .load_cpu(we && sys_addr[1:0] == 2'd3),
 	.idx(lc_load), .gate(gate_lc), .*);
 
 // Output control

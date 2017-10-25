@@ -1,5 +1,5 @@
 module apu_pwm #(parameter N = 8) (
-	input logic n_reset, clk,
+	input logic clk, n_reset,
 	input logic [N - 1:0] cmp,
 	input logic en,
 	output logic q

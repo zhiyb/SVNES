@@ -1,12 +1,12 @@
 *.bak
-work
+work/
 db
 *_db
 *_temp
 *_tmp
 transcript
 simulation
-output_files
+output_files/
 *.cr.mti
 .*.swp
 *.wlf
@@ -23,3 +23,4 @@ output_files
 *.json
 wlft*
 *.qdf
+tests/

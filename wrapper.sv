@@ -1,7 +1,8 @@
 // {{{ Clocks and reset control
 module clk_reset (
 	input logic CLOCK_50,
-	output logic clkSYS, clkSDRAM, clkTFT,
+	output logic clkSYS, clkSDRAM, clkTFT, clkAudio,
+	output logic clkMaster, clkPPU, clkCPU, clkRAM,
 	input logic KEY,
 	output logic [1:0] clk,
 	input logic n_reset_mem,
@@ -44,6 +45,12 @@ assign clkSYS = sys[clk];
 
 assign clkSDRAM = clk90M;
 assign clkTFT = clk30M;
+assign clkAudio = clk10M;
+assign clkRAM = clk30M;
+
+// NES clocks
+pll_ntsc pll1 (.areset(1'b0), .inclk0(clk50M), .locked(),
+	.c0(clkMaster), .c1(clkPPU), .c2(clkCPU));
 
 endmodule
 // }}}
@@ -79,7 +86,8 @@ module wrapper (
 );
 
 // Clocks and reset control
-logic clkSYS, clkSDRAM, clkTFT;
+logic clkSYS, clkSDRAM, clkTFT, clkAudio;
+logic clkMaster, clkPPU, clkCPU, clkRAM;
 logic [1:0] clk;
 logic n_reset, n_reset_ext, n_reset_mem;
 clk_reset cr0 (.KEY(KEY[1]), .*);
@@ -111,9 +119,6 @@ assign arb_req[2] = 1'b0;
 assign arb_wr[2] = 1'bx;
 assign arb_addr[2] = 'bx;
 assign arb_data[2] = 'bx;
-
-// System
-cpu cpu0 (clk10M, ~clk10M, n_reset, , , );
 
 // TFT
 logic [5:0] tft_level;
@@ -149,6 +154,15 @@ mem_test #(BURST, 24'hfb0000, 24'h040000) test0 (clkSYS, n_reset,
 	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
 	arb_req[test], arb_wr[test], arb_ack[test], test_fail, ~KEY[1], SW[3]);
 `endif
+
+// Audio PWM
+logic [7:0] audio;
+logic aout;
+assign GPIO_1[25] = aout;
+apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, 1'b1, aout);
+
+// System
+system sys0 (.*);
 
 // Debugging LEDs
 assign LED[7:0] = {clk, test_fail, sdram_empty, sdram_level[1], tft_empty, tft_level[5:4]};

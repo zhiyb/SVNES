@@ -1,7 +1,7 @@
 #!/bin/bash
 subst='	s/#.*//;
 	s/ALU_ADD/000/; s/ALU_SUB/001/; s/ALU_SL/010/; s/ALU_SR/011/;
-	s/ALU_AND/100/; s/ALU_OR/101/; s/ALU_EOR/110/; s/ALU_DEC/111/;
+	s/ALU_AND/100/; s/ALU_OR/101/; s/ALU_EOR/110/; s/ALU_REL/111/;
 	s/AI_0/0/; s/AI_SB/1/; s/AI_HLD/1/;
 	s/BI_DB/00/; s/BI_nDB/01/; s/BI_ADL/10/; s/BI_HLD/11/;
 	s/DB_DL/000/; s/DB_PCL/001/; s/DB_PCH/010/; s/DB_SB/011/;

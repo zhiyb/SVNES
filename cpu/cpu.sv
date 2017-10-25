@@ -8,11 +8,11 @@ module cpu (
 logic [7:0] bus_db, bus_sb, bus_adh, bus_adl, int_addr;
 logic [7:0] abh, abl, dl, dout, alu;
 logic [7:0] y, x, sp, a, p, pch, pcl;
-// Overflow, carry out, half carry, branch
-logic avr, acr, hc, br;
+// Overflow, carry out, relative carry out, branch
+logic avr, acr, arc, br;
 
 // {{{ Microcode controller
-typedef enum logic [2:0] {ALU_ADD = 3'h0, ALU_SUB = 3'h1, ALU_SL = 3'h2, ALU_SR = 3'h3, ALU_AND = 3'h4, ALU_OR = 3'h5, ALU_EOR = 3'h6, ALU_DEC = 3'h7} ALUop_t;
+typedef enum logic [2:0] {ALU_ADD = 3'h0, ALU_SUB = 3'h1, ALU_SL = 3'h2, ALU_SR = 3'h3, ALU_AND = 3'h4, ALU_OR = 3'h5, ALU_EOR = 3'h6, ALU_REL = 3'h7} ALUop_t;
 typedef enum logic       {AI_0 = 1'h0, AI_SB = 1'h1} ALUAI_t;
 typedef enum logic       {AI_HLD = 1'h1} ALUAI1_t;
 typedef enum logic [1:0] {BI_DB = 2'h0, BI_nDB = 2'h1, BI_ADL = 2'h2, BI_HLD = 2'h3} ALUBI_t;
@@ -148,8 +148,10 @@ logic [7:0] pbr;
 always_comb
 begin
 	pbr = p;
-	if (~mop.pop[1])
+	if (~mop.pop[1]) begin
 		pbr[S_C] = pn[S_C];
+		pbr[S_V] = arc;
+	end
 	br = 1'b0;
 	case (mop.p)
 	P_N:	br = pbr[S_N];
@@ -265,7 +267,7 @@ assign ac = mop.alu[0] ^ (mop.alu_c & p[S_C]);
 
 logic [7:0] ai, bi;
 logic [8:0] alu_sum, alu_sr, alu_sl;
-logic [7:0] alu_and, alu_or, alu_eor;
+logic [7:0] alu_and, alu_or, alu_eor, alu_rel;
 assign alu_sum = ai + bi + (ac ? 1 : 0);
 assign alu_and = ai & bi;
 assign alu_or = ai | bi;
@@ -278,6 +280,7 @@ always_ff @(posedge dclk, negedge n_reset)
 		{avr, acr, alu} <= 0;
 	else begin
 		{acr, alu} <= alu_sum;
+		arc = ai[7] ^ alu_sum[8];
 		avr = ~(ai[7] ^ bi[7]) & (ai[7] ^ alu_sum[7]);
 		case (mop.alu)
 		ALU_SL:		{acr, alu} <= alu_sl;
@@ -285,7 +288,7 @@ always_ff @(posedge dclk, negedge n_reset)
 		ALU_AND:	alu <= alu_and;
 		ALU_OR:		alu <= alu_or;
 		ALU_EOR:	alu <= alu_eor;
-		ALU_DEC:	alu <= bi - 1;
+		ALU_REL:	alu <= alu_rel;
 		endcase
 	end
 
@@ -298,6 +301,8 @@ always_ff @(posedge clk, negedge n_reset)
 		ai_reg <= ai;
 		bi_reg <= bi;
 	end
+
+assign alu_rel = {8{ai_reg[7]}} + (acr ? 1 : 0) + bi;
 
 always_comb
 begin

@@ -64,7 +64,7 @@ assign rom_rden = mop.seq_rom && mop.seq == 0;
 assign rom_op = irq_pending ? 8'h00 : data;
 
 logic mop_rst;
-assign mop_rst = mop.seq_rom && rom_addr[mop.seq] == 0;
+assign mop_rst = mop.seq_rom && mop.seq == 0 && rom_addr[mop.seq] == 0;
 
 always_comb
 	if (mop.p_chk & br)

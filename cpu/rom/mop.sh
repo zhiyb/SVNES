@@ -9,7 +9,7 @@ subst='	s/#.*//;
 	s/SB_ALU/000/; s/SB_SP/001/; s/SB_X/010/; s/SB_Y/011/; s/SB_A/100/;
 	s/SB_DB/101/; s/SB_FUL/111/;
 	s/AD_0A/1000/; s/AD_DA/1001/; s/AD_1S/1010/; s/AD_DS/1011/;
-	s/AD_0D/1101/; s/AD_PC/1110/; s/AD_FI/1111/;
+	s/AD_0D/1100/; s/AD_PC/1110/; s/AD_FI/1111/;
 	s/AD_HLD/0000/; s/AD_ADL/0001/; s/AD_ADH/0010/;
 	s/PC_PC/0/; s/PC_AD/1/;
 	s/P_MASK/00/; s/P_SP/01/; s/P_CLR/10/; s/P_SET/11/;

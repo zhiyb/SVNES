@@ -47,10 +47,11 @@ always_ff @(posedge clk4, negedge n_reset_async)
 logic [7:0] ram[1024];
 
 logic [7:0] rom[72] = '{
+	'h20, 'h04, 'h00,	// JSR a
 	'h00,			// BRK
-	'h20, 'h56, 'h78,	// JSR a
-	'h38,			// SEC
+	'h60,			// RTS
 	'h40,			// RTI
+	'h38,			// SEC
 	'h38,			// SEC
 	'h6c, 'h04, 'h00,	// JMP (a)
 	'h4c, 'h12, 'h34,	// JMP a
@@ -61,7 +62,6 @@ logic [7:0] rom[72] = '{
 	'h38,			// SEC
 	'hb0, 'hf5,		// BCS
 	'ha9, 'h34,		// LDA #i
-	'h08,			// PHP
 	'h48,			// PHA
 	'ha9, 'h12,		// LDA #i
 	'h28,			// PLP
@@ -93,7 +93,7 @@ assign data = rw ? ram_out : 8'bz;
 always_ff @(posedge qclk[0])
 begin
 	if (addr == 16'hfffe)
-		ram_out <= 8'h04;
+		ram_out <= 8'h05;
 	else if (addr == 16'hffff)
 		ram_out <= 8'h00;
 	else if (addr < $size(rom))

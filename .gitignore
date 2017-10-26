@@ -20,6 +20,7 @@ output_files/
 *.stp
 *.xml
 *.srf
+*.cdf
 *.json
 wlft*
 *.qdf

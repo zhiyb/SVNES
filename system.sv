@@ -1,13 +1,26 @@
 module system (
-	input logic clkCPU, clkRAM, n_reset,
+	input logic clkCPU2, n_reset,
 	// Audio
 	output logic [7:0] audio
 );
 
 // Clock generation
 logic clk, dclk;
-assign clk = clkCPU;
-assign dclk = ~clk;
+always_ff @(posedge clkCPU2, negedge n_reset)
+	if (~n_reset) begin
+		clk <= 1'b1;
+		dclk <= 1'b1;
+	end else begin
+		clk <= ~clk;
+		dclk <= clk;
+	end
+
+logic clkRAM;
+always_ff @(negedge clkCPU2, negedge n_reset)
+	if (~n_reset)
+		clkRAM <= 1'b1;
+	else
+		clkRAM <= clk;
 
 // CPU
 logic nmi, irq, sys_rw;

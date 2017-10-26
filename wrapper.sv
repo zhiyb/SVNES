@@ -2,7 +2,7 @@
 module clk_reset (
 	input logic CLOCK_50,
 	output logic clkSYS, clkSDRAM, clkTFT, clkAudio,
-	output logic clkMaster, clkPPU, clkCPU, clkRAM,
+	output logic clkMaster, clkPPU, clkCPU2,
 	input logic KEY,
 	output logic [1:0] clk,
 	input logic n_reset_mem,
@@ -46,11 +46,10 @@ assign clkSYS = sys[clk];
 assign clkSDRAM = clk90M;
 assign clkTFT = clk30M;
 assign clkAudio = clk10M;
-assign clkRAM = clk30M;
 
 // NES clocks
 pll_ntsc pll1 (.areset(1'b0), .inclk0(clk50M), .locked(),
-	.c0(clkMaster), .c1(clkPPU), .c2(clkCPU));
+	.c0(clkMaster), .c1(clkPPU), .c2(clkCPU2));
 
 endmodule
 // }}}
@@ -87,7 +86,7 @@ module wrapper (
 
 // Clocks and reset control
 logic clkSYS, clkSDRAM, clkTFT, clkAudio;
-logic clkMaster, clkPPU, clkCPU, clkRAM;
+logic clkMaster, clkPPU, clkCPU2;
 logic [1:0] clk;
 logic n_reset, n_reset_ext, n_reset_mem;
 clk_reset cr0 (.KEY(KEY[1]), .*);

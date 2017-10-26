@@ -1,7 +1,7 @@
 #!/bin/bash
 cat - <<-DOC
-WIDTH=32;
-DEPTH=256;
+WIDTH=8;
+DEPTH=1024;
 
 ADDRESS_RADIX=HEX;
 DATA_RADIX=DEC;
@@ -9,8 +9,8 @@ DATA_RADIX=DEC;
 CONTENT BEGIN
 DOC
 
-cat - | sed 's/#.*//;s/,$//;s/\s//g;s/[,:]/ /g' | grep -v '^$' | sort | \
-	awk '{print "\t" $1 ":\t" $4 * 1024 * 1024 + $3 * 1024 + $2 ";\t--\t" $2 ",\t" $3 ",\t" $4}'
+cat - | sed 's/#.*//;s/\s//g;s/^\([0-9a-f][0-9a-f]:\)/0x\1/;s/[,:]/ /g' | grep -v '^$' | sort | \
+	awk --non-decimal-data '{printf "\t%x:\t%d;\n\t%x:\t%d;\n\t%x:\t%d;\n", $1 * 4, $2, $1 * 4 + 1, $3, $1 * 4 + 2, $4}'
 
 cat - <<-DOC
 END;

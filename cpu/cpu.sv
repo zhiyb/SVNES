@@ -55,36 +55,45 @@ rom_mop rom0 (~n_reset, mop_addr, clk, rom_mop);
 assign mop = rom_mop[31:0];
 
 logic rom_rden;
-logic [7:0] rom_op;
-logic [31:0] rom_dispatch;
-rom_mop_dispatch rom1 (~n_reset, rom_op, dclk, rom_rden, rom_dispatch);
-logic [9:0] rom_addr[3];
-assign {rom_addr[2], rom_addr[1], rom_addr[0]} = rom_dispatch[29:0];
 assign rom_rden = mop.seq_rom && mop.seq == 0;
-assign rom_op = irq_pending ? 8'h00 : data;
+logic [7:0] rom_dl;
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset)
+		rom_dl <= 0;
+	else if (rom_rden)
+		rom_dl <= data;
+
+logic [9:0] rom_op;
+logic [7:0] mop_jump;
+rom_mop_dispatch rom1 (~n_reset, rom_op, dclk, mop.seq_rom, mop_jump);
+assign rom_op[1:0] = mop.seq;
+assign rom_op[9:2] = mop.seq == 0 ? (irq_pending ? 8'h00 : data) : rom_dl;
 
 logic mop_rst;
-assign mop_rst = mop.seq_rom && mop.seq == 0 && rom_addr[mop.seq] == 0;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		mop_rst <= 1'b0;
+	else
+		mop_rst <= rom_rden && mop_jump == 0;
+
 logic irq_op;
 assign irq_op = irq_pending & rom_rden;
 
 always_comb
 	if (mop.p_chk & br)
-		mop_addr = mop_addrn;
-	else if (mop.seq_rom)
-		mop_addr = rom_addr[mop.seq];
-	else if (mop.seq == SEQ)
-		mop_addr = mop_addrn;
-	else if (mop.seq == SEQ_2)
 		mop_addr = mop_addrn + 1;
-	else
+	else if (mop.seq_rom)
+		mop_addr = mop_jump;
+	else if (mop.seq == SEQ_0)
 		mop_addr = 0;
+	else
+		mop_addr = mop_addrn + mop.seq;
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		mop_addrn <= 0;
 	else
-		mop_addrn <= mop_addr + 1;
+		mop_addrn <= mop_addr;
 // }}}
 
 // {{{ Buses
@@ -226,7 +235,7 @@ always_ff @(posedge clk, negedge n_reset)
 		P_SET:	p <= p | pmask;
 		P_CLR:	p <= p & ~pmask;
 		endcase
-		p[5] <= 1'b1;
+		p[S_R] <= 1'b1;
 	end
 // }}}
 
@@ -286,7 +295,7 @@ always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		{pch, pcl} <= 0;
 	else if (load_pc)
-		{pch, pcl} <= {addr} + (~irq_op ? 1 : 0);
+		{pch, pcl} <= addr + (~irq_op ? 1 : 0);
 	else
 		{pch, pcl} <= {pch, pcl} + ((mop.pc_inc & ~irq_op) ? 1 : 0);
 

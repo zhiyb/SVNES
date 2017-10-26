@@ -74,7 +74,11 @@ flag_keeper flag0 (.n_reset(n_reset),
 
 enum int unsigned {S0, S1, S2, S3, S4} state;
 
+`ifdef MODEL_TECH
+parameter logic [11:0] frame_load_lut[5] = '{12'd7, 12'd7, 12'd8, 12'd8, 12'd5};
+`else
 parameter logic [11:0] frame_load_lut[5] = '{12'd3727, 12'd3727, 12'd3728, 12'd3728, 12'd3725};
+`endif
 logic [11:0] frame_load;
 always_comb
 begin

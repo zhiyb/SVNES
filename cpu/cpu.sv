@@ -65,6 +65,8 @@ assign rom_op = irq_pending ? 8'h00 : data;
 
 logic mop_rst;
 assign mop_rst = mop.seq_rom && mop.seq == 0 && rom_addr[mop.seq] == 0;
+logic irq_op;
+assign irq_op = irq_pending & rom_rden;
 
 always_comb
 	if (mop.p_chk & br)
@@ -273,7 +275,6 @@ end
 // }}}
 
 // {{{ Program counter & registers
-
 logic load_pc;
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
@@ -285,9 +286,9 @@ always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		{pch, pcl} <= 0;
 	else if (load_pc)
-		{pch, pcl} <= {addr} + 1;
+		{pch, pcl} <= {addr} + (~irq_op ? 1 : 0);
 	else
-		{pch, pcl} <= {pch, pcl} + (mop.pc_inc ? 1 : 0);
+		{pch, pcl} <= {pch, pcl} + ((mop.pc_inc & ~irq_op) ? 1 : 0);
 
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
@@ -332,8 +333,8 @@ always_ff @(posedge dclk, negedge n_reset)
 		{avr, acr, alu} <= 0;
 	else begin
 		{acr, alu} <= alu_sum;
-		arc = ai[7] ^ alu_sum[8];
-		avr = ~(ai[7] ^ bi[7]) & (ai[7] ^ alu_sum[7]);
+		arc <= ai[7] ^ alu_sum[8];
+		avr <= ~(ai[7] ^ bi[7]) & (ai[7] ^ alu_sum[7]);
 		case (mop.alu)
 		ALU_SL:		{acr, alu} <= alu_sl;
 		ALU_SR:		{alu, acr} <= alu_sr;

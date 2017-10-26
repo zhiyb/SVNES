@@ -38,6 +38,16 @@ ram2k ram0 (.clock(clkRAM), .aclr(~n_reset),
 	.wren(ram0sel & ~sys_rw), .q(ram0q));
 assign sys_data = (ram0sel & sys_rw) ? ram0q : 8'bz;
 
+// SRAM at $6000 to $8000 of size $2000 (8kB)
+logic ram1sel;
+assign ram1sel = (sys_addr & ~16'h1fff) == 16'h6000;
+assign sys_rdy = ram1sel ? 1'b1 : 1'bz;
+logic [7:0] ram1q;
+ram8k ram1 (.clock(clkRAM), .aclr(~n_reset),
+	.address(sys_addr[12:0]), .data(sys_data),
+	.wren(ram1sel & ~sys_rw), .q(ram1q));
+assign sys_data = (ram1sel & sys_rw) ? ram1q : 8'bz;
+
 // Startup ROM at $8000 to $10000 of size $8000 (32kB)
 logic rom0sel;
 assign rom0sel = (sys_addr & ~16'h7fff) == 16'h8000;

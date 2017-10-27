@@ -1,5 +1,6 @@
 module cpu (
-	input logic clk, dclk, n_reset, nmi, irq,
+	input logic clk, dclk, n_reset,
+	input logic nmi, irq, ready,
 	output logic [15:0] addr,
 	inout wire [7:0] data,
 	output logic rw
@@ -10,6 +11,16 @@ logic [7:0] abh, abl, dl, dout, alu;
 logic [7:0] y, x, sp, a, p, pch, pcl;
 // Overflow, carry out, relative carry out, branch, IRQ pending
 logic avr, acr, arc, br, irq_pending;
+
+// Halting control
+logic run, runc;
+// Only halts at read cycles
+assign run = ~rw | ready;
+always_ff @(posedge dclk, negedge n_reset)
+	if (~n_reset)
+		runc <= 1'b0;
+	else
+		runc <= run;
 
 // {{{ Microcode controller
 typedef enum logic [2:0] {ALU_ADD = 3'h0, ALU_SUB = 3'h1, ALU_SL = 3'h2, ALU_SR = 3'h3, ALU_AND = 3'h4, ALU_OR = 3'h5, ALU_EOR = 3'h6, ALU_REL = 3'h7} ALUop_t;
@@ -51,7 +62,7 @@ struct packed {
 
 logic [7:0] mop_addr, mop_addrn;
 logic [31:0] rom_mop;
-rom_mop rom0 (~n_reset, mop_addr, clk, rom_mop);
+rom_mop rom0 (~n_reset, mop_addr, clk, runc, rom_mop);
 assign mop = rom_mop[31:0];
 
 logic rom_rden;
@@ -92,7 +103,7 @@ always_comb
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		mop_addrn <= 0;
-	else
+	else if (runc)
 		mop_addrn <= mop_addr;
 // }}}
 
@@ -288,12 +299,14 @@ logic load_pc;
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		load_pc <= 1'b0;
-	else
+	else if (run)
 		load_pc <= mop.pc == PC_AD;
 
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		{pch, pcl} <= 0;
+	else if (~run)
+		;
 	else if (load_pc)
 		{pch, pcl} <= addr + (~irq_op ? 1 : 0);
 	else
@@ -302,7 +315,7 @@ always_ff @(posedge dclk, negedge n_reset)
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		dl <= 0;
-	else
+	else if (run)
 		dl <= data;
 
 always_ff @(posedge clk, negedge n_reset)
@@ -311,7 +324,7 @@ always_ff @(posedge clk, negedge n_reset)
 		x <= 0;
 		sp <= 0;
 		a <= 0;
-	end else begin
+	end else if (runc) begin
 		if (mop.sb_y)
 			y <= bus_sb;
 		if (mop.sb_x)
@@ -340,7 +353,7 @@ assign alu_sl = {ai[7:0], mop.alu_c & p[S_C]};
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		{avr, acr, alu} <= 0;
-	else begin
+	else if (run) begin
 		{acr, alu} <= alu_sum;
 		arc <= ai[7] ^ alu_sum[8];
 		avr <= ~(ai[7] ^ bi[7]) & (ai[7] ^ alu_sum[7]);
@@ -359,7 +372,7 @@ always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset) begin
 		ai_reg <= 0;
 		bi_reg <= 0;
-	end else begin
+	end else if (runc) begin
 		ai_reg <= ai;
 		bi_reg <= bi;
 	end

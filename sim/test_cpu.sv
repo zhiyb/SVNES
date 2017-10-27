@@ -2,7 +2,8 @@
 
 module test_cpu;
 
-logic clk, qclk[3], n_reset, n_reset_async, nmi, irq;
+logic clk, qclk[3], n_reset, n_reset_async;
+logic nmi, irq, ready;
 logic [15:0] addr;
 wire [7:0] data;
 logic rw;
@@ -42,6 +43,9 @@ initial
 begin
 	nmi = 1'b1;
 	irq = 1'b1;
+	ready = 1'b1;
+	#80ns ready = 1'b0;
+	#20ns ready = 1'b1;
 end
 
 always_ff @(posedge clk4, negedge n_reset_async)

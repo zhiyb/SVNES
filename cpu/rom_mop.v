@@ -41,17 +41,20 @@ module rom_mop (
 	aclr,
 	address,
 	clock,
+	rden,
 	q);
 
 	input	  aclr;
 	input	[7:0]  address;
 	input	  clock;
+	input	  rden;
 	output	[31:0]  q;
 `ifndef ALTERA_RESERVED_QIS
 // synopsys translate_off
 `endif
 	tri0	  aclr;
 	tri1	  clock;
+	tri1	  rden;
 `ifndef ALTERA_RESERVED_QIS
 // synopsys translate_on
 `endif
@@ -63,6 +66,7 @@ module rom_mop (
 				.aclr0 (aclr),
 				.address_a (address),
 				.clock0 (clock),
+				.rden_a (rden),
 				.q_a (sub_wire0),
 				.aclr1 (1'b0),
 				.address_b (1'b1),
@@ -79,7 +83,6 @@ module rom_mop (
 				.data_b (1'b1),
 				.eccstatus (),
 				.q_b (),
-				.rden_a (1'b1),
 				.rden_b (1'b1),
 				.wren_a (1'b0),
 				.wren_b (1'b0));
@@ -131,7 +134,7 @@ endmodule
 // Retrieval info: PRIVATE: UseDQRAM NUMERIC "0"
 // Retrieval info: PRIVATE: WidthAddr NUMERIC "8"
 // Retrieval info: PRIVATE: WidthData NUMERIC "32"
-// Retrieval info: PRIVATE: rden NUMERIC "0"
+// Retrieval info: PRIVATE: rden NUMERIC "1"
 // Retrieval info: LIBRARY: altera_mf altera_mf.altera_mf_components.all
 // Retrieval info: CONSTANT: ADDRESS_ACLR_A STRING "CLEAR0"
 // Retrieval info: CONSTANT: CLOCK_ENABLE_INPUT_A STRING "BYPASS"
@@ -150,9 +153,11 @@ endmodule
 // Retrieval info: USED_PORT: address 0 0 8 0 INPUT NODEFVAL "address[7..0]"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT VCC "clock"
 // Retrieval info: USED_PORT: q 0 0 32 0 OUTPUT NODEFVAL "q[31..0]"
+// Retrieval info: USED_PORT: rden 0 0 0 0 INPUT VCC "rden"
 // Retrieval info: CONNECT: @aclr0 0 0 0 0 aclr 0 0 0 0
 // Retrieval info: CONNECT: @address_a 0 0 8 0 address 0 0 8 0
 // Retrieval info: CONNECT: @clock0 0 0 0 0 clock 0 0 0 0
+// Retrieval info: CONNECT: @rden_a 0 0 0 0 rden 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 32 0 @q_a 0 0 32 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL rom_mop.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL rom_mop.inc FALSE

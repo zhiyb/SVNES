@@ -3,7 +3,6 @@ module apu_registers (
 
 	input logic [15:0] sys_addr,
 	inout wire [7:0] sys_data,
-	output wire sys_rdy,
 	input logic sys_rw,
 
 	input logic sel,

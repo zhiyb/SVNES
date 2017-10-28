@@ -1,16 +1,19 @@
 module ppu (
-	sys_if sys,
-	sysbus_if sysbus,
-	input logic clkPPU,
+	input logic clk, dclk, clkPPU, n_reset,
 	output logic nmi,
+
+	input logic [15:0] sys_addr,
+	inout wire [7:0] sys_data,
+	output wire sys_rdy,
+	input logic sys_rw,
+
 	// PPU bus interface
 	output logic [13:0] ppu_addr,
 	inout wire [7:0] ppu_data,
-	output logic ppu_rd, ppu_we,
+	output logic ppu_rd, ppu_wr,
 	// Rendering output
-	output logic [9:0] out_x, out_y,
 	output logic [23:0] out_rgb,
-	output logic out_we
+	output logic out_vblank, out_hblank
 );
 
 // Reset signal
@@ -24,30 +27,30 @@ assign ext = 4'h0;
 logic [7:0] regs[8], oam_dma;
 
 logic sel;
-assign sel = sysbus.addr[15:13] == 3'h1;
-assign sysbus.rdy = sel ? 1'b1 : 1'bz;
+assign sel = sys_addr[15:13] == 3'h1;
+assign sys_rdy = sel ? 1'b1 : 1'bz;
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
 		for (int i = 0; i != 8; i++)
 			regs[i] <= 8'h0;
-	else if (sel & sysbus.we)
-		regs[sysbus.addr[2:0]] <= sysbus.data;
+	else if (sel & ~sys_rw)
+		regs[sys_addr[2:0]] <= sys_data;
 
-always_ff @(posedge sys.clk, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
 		oam_dma <= 8'h0;
-	else if (sysbus.addr == 16'h4014 && sysbus.we)
-		oam_dma <= sysbus.data;
+	else if (sys_addr == 16'h4014 && ~sys_rw)
+		oam_dma <= sys_data;
 
 // Register reading
 logic [7:0] bus_out, reg_status, reg_oam_data, reg_data_out;
-assign sysbus.data = sel && ~sysbus.we ? bus_out : 8'bz;
+assign sys_data = sel && sys_rw ? bus_out : 8'bz;
 always_comb
 begin
 	bus_out = 8'h0;
-	if (sel && ~sysbus.we)
-		case (sysbus.addr[2:0])
+	if (sel && sys_rw)
+		case (sys_addr[2:0])
 		3'd2:	bus_out = reg_status;
 		3'd4:	bus_out = reg_oam_data;
 		3'd7:	bus_out = reg_data_out;
@@ -76,7 +79,7 @@ assign oam_data = regs[4];
 logic clkCPU[2];
 always_ff @(posedge clkPPU)
 begin
-	clkCPU[0] <= sys.clk;
+	clkCPU[0] <= clk;
 	clkCPU[1] <= ~clkCPU[0];
 end
 
@@ -88,10 +91,10 @@ logic [2:0] addr_reg;
 logic [7:0] data_reg;
 always_ff @(posedge clkPPU)
 	if (update) begin
-		rd_reg <= sel & ~sysbus.we;
-		wr_reg <= sel & sysbus.we;
-		addr_reg <= sysbus.addr;
-		data_reg <= sysbus.data;
+		rd_reg <= sel & sys_rw;
+		wr_reg <= sel & ~sys_rw;
+		addr_reg <= sys_addr;
+		data_reg <= sys_data;
 	end else begin
 		rd_reg <= 1'b0;
 		wr_reg <= 1'b0;
@@ -107,7 +110,7 @@ assign data_out = data_reg;
 assign we = wr_reg && addr_reg == 7;
 assign rd = rd_reg && addr_reg == 7;
 
-always_ff @(posedge sys.clk)
+always_ff @(posedge clk)
 	reg_data_out <= data;
 
 // Internal palette control RAM
@@ -124,20 +127,20 @@ ramdual32 ram0 (.aclr(reset), .clock(clkPPU),
 
 // Unified bus
 assign ppu_addr = addr;
-assign ppu_we = we & ~pal_sel;
-assign ppu_data = ppu_we ? data_out : 8'hz;
+assign ppu_wr = ~we | pal_sel;
+assign ppu_data = ~ppu_wr ? data_out : 8'hz;
 assign data = pal_sel ? pal_bus_data : ppu_data;
 
 // Renderer
 parameter vblanking = 20, vpost = 1;
 parameter vlines = 240 + vpost + vblanking + 1;
-//ppu_renderer renderer0 (.n_reset(sys.n_reset), .req(rdr_req), .addr(rdr_addr), .*);
+//ppu_renderer renderer0 (.n_reset(n_reset), .req(rdr_req), .addr(rdr_addr), .*);
 
 // Frame counters
 logic skip;
 logic [8:0] x, y;
-always_ff @(posedge clkPPU, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
 		x <= 0;
 	else if (skip && x == 339 && y == vlines - 1)
 		x <= 0;
@@ -146,8 +149,8 @@ always_ff @(posedge clkPPU, negedge sys.n_reset)
 	else
 		x <= x + 1;
 
-always_ff @(posedge clkPPU, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
 		y <= 0;
 	else if (skip && x == 339 && y == vlines - 1)
 		y <= 0;
@@ -158,14 +161,14 @@ always_ff @(posedge clkPPU, negedge sys.n_reset)
 			y <= y + 1;
 	end
 
-always_ff @(posedge clkPPU, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
 		skip <= 1'b0;
 	else if (x == 0 && y == 0)
 		skip <= ~skip;
 
 logic rendering;
-assign rendering = (y < 240 || y >= vlines - 1) && bg_en && sp_en;
+assign rendering = (y < 240 || y >= vlines - 1) && (bg_en | sp_en);
 
 // v, t, x, w registers
 logic [14:0] v, v_load, t;
@@ -278,7 +281,7 @@ begin
 	end
 end
 
-assign ppu_rd = (rendering && x != 0) || rd;
+assign ppu_rd = ~((rendering && x != 0) || rd);
 
 // Data registers
 logic [1:0] at_bit;
@@ -326,9 +329,8 @@ assign pal_addr = {1'b0, pixel == 2'b0 ? ext : {palette, pixel}};
 
 always_ff @(posedge clkPPU)
 begin
-	out_x <= x + 128;
-	out_y <= y + 128;
-	out_we <= bg_en && sp_en && x > 2 && x < 259 && y < 240;
+	out_hblank <= ~(x > 2 && x < 259);
+	out_vblank <= ~((bg_en | sp_en) && y < 240);
 end
 
 ppu_rom_palette rom0 (.aclr(reset), .clock(clkPPU),
@@ -336,17 +338,21 @@ ppu_rom_palette rom0 (.aclr(reset), .clock(clkPPU),
 
 // vblank flag
 logic vblank;
-always_ff @(posedge clkPPU)
-	if (rd_reg && addr_reg == 2)
-		vblank <= 1'b0;
-	else if (x == 0) begin
-		if (y == 240 + vpost)
-			vblank <= 1'b1;
-		else if (y == vlines - 1)
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
+		vblank <= 1'b1;
+	else begin
+		if (rd_reg && addr_reg == 2)
 			vblank <= 1'b0;
+		else if (x == 0) begin
+			if (y == 240 + vpost)
+				vblank <= 1'b1;
+			else if (y == vlines - 1)
+				vblank <= 1'b0;
+		end
 	end
 
-always_ff @(posedge sys.clk)
+always_ff @(posedge clk)
 	vblank_cpu <= vblank;
 
 // NMI generation
@@ -357,8 +363,8 @@ always_ff @(posedge clkPPU)
 		nmi <= 1'b1;
 
 // Reset signal
-always_ff @(posedge clkPPU, negedge sys.n_reset)
-	if (~sys.n_reset)
+always_ff @(posedge clkPPU, negedge n_reset)
+	if (~n_reset)
 		reset <= 1'b1;
 	else if (x == 0 && y == vlines - 1)
 		reset <= 1'b0;

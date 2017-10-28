@@ -107,25 +107,21 @@ logic sdram_empty, sdram_full;
 memory #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
 
 // Memory access arbiter assignments
-localparam tft = 0, test = 3;
+localparam tft = 0, ppu = 2, test = 3;
 
 assign arb_req[1] = 1'b0;
 assign arb_wr[1] = 1'bx;
 assign arb_addr[1] = 'bx;
 assign arb_data[1] = 'bx;
 
-assign arb_req[2] = 1'b0;
-assign arb_wr[2] = 1'bx;
-assign arb_addr[2] = 'bx;
-assign arb_data[2] = 'bx;
-
 // TFT
+localparam TFT_BASE = 24'hfa0000;
 logic [5:0] tft_level;
 logic tft_empty, tft_full;
 `ifdef MODEL_TECH
-tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 1, 256, 1}, 10, '{1, 1, 128, 1}) tft0
+tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 1, 256, 1}, 10, '{1, 1, 128, 1}) tft0
 `else
-tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 40, 479, 1}, 10, '{1, 9, 271, 1}) tft0
+tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 40, 479, 1}, 10, '{1, 9, 271, 1}) tft0
 //tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 43, 799, 15}, 10, '{1, 20, 479, 6}) tft0
 `endif
 	(.clkSYS(clkSYS), .clkTFT(clkTFT), .n_reset(n_reset),
@@ -145,11 +141,11 @@ assign tft_pwm = n_reset;
 // Memory RW test client
 logic test_fail;
 `ifdef MODEL_TECH
-mem_test #(BURST, 24'hfb0000, 24'h000010) test0 (clkSYS, n_reset,
+mem_test #(BURST, TFT_BASE + 24'h010000, 24'h000010) test0 (clkSYS, n_reset,
 	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
 	arb_req[test], arb_wr[test], arb_ack[test], test_fail, ~KEY[1], SW[3]);
 `else
-mem_test #(BURST, 24'hfb0000, 24'h040000) test0 (clkSYS, n_reset,
+mem_test #(BURST, TFT_BASE + 24'h000100, 24'h001000) test0 (clkSYS, n_reset,
 	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
 	arb_req[test], arb_wr[test], arb_ack[test], test_fail, ~KEY[1], SW[3]);
 `endif
@@ -159,6 +155,13 @@ logic [7:0] audio;
 logic aout;
 assign GPIO_1[25] = aout;
 apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, 1'b1, aout);
+
+// Video frame buffer
+logic [23:0] video_rgb;
+logic video_vblank, video_hblank;
+ppu_fb #(AN, DN, TFT_BASE, 9, 9, 64, 16, 480) fb0 (clkSYS, clkPPU, n_reset,
+	arb_addr[ppu], arb_data[ppu], arb_req[ppu], arb_wr[ppu], arb_ack[ppu],
+	video_rgb, video_vblank, video_hblank);
 
 // System
 system sys0 (.*);

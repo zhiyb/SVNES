@@ -64,7 +64,9 @@ logic [7:0] vector[6] = '{
 
 logic [7:0] rom[72] = '{
 	'h40,			// RTI
-	'ha2, 'h03,		// LDX #i
+	'ha2, 'h00,		// LDX #i
+	'h86, 'h08,		// STX d
+	'h24, 'h08,		// BIT d
 	'hfc, 'haa, 'h55,	// NOP a, x
 	'h38,			// SEC
 	'h00,			// BRK
@@ -88,7 +90,6 @@ logic [7:0] rom[72] = '{
 	'h85, 'h04,		// STA d
 	'ha0, 'hee,		// LDY #i
 	'h95, 'h01,		// STA d, x
-	'h09, 'h46,		// ORA #i
 	'he9, 'h12,		// SBC #i
 	'h69, 'h12,		// ADC #i
 	'ha9, 'h34,		// LDA #i
@@ -97,7 +98,6 @@ logic [7:0] rom[72] = '{
 	'h8c, 'h56, 'h34,	// STY a
 	'h8d, 'hde, 'hbc,	// STA a
 	'h94, 'h01,		// STY d, x
-	'h86, 'h06,		// STX d
 	'hb1, 'h0d,		// LDA (d), y
 	'ha1, 'h04		// LDA (d, x)
 };

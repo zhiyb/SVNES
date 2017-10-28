@@ -1,7 +1,10 @@
 module system (
-	input logic clkCPU2, n_reset,
+	input logic clkCPU2, clkPPU, n_reset,
 	// Audio
-	output logic [7:0] audio
+	output logic [7:0] audio,
+	// Video
+	output logic [23:0] video_rgb,
+	output logic video_vblank, video_hblank
 );
 
 // Clock generation
@@ -22,14 +25,20 @@ always_ff @(negedge clkCPU2, negedge n_reset)
 	else
 		clkRAM <= clk;
 
+// Memory access arbiter
+logic [1:0] arb_req, arb_grant, arb_rot;
+assign arb_rot = 1;	// Fixed priority
+arbiter #(.N(2)) arb_mem (arb_req, arb_grant, arb_rot, 2'b11, , );
+
+// DMA
+
 // CPU
 logic nmi, irq, sys_rw;
 wire sys_rdy;
 logic [15:0] sys_addr;
 wire [7:0] sys_data;
-cpu cpu0 (clk, dclk, n_reset, nmi, irq, sys_addr, sys_data, sys_rw);
-
-assign nmi = 1'b1;
+cpu cpu0 (clk, dclk, n_reset, nmi, irq, sys_rdy, sys_addr, sys_data, sys_rw);
+assign arb_req[1] = 1'b1;
 
 // APU
 logic [15:0] apu_addr;
@@ -40,6 +49,7 @@ apu apu0 (clk, dclk, n_reset, sys_addr, sys_data, sys_rdy, ~sys_rw,
 assign apu_rdy = 1'b0;
 assign irq = apu_irq;
 assign audio = apu_out;
+assign arb_req[0] = apu_req;
 
 // RAM at $0000 to $2000 of size $0800 (2kB)
 logic ram0sel;
@@ -69,5 +79,32 @@ logic [7:0] rom0q;
 rom4k rom0 (.clock(clkRAM), .aclr(~n_reset),
 	.address(sys_addr[11:0]), .q(rom0q));
 assign sys_data = (rom0sel & sys_rw) ? rom0q : 8'bz;
+
+// PPU
+logic ppu_nmi;
+logic [13:0] ppu_addr;
+wire [7:0] ppu_data;
+logic ppu_rd, ppu_wr;
+ppu ppu0 (clk, dclk, clkPPU, n_reset, ppu_nmi,
+	sys_addr, sys_data, sys_rdy, sys_rw,
+	ppu_addr, ppu_data, ppu_rd, ppu_wr,
+	video_rgb, video_vblank, video_hblank);
+assign nmi = ppu_nmi;
+
+// PPU pattern table RAM
+logic [7:0] ppu_ram0q;
+assign ppu_data = ppu_wr && ppu_addr[13] == 1'b0 ? ppu_ram0q : 8'bz;
+ram8k ppu_ram0 (
+	.aclr(~n_reset), .clock(clkPPU),
+	.address(ppu_addr[12:0]), .data(ppu_data),
+	.wren(~ppu_wr && ppu_addr[13] == 1'b0), .q(ppu_ram0q));
+
+// PPU nametable RAM
+logic [7:0] ppu_ram1q;
+assign ppu_data = ppu_wr && ppu_addr[13] == 1'b1 ? ppu_ram1q : 8'bz;
+ram4k ppu_ram1 (
+	.aclr(~n_reset), .clock(clkPPU),
+	.address(ppu_addr[11:0]), .data(ppu_data),
+	.wren(~ppu_wr && ppu_addr[13] == 1'b1), .q(ppu_ram1q));
 
 endmodule

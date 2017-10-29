@@ -174,6 +174,7 @@ typedef enum {
 } Pf_t;
 
 logic [7:0] pn;
+// FIXME: S_Z should be checking bus_db
 assign pn = {bus_db[7], avr, 1'b1, p[S_B], p[S_D], p[S_I], bus_sb == 0, acr};
 
 logic [7:0] pbr;
@@ -194,12 +195,19 @@ begin
 	br = br ^ mop.pop[0];
 end
 
+logic pbit;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		pbit <= 1'b0;
+	else
+		pbit <= bus_db[6];
+
 logic [7:0] pspn;
 always_comb
 begin
 	pspn = bus_db;
 	case (mop.p)
-	P_BIT:	pspn[S_Z] = pn[S_Z];
+	P_BIT:	{pspn[S_V], pspn[S_Z]} = {pbit, pn[S_Z]};
 	endcase
 end
 
@@ -218,7 +226,7 @@ always_ff @(posedge dclk, negedge n_reset)
 		P_SP:	case (mop.p)
 			P_PUSH:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
 			P_POP:	{pmask[S_N:S_V], pmask[S_D:S_C]} <= 6'b111111;
-			P_BIT:	{pmask[S_N:S_V], pmask[S_Z]} <= 3'b111;
+			P_BIT:	{pmask[S_V], pmask[S_Z]} <= 2'b11;
 			endcase
 		P_CLR:	case (mop.p)
 			P_C:	pmask[S_C] <= 1'b1;

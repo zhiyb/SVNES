@@ -25,16 +25,6 @@ cnt:	.byte	0
 	lda	#$09	; Enable noise and pulse channels
 	sta	apu_status
 
-	; PASS and FAIL notification sounds
-s0:	ldx	#$00
-	jsr	notify
-
-	ldx	#$80
-	jsr	notify
-
-	lda	#30
-	jsr	delay
-
 	; Wait for PPU startup
 	bit	ppu_status
 @ppuw0:	bit	ppu_status
@@ -77,7 +67,7 @@ sounds:	ldx	#$00
 	sta	ppu_scroll
 
 	; APU pulse 1
-	lda	#$9f	; Duty 2, no halt, constant
+	lda	#$92	; Duty 2, no halt, constant
 	sta	apu_pulse1_ctrl
 	lda	#$00	; Disable sweep
 	sta	apu_pulse1_sweep

@@ -10,7 +10,7 @@ module mem_test #(parameter BURST, BASE, SIZE) (
 	input logic ack,
 
 	output logic fail,
-	input logic reset, pattern
+	input logic enable, reset, pattern
 );
 
 // Data buffer FIFO
@@ -147,10 +147,10 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		req <= 0;
 		wr <= 0;
 	end else if (state == Write) begin
-		req <= ~ack;
+		req <= ~ack & enable;
 		wr <= 1;
 	end else if (state == Read) begin
-		req <= ~ack;
+		req <= ~ack & enable;
 		wr <= 0;
 	end else begin
 		req <= 0;

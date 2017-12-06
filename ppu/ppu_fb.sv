@@ -19,32 +19,30 @@ module ppu_fb #(
 );
 
 // Data FIFO
-logic [15:0] in, out;
+logic [17:0] in, out;
 logic rdreq, wrreq, rdempty, wrfull;
 ppu_fb_fifo fifo0 (in, clkSYS, rdreq, clkPPU, wrreq, out, rdempty, wrfull);
 
-assign in = {video_rgb[23:19], video_rgb[15:10], video_rgb[7:3]};
-assign wrreq = ~(video_vblank | video_hblank);
-assign rdreq = ~rdempty & ~req;
-assign data = out;
-
-// Synchronisation
-logic [2:0] ppu, hblank;
-logic [1:0] vblank;
-logic sync, hsync;
+logic updated;
 always_ff @(posedge clkSYS)
-begin
-	ppu <= {ppu[1:0], ~clkPPU};
-	// PPU clock falling edge
-	sync <= ~ppu[2] & ppu[1];
-	vblank <= {vblank[0], video_vblank};
-	hblank <= {hblank[1:0], video_hblank};
-	// Horizontal blank rising edge
-	hsync <= ~hblank[2] & hblank[1];
-end
+	updated <= rdreq;
+
+assign wrreq = 1'b1;
+always_ff @(posedge clkSYS, negedge n_reset)
+	if (~n_reset)
+		rdreq <= 1'b0;
+	else
+		rdreq <= ~rdempty & ~req & ~rdreq & ~updated;
+
+assign in = {video_vblank, video_hblank, video_rgb[23:19], video_rgb[15:10], video_rgb[7:3]};
+logic vblank, hblank, _hblank;
+assign {vblank, hblank, data} = out;
+always_ff @(posedge clkSYS)
+	if (updated)
+		_hblank <= hblank;
 
 // Memory interface
-assign wr = 1'b1;
+assign wr = ~wrfull;
 
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
@@ -52,25 +50,35 @@ always_ff @(posedge clkSYS, negedge n_reset)
 	else if (req)
 		req <= ~ack;
 	else
-		req <= ~rdempty;
+		req <= updated & ~vblank & ~hblank;
 
 // Address generation
 localparam RELOAD = BASE + YOFF * LS + XOFF;
-logic [AN - 1:0] yaddr;
+logic [AN - 1:0] _yaddr, yaddr;
+always_ff @(posedge clkSYS)
+	_yaddr <= yaddr + LS;
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		yaddr <= RELOAD;
-	else if (vblank[1])
-		yaddr <= RELOAD;
-	else if (hsync)
-		yaddr <= yaddr + LS;
+	else if (updated) begin
+		if (vblank)
+			yaddr <= RELOAD;
+		else if (hblank & ~_hblank)
+			yaddr <= _yaddr;
+	end
 
+logic [AN - 1:0] _xaddr, xaddr;
+always_ff @(posedge clkSYS)
+	_xaddr <= addr + 1;
+always_ff @(posedge clkSYS)
+	if (hblank | vblank)
+		xaddr <= yaddr;
+	else
+		xaddr <= _xaddr;
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		addr <= RELOAD;
-	else if (hblank[1])
-		addr <= yaddr;
-	else if (rdreq)
-		addr <= addr + 1;
+	else if (updated)
+		addr <= xaddr;
 
 endmodule

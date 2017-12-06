@@ -97,14 +97,14 @@ localparam AN = 24, DN = 16, IN = 4, BURST = 8;
 logic [AN - 1:0] arb_addr[IN];
 logic [DN - 1:0] arb_data[IN];
 logic arb_wr[IN];
-logic [IN - 1:0] arb_req, arb_grant, arb_ack;
+logic [IN - 1:0] arb_req, arb_ack;
 
 logic [DN - 1:0] mem_data_out;
 logic [IN - 1:0] arb_valid;
 
 logic [1:0] sdram_level;
 logic sdram_empty, sdram_full;
-memory #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
+sdram_shared #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
 
 // Memory access arbiter assignments
 localparam tft = 0, ppu = 1, rect = 2, test = 3;

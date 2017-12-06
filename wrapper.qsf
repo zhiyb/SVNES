@@ -60,6 +60,7 @@ set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE PERFORMANCE"
 set_global_assignment -name AUTO_DELAY_CHAINS_FOR_HIGH_FANOUT_INPUT_PINS ON
 
 set_global_assignment -name QII_AUTO_PACKED_REGISTERS AUTO
+set_global_assignment -name SYSTEMVERILOG_FILE memory/sdram_shared.sv
 set_global_assignment -name SYSTEMVERILOG_FILE misc/rectfill.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ppu/ppu_fb.sv
 set_global_assignment -name VERILOG_FILE ppu/ppu_rom_palette.v
@@ -129,7 +130,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_dmc.sv
 set_global_assignment -name SYSTEMVERILOG_FILE apu/apu.sv
 set_global_assignment -name SYSTEMVERILOG_FILE system.sv
 set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE memory.sv
 set_global_assignment -name SYSTEMVERILOG_FILE structural/arbiter.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_sys.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_types.sv

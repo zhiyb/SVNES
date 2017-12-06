@@ -57,22 +57,22 @@ end
 
 logic lfsr_fb;
 logic [17:0] lfsr;
-lfsr #(18, {18{1'b1}}) (~active, n_reset, lfsr_fb, lfsr);
-assign lfsr_fb = lfsr[17] ^ lfsr[10];
+lfsr #(18, 0) (~active, n_reset, lfsr_fb, lfsr);
+assign lfsr_fb = ~lfsr[17] ^ lfsr[10];
 
 assign data = lfsr[17:2];
 assign wr = 1'b1;
 
-logic updated;
+logic [1:0] updated;
 always_ff @(posedge clkSYS)
-	updated <= update;
+	updated <= {updated[0], update};
 
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		active <= 1'b0;
 	else if (start)
 		active <= 1'b1;
-	else if (updated & yend & xend)
+	else if (update & yend & xend)
 		active <= 1'b0;
 
 always_ff @(posedge clkSYS)
@@ -97,15 +97,17 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		yaddr <= RELOAD;
 	else if (yend)
 		yaddr <= RELOAD;
-	else if (x == 0 && ack)
-		yaddr <= addr + LS;
+	else if (xend & updated[1])
+		yaddr <= yaddr + LS;
 
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		addr <= RELOAD;
-	else if (xend)
-		addr <= yaddr;
-	else if (ack)
-		addr <= addr + 1;
+	else if (update) begin
+		if (xend)
+			addr <= yaddr;
+		else
+			addr <= addr + 1;
+	end
 
 endmodule

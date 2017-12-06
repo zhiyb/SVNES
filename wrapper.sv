@@ -165,16 +165,16 @@ apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, 1'b1, aout);
 
 // Video frame buffer
 logic [23:0] video_rgb;
-logic video_vblank, video_hblank;
+logic video_vblank, video_hblank, fb_empty, fb_full;
 ppu_fb #(AN, DN, TFT_BASE, 9, 9,
 	PPU_X, PPU_Y, TFT_LS) fb0 (clkSYS, clkPPU, n_reset,
 	arb_addr[ppu], arb_data[ppu], arb_req[ppu], arb_wr[ppu], arb_ack[ppu],
-	video_rgb, video_vblank, video_hblank);
+	video_rgb, video_vblank, video_hblank, fb_empty, fb_full);
 
 // System
 system sys0 (.*);
 
 // Debugging LEDs
-assign LED[7:0] = {clk, test_fail, sdram_empty, sdram_level[1], tft_empty, tft_level[5:4]};
+assign LED[7:0] = {clk, test_fail, fb_full, tft_level[5], tft_empty, sdram_full, sdram_empty};
 
 endmodule

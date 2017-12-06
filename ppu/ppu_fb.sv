@@ -15,19 +15,29 @@ module ppu_fb #(
 
 	// Video input
 	input logic [23:0] video_rgb,
-	input logic video_vblank, video_hblank
+	input logic video_vblank, video_hblank,
+
+	// Status
+	output logic ppu_empty, ppu_full
 );
 
 // Data FIFO
 logic [17:0] in, out;
 logic rdreq, wrreq, rdempty, wrfull;
+assign ppu_empty = rdempty;
+assign ppu_full = wrfull;
 ppu_fb_fifo fifo0 (in, clkSYS, rdreq, clkPPU, wrreq, out, rdempty, wrfull);
 
 logic updated;
 always_ff @(posedge clkSYS)
 	updated <= rdreq;
 
-assign wrreq = 1'b1;
+logic [1:0] video_blank, _video_blank;
+assign wrreq = _video_blank != video_blank || video_blank == 0;
+assign video_blank = {video_vblank, video_hblank};
+always_ff @(posedge clkPPU)
+	_video_blank <= video_blank;
+
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		rdreq <= 1'b0;
@@ -42,7 +52,7 @@ always_ff @(posedge clkSYS)
 		_hblank <= hblank;
 
 // Memory interface
-assign wr = ~wrfull;
+assign wr = 1'b1;
 
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
@@ -71,14 +81,14 @@ logic [AN - 1:0] _xaddr, xaddr;
 always_ff @(posedge clkSYS)
 	_xaddr <= addr + 1;
 always_ff @(posedge clkSYS)
-	if (hblank | vblank)
+	if (hblank)
 		xaddr <= yaddr;
-	else
+	else if (ack)
 		xaddr <= _xaddr;
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		addr <= RELOAD;
-	else if (updated)
+	else
 		addr <= xaddr;
 
 endmodule

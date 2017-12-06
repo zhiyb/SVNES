@@ -34,11 +34,14 @@ tft_fifo fifo0 (.aclr(aclr), .data(mem_data),
 	.wrclk(clkSYS), .wrreq(wrreq), .wrfull(full), .wrusedw(level));
 
 // Memory request
+logic [AN - 1:0] req_addrn;
+always_ff @(posedge clkSYS)
+	req_addrn <= req_addr + BURST;
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
 		req_addr <= BASE;
 	else if (req_ack)
-		req_addr <= req_addr + BURST;
+		req_addr <= req_addrn;
 
 logic [4:0] empty_req;
 logic [2:0] empty_level;

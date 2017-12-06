@@ -99,7 +99,7 @@ logic [DN - 1:0] arb_data[IN];
 logic arb_wr[IN];
 logic [IN - 1:0] arb_req, arb_ack;
 
-logic [DN - 1:0] mem_data_out;
+logic [DN - 1:0] arb_data_out;
 logic [IN - 1:0] arb_valid;
 
 logic [1:0] sdram_level;
@@ -120,7 +120,7 @@ tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 40, 479, 1}, 10, '{1, 9, 271, 1}) tft0
 //tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 43, 799, 15}, 10, '{1, 20, 479, 6}) tft0
 `endif
 	(.clkSYS(clkSYS), .clkTFT(clkTFT), .n_reset(n_reset),
-	.mem_data(mem_data_out), .mem_valid(arb_valid[tft]),
+	.mem_data(arb_data_out), .mem_valid(arb_valid[tft]),
 	.req_addr(arb_addr[tft]), .req_ack(arb_ack[tft]), .req(arb_req[tft]),
 	.disp(GPIO_0[26]), .de(GPIO_0[29]), .dclk(GPIO_0[25]),
 	.vsync(GPIO_0[28]), .hsync(GPIO_0[27]),
@@ -147,12 +147,12 @@ rectfill #(AN, DN, TFT_BASE, 16'h0841, 9, 9, TFT_LS,
 logic test_fail;
 `ifdef MODEL_TECH
 mem_test #(BURST, TFT_BASE + 24'h010000, 24'h000010) test0 (clkSYS, n_reset,
-	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
+	arb_data_out, arb_valid[test], arb_addr[test], arb_data[test],
 	arb_req[test], arb_wr[test], arb_ack[test],
 	test_fail, SW[2], ~KEY[1], SW[3]);
 `else
 mem_test #(BURST, TFT_BASE + 24'h000100, 24'h001000) test0 (clkSYS, n_reset,
-	mem_data_out, arb_valid[test], arb_addr[test], arb_data[test],
+	arb_data_out, arb_valid[test], arb_addr[test], arb_data[test],
 	arb_req[test], arb_wr[test], arb_ack[test],
 	test_fail, SW[2], ~KEY[1], SW[3]);
 `endif

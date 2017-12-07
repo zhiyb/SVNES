@@ -17,15 +17,16 @@ begin
 end
 
 // Clocks
-logic clk10M, clk30M, clk50M, clk90M, clk270M, clk360M;
+logic clk10M, clk50M, clkSYS1, clkSYS2;
 assign clk50M = CLOCK_50;
+assign clkAudio = clk10M;
 pll pll0 (.inclk0(clk50M), .locked(),
-	.c0(clk10M), .c1(clk30M), .c2(clk90M), .c3(clk270M), .c4(clk360M));
+	.c0(clk10M), .c1(clkTFT), .c2(clkSDRAM), .c3(clkSYS1), .c4(clkSYS2));
 
 // System interface clock switch for debugging
 `ifdef MODEL_TECH
 assign clk = 0;
-assign clkSYS = clk360M;
+assign clkSYS = clkSYS1;
 `else
 logic [23:0] cnt;
 always_ff @(posedge clk10M)
@@ -36,16 +37,12 @@ always_ff @(posedge clk10M)
 		cnt <= cnt - 1;
 
 logic sys[4];
-assign sys[0] = clk270M;
-assign sys[1] = clk90M;
-assign sys[2] = clk270M;
-assign sys[3] = clk360M;
+assign sys[0] = clkSYS1;
+assign sys[1] = clkSDRAM;
+assign sys[2] = clkSYS1;
+assign sys[3] = clkSYS2;
 assign clkSYS = sys[clk];
 `endif
-
-assign clkSDRAM = clk90M;
-assign clkTFT = clk30M;
-assign clkAudio = clk10M;
 
 // NES clocks
 pll_ntsc pll1 (.areset(1'b0), .inclk0(clk50M), .locked(),
@@ -175,6 +172,6 @@ ppu_fb #(AN, DN, TFT_BASE, 9, 9,
 system sys0 (.*);
 
 // Debugging LEDs
-assign LED[7:0] = {clk, test_fail, fb_full, tft_level[5], tft_empty, sdram_full, sdram_empty};
+assign LED[7:0] = {clk, test_fail, fb_full, fb_empty, tft_empty, sdram_full, sdram_empty};
 
 endmodule

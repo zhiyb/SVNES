@@ -7,7 +7,7 @@ module sdram_io #(
 `ifdef MODEL_TECH
 	tINIT = 10, tREF = 704,
 `else
-	tINIT = 9000, tREF = 704,
+	tINIT = 9334, tREF = 730,
 `endif
 	logic [2:0] CAS = 2
 ) (

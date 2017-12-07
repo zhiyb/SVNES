@@ -213,10 +213,10 @@ ALU_SUB, L, AI_HLD, BI_HLD, DB_SB, SB_ALU, L, L, L, L, AD_PC, PC_PC, H, L, P_MAS
 # 114	BIT, Fetch
 ALU_AND, L, AI_HLD, BI_HLD, DB_SB, SB_ALU, L, L, L, L, AD_PC, PC_PC, H, L, P_SP, P_BIT, READ, H, 00
 
-# 115	X -> ADD
-ALU_ADD, L, AI_0, BI_DB, DB_SB, SB_X, L, L, L, L, AD_PC, PC_PC, H, L, P_MASK, P_NONE, READ, H, 10
-# 116	Y -> ADD
-ALU_ADD, L, AI_0, BI_DB, DB_SB, SB_Y, L, L, L, L, AD_PC, PC_PC, H, L, P_MASK, P_NONE, READ, H, 10
+# 115	x -> ai, ndl -> bi
+ALU_ADD, L, AI_SB, BI_nDB, DB_DL, SB_X, L, L, L, L, AD_PC, PC_PC, H, L, P_MASK, P_NONE, READ, H, 10
+# 116	y -> ai, ndl -> bi
+ALU_ADD, L, AI_SB, BI_nDB, DB_DL, SB_Y, L, L, L, L, AD_PC, PC_PC, H, L, P_MASK, P_NONE, READ, H, 10
 
 # 117	PLx
 ALU_SUB, L, AI_0, BI_ADL, DB_SB, SB_ALU, L, L, L, H, AD_1S, PC_PC, L, L, P_MASK, P_NONE, READ, L, SEQ

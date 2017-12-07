@@ -157,8 +157,8 @@ mem_test #(BURST, TFT_BASE + 24'h000100, 24'h001000) test0 (clkSYS, n_reset,
 // Audio PWM
 logic [7:0] audio;
 logic aout;
-assign GPIO_1[25] = SW[0] | aout;
-apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, 1'b1, aout);
+assign GPIO_1[25] = aout;
+apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, SW[0], aout);
 
 // Video frame buffer
 logic [23:0] video_rgb;

@@ -45,7 +45,7 @@ begin
 	irq = 1'b1;
 	ready = 1'b1;
 	#80ns ready = 1'b0;
-	#20ns ready = 1'b1;
+	#5ns ready = 1'b1;
 end
 
 always_ff @(posedge clk4, negedge n_reset_async)
@@ -65,7 +65,9 @@ logic [7:0] vector[6] = '{
 logic [7:0] rom[72] = '{
 	'h40,			// RTI
 	'ha2, 'h00,		// LDX #i
-	'h86, 'h08,		// STX d
+	'h86, 'hff,		// STX d
+	'ha2, 'h80,		// LDX #i
+	'he4, 'hff,		// CPX d
 	'h24, 'h08,		// BIT d
 	'hfc, 'haa, 'h55,	// NOP a, x
 	'h38,			// SEC
@@ -86,11 +88,9 @@ logic [7:0] rom[72] = '{
 	'h48,			// PHA
 	'ha9, 'h12,		// LDA #i
 	'h2c, 'h04, 'h00,	// BIT a
-	'h06, 'h02,		// ASL d
 	'h85, 'h04,		// STA d
 	'ha0, 'hee,		// LDY #i
 	'h95, 'h01,		// STA d, x
-	'he9, 'h12,		// SBC #i
 	'h69, 'h12,		// ADC #i
 	'ha9, 'h34,		// LDA #i
 	'h58,			// CLI

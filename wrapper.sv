@@ -11,7 +11,7 @@ module clk_reset (
 );
 
 // Reset control
-always_ff @(posedge CLOCK_50)
+always_ff @(posedge clkSYS)
 begin
 	n_reset_ext <= KEY[1];
 	n_reset <= n_reset_ext & n_reset_mem;

@@ -1,5 +1,5 @@
 module sdram_shared #(parameter AN, DN, IN, BURST) (
-	input logic clkSYS, clkSDRAM, n_reset,
+	input logic clkSYS, clkSDRAMIO, clkSDRAM, n_reset,
 	output logic n_reset_mem,
 
 	// Access request
@@ -70,7 +70,7 @@ end
 
 // SDRAM
 sdram #(AN, DN, IN, BURST) sdram0
-	(clkSYS, clkSDRAM, n_reset, n_reset_mem,
+	(clkSYS, clkSDRAMIO, clkSDRAM, n_reset, n_reset_mem,
 	mem_data_out, mem_id_out, mem_valid,
 	mem_addr, mem_data, mem_id, mem_req, mem_wr, mem_ack,
 	DRAM_DQ, DRAM_ADDR, DRAM_BA, DRAM_DQM,

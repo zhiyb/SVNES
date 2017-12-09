@@ -7,11 +7,11 @@ module sdram_io #(
 `ifdef MODEL_TECH
 	tINIT = 10, tREF = 704,
 `else
-	tINIT = 9334, tREF = 730,
+	tINIT = 12000, tREF = 938,
 `endif
 	logic [2:0] CAS = 2
 ) (
-	input logic clkSDRAM, n_reset,
+	input logic clkSDRAMIO, clkSDRAM, n_reset,
 
 	// Periodic counter
 	output logic icnt_ovf,
@@ -58,7 +58,7 @@ logic [IN - 1:0] dram_id;
 assign dram_id = dram.d.data[IN - 1:0];
 
 // {{{ Logic IO operations
-assign DRAM_CLK = clkSDRAM;
+assign DRAM_CLK = clkSDRAMIO;
 
 // Tri-state DQ
 logic DRAM_DQ_out;
@@ -361,7 +361,7 @@ for (i = BURST; i < tLATCH; i++) begin: latch_latency
 end
 endgenerate
 
-assign data_valid_io = data_latch[tLATCH - 2].valid;
+assign data_valid_io = data_latch[tLATCH - 1].valid;
 assign data_id_io = data_latch[tLATCH - 1].id;
 assign data_io = DRAM_DQ_d;
 // }}}

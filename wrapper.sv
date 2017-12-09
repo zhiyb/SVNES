@@ -1,10 +1,11 @@
 // {{{ Clocks and reset control
 module clk_reset (
 	input logic CLOCK_50,
-	output logic clkSYS, clkSDRAM, clkTFT, clkAudio,
+	output logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio,
 	output logic clkMaster, clkPPU, clkCPU2,
-	input logic KEY,
-	output logic [1:0] clk,
+	input logic [1:0] KEY,
+	input logic [3:0] SW,
+	output logic clk,
 	input logic n_reset_mem,
 	output logic n_reset, n_reset_ext
 );
@@ -12,16 +13,17 @@ module clk_reset (
 // Reset control
 always_ff @(posedge CLOCK_50)
 begin
-	n_reset_ext <= KEY;
+	n_reset_ext <= KEY[1];
 	n_reset <= n_reset_ext & n_reset_mem;
 end
 
 // Clocks
-logic clk10M, clk50M, clkSYS1, clkSYS2;
+logic clk10M, clk50M, clkSYS1;
 assign clk50M = CLOCK_50;
 assign clkAudio = clk10M;
-pll pll0 (.inclk0(clk50M), .locked(),
-	.c0(clk10M), .c1(clkTFT), .c2(clkSDRAM), .c3(clkSYS1), .c4(clkSYS2));
+pll pll0 (.inclk0(clk50M), .locked(), .scanclk(clk10M),
+	.phasecounterselect(SW[2:0]), .phasestep(~KEY[0]), .phaseupdown(SW[3]),
+	.c0(clkSDRAMIO), .c1(clkSDRAM), .c2(clk10M), .c3(clkTFT), .c4(clkSYS1));
 
 // System interface clock switch for debugging
 `ifdef MODEL_TECH
@@ -32,15 +34,14 @@ logic [23:0] cnt;
 always_ff @(posedge clk10M)
 	if (cnt == 0) begin
 		cnt <= 10000000;
-		clk <= KEY ? clk : clk + 1;
+		if (~KEY[1])
+			clk <= ~clk;
 	end else
 		cnt <= cnt - 1;
 
-logic sys[4];
+logic sys[2];
 assign sys[0] = clkSYS1;
 assign sys[1] = clkSDRAM;
-assign sys[2] = clkSYS1;
-assign sys[3] = clkSYS2;
 assign clkSYS = sys[clk];
 `endif
 
@@ -82,11 +83,11 @@ module wrapper (
 );
 
 // Clocks and reset control
-logic clkSYS, clkSDRAM, clkTFT, clkAudio;
+logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio;
 logic clkMaster, clkPPU, clkCPU2;
-logic [1:0] clk;
+logic clk;
 logic n_reset, n_reset_ext, n_reset_mem;
-clk_reset cr0 (.KEY(KEY[1]), .*);
+clk_reset cr0 (.*);
 
 // Memory subsystem with arbiter
 localparam AN = 24, DN = 16, IN = 4, BURST = 8;
@@ -131,7 +132,7 @@ assign GPIO_0[24] = tft_pwm;
 assign tft_pwm = n_reset;
 
 // Rectangular background fill
-localparam PPU_X = 64, PPU_Y = 20, PPU_W = 256, PPU_H = 240, MARGIN = 4;
+localparam PPU_X = 272, PPU_Y = 120, PPU_W = 256, PPU_H = 240, MARGIN = 8;
 logic rect_active;
 rectfill #(AN, DN, TFT_BASE, 16'h0841, 9, 9, TFT_LS,
 	// x-offset, y-offset, x-length, y-length
@@ -148,7 +149,7 @@ mem_test #(BURST, TFT_BASE + 24'h010000, 24'h000010) test0 (clkSYS, n_reset,
 	arb_req[test], arb_wr[test], arb_ack[test],
 	test_fail, SW[2], ~KEY[1], SW[3]);
 `else
-mem_test #(BURST, TFT_BASE + 24'h000100, 24'h001000) test0 (clkSYS, n_reset,
+mem_test #(BURST, TFT_BASE + 24'h002000, 24'h010000) test0 (clkSYS, n_reset,
 	arb_data_out, arb_valid[test], arb_addr[test], arb_data[test],
 	arb_req[test], arb_wr[test], arb_ack[test],
 	test_fail, SW[2], ~KEY[1], SW[3]);
@@ -172,6 +173,6 @@ ppu_fb #(AN, DN, TFT_BASE, 9, 9,
 system sys0 (.*);
 
 // Debugging LEDs
-assign LED[7:0] = {clk, test_fail, fb_full, fb_empty, tft_empty, sdram_full, sdram_empty};
+assign LED[7:0] = {clk, test_fail, fb_full, fb_empty, tft_full, tft_empty, sdram_full, sdram_empty};
 
 endmodule

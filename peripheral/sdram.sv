@@ -4,7 +4,7 @@ module sdram #(
 	// Address bus size, data bus size
 	parameter AN = 24, DN = 16, IN = 2, BURST = 8
 ) (
-	input logic clkSYS, clkSDRAM, n_reset,
+	input logic clkSYS, clkSDRAMIO, clkSDRAM, n_reset,
 	output logic n_reset_mem,
 
 	// Memory interface
@@ -56,43 +56,12 @@ logic [IN - 1:0] data_id_io;
 logic [15:0] data_io;
 sdram_io #(IN, BURST) io0 (.icnt_ovf(icnt_ovf[0]), .*);
 
-// {{{ Data output
-logic [1:0] data_valid_latch;
-always_ff @(posedge clkSDRAM, negedge n_reset)
-	if (~n_reset)
-		data_valid_latch <= 0;
-	else if (data_valid_io) begin
-		data_valid_latch[1] <= data_valid_latch[0];
-		data_valid_latch[0] <= ~data_valid_latch[0];
-	end else
-		data_valid_latch <= 0;
-
-logic [2:0] data_valid[2];
-always_ff @(posedge clkSYS, negedge n_reset) begin
-	if (~n_reset) begin
-		data_valid[0] <= 0;
-		data_valid[1] <= 0;
-	end else begin
-		data_valid[0] <= {data_valid[0][1:0], data_valid_latch[0]};
-		data_valid[1] <= {data_valid[1][1:0], data_valid_latch[1]};
-	end
-end
-
-logic [IN - 1:0] data_id[2];
-logic [15:0] data[2];
-always_ff @(posedge clkSYS) begin
-	data_id[0] <= data_id_io;
-	data_id[1] <= data_id[0];
-	data[0] <= data_io;
-	data[1] <= data[0];
-end
-
-always_ff @(posedge clkSYS) begin
-	mem_valid <= (data_valid[0][1] & ~data_valid[0][2]) ||
-		(data_valid[1][1] & ~data_valid[1][2]);
-	mem_data <= data[1];
-	mem_id <= data_id[1];
-end
-// }}}
+// Data output
+logic out_empty, out_full;
+sdram_out_fifo fifo1 (~n_reset, {data_id_io, data_io},
+	clkSYS, ~out_empty, clkSDRAM, data_valid_io,
+	{mem_id, mem_data}, out_empty, out_full);
+always_ff @(posedge clkSYS)
+	mem_valid <= ~out_empty;
 
 endmodule

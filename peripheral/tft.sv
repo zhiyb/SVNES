@@ -1,25 +1,23 @@
 module tft #(
-	// Address bus size, data bus size
-	parameter AN = 24, DN = 16, BURST, BASE,
 	// VT & HT: Sync width, back porch, display, front porch
-	int HN, logic [HN - 1:0] HT[4],
+	parameter int HN, logic [HN - 1:0] HT[4],
 	int VN, logic [VN - 1:0] VT[4]
 ) (
 	input logic clkSYS, clkTFT, n_reset,
 
-	// Memory interface
-	input logic [DN - 1:0] mem_data,
-	input logic mem_valid,
+	// FIFO interface
+	input logic [15:0] tft_fifo,
+	input logic tft_wrreq,
+	output logic tft_rdreq,
 
-	output logic [AN - 1:0] req_addr,
-	output logic req,
-	input logic req_ack,
+	// TFT signals
+	output logic tft_hblank, tft_vblank,
 
-	// Hardware interface
+	// Hardware IO
 	output logic disp, de, dclk, vsync, hsync,
 	output logic [23:0] out,
 
-	// Debugging signals
+	// Status
 	output logic [5:0] level,
 	output logic empty, full
 );
@@ -29,61 +27,11 @@ logic [15:0] fifo;
 assign out = {fifo[15:11], 3'h0, fifo[10:5], 2'h0, fifo[4:0], 3'h0};
 
 logic aclr, rdreq, wrreq;
-tft_fifo fifo0 (.aclr(aclr), .data(mem_data),
+assign wrreq = tft_wrreq;
+assign tft_rdreq = rdreq;
+tft_fifo fifo0 (.aclr(aclr), .data(tft_fifo),
 	.rdclk(clkTFT), .rdreq(rdreq), .q(fifo), .rdempty(empty),
 	.wrclk(clkSYS), .wrreq(wrreq), .wrfull(full), .wrusedw(level));
-
-logic [1:0] clr;
-always_ff @(posedge clkSYS)
-	clr <= {clr[0], aclr};
-
-// Memory request
-logic [AN - 1:0] req_addrn;
-always_ff @(posedge clkSYS)
-	req_addrn <= req_addr + BURST;
-always_ff @(posedge clkSYS)
-	if (clr[1])
-		req_addr <= BASE;
-	else if (req_ack)
-		req_addr <= req_addrn;
-
-logic [4:0] empty_req;
-logic [2:0] empty_level;
-always_ff @(posedge clkTFT)
-	if (clr[1]) begin
-		empty_req[0] <= 1'b0;
-		empty_level <= 3'h0;
-	end else if (rdreq) begin
-		empty_level <= empty_level + 3'h1;
-		empty_req[0] <= empty_level == 3'h7;
-	end else
-		empty_req[0] <= 1'b0;
-
-always_ff @(posedge clkSYS)
-begin
-	empty_req[3:1] <= empty_req[2:0];
-	empty_req[4] <= empty_req[2] & ~empty_req[3];
-end
-
-logic [5:0] fill_level;
-always_ff @(posedge clkSYS)
-	if (clr[1])
-		fill_level <= 0;
-	else if (req_ack) begin
-		if (!empty_req[4])
-			fill_level <= fill_level + BURST;
-	end else if (empty_req[4])
-		fill_level <= fill_level - BURST;
-
-always_ff @(posedge clkSYS)
-	if (clr[1])
-		req <= 1'b0;
-	else if (fill_level[5:4] != 2'b11)
-		req <= 1'b1;
-	else if (req_ack)
-		req <= 1'b0;
-
-assign wrreq = mem_valid;
 
 // Hardware logics
 assign dclk = clkTFT;
@@ -94,6 +42,7 @@ assign de = 1'b0;
 logic [HN - 1:0] hcnt;
 logic [1:0] hstate;
 logic _hsync, htick, hblank;
+assign tft_hblank = hblank;
 
 always_ff @(posedge clkTFT, negedge n_reset)
 	if (~n_reset) begin
@@ -128,6 +77,7 @@ logic [VN - 1:0] vcnt;
 logic [1:0] vstate;
 logic vtick, vblank;
 assign aclr = vblank;
+assign tft_vblank = vblank;
 
 always_ff @(posedge hsync, negedge n_reset)
 	if (~n_reset) begin

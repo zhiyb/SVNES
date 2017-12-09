@@ -88,6 +88,12 @@ logic clk;
 logic n_reset, n_reset_ext, n_reset_mem;
 clk_reset cr0 (.*);
 
+// NES system
+logic [7:0] audio;
+logic [23:0] video_rgb;
+logic video_vblank, video_hblank;
+system sys0 (.*);
+
 // Memory subsystem with arbiter
 localparam AN = 24, DN = 16, IN = 4, BURST = 8;
 
@@ -104,9 +110,19 @@ logic sdram_empty, sdram_full;
 sdram_shared #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
 
 // Memory access arbiter assignments
-localparam tft = 0, ppu = 1, rect = 2, test = 3;
+localparam tft = 0, disp = 3;
 
-// TFT
+assign arb_addr[1] = 'bx;
+assign arb_data[1] = 'bx;
+assign arb_wr[1] = 'bx;
+assign arb_req[1] = 0;
+
+assign arb_addr[2] = 'bx;
+assign arb_data[2] = 'bx;
+assign arb_wr[2] = 'bx;
+assign arb_req[2] = 1'b0;
+
+// TFT frame buffer
 localparam TFT_BASE = 24'hfa0000, TFT_LS = 800;
 logic [5:0] tft_level;
 logic tft_empty, tft_full;
@@ -130,48 +146,28 @@ logic tft_pwm;
 assign GPIO_0[24] = tft_pwm;
 assign tft_pwm = n_reset;
 
-// Rectangular background fill
-localparam PPU_X = 272, PPU_Y = 120, PPU_W = 256, PPU_H = 240, MARGIN = 8;
-logic rect_active;
-rectfill #(AN, DN, TFT_BASE, 9, 9, TFT_LS,
-	// x-offset, y-offset, x-length, y-length
-	PPU_X - MARGIN, PPU_Y - MARGIN, PPU_W + MARGIN * 2, PPU_H + MARGIN * 2)
-	rect0 (clkSYS, n_reset, arb_addr[rect], arb_data[rect],
-	arb_req[rect], arb_wr[rect], arb_ack[rect],
-	~KEY[0], rect_active);
-
-// Memory RW test client
-logic test_fail;
-`ifdef MODEL_TECH
-mem_test #(BURST, TFT_BASE + 24'h010000, 24'h000010) test0 (clkSYS, n_reset,
-	arb_data_out, arb_valid[test], arb_addr[test], arb_data[test],
-	arb_req[test], arb_wr[test], arb_ack[test],
-	test_fail, SW[2], ~KEY[1], SW[3]);
-`else
-mem_test #(BURST, TFT_BASE + 24'h002000, 24'h010000) test0 (clkSYS, n_reset,
-	arb_data_out, arb_valid[test], arb_addr[test], arb_data[test],
-	arb_req[test], arb_wr[test], arb_ack[test],
-	test_fail, SW[2], ~KEY[1], SW[3]);
-`endif
+// Display elements
+logic fb_empty, fb_full, test_fail;
+display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (clkSYS, clkPPU, n_reset,
+	// Memory interface
+	arb_addr[disp], arb_data[disp],
+	arb_req[disp], arb_wr[disp], arb_ack[disp],
+	arb_data_out, arb_valid[disp],
+	// PPU video
+	video_rgb, video_vblank, video_hblank,
+	// Switches
+	KEY, SW,
+	// Status
+	fb_empty, fb_full, test_fail
+);
 
 // Audio PWM
-logic [7:0] audio;
 logic aout;
 assign GPIO_1[25] = aout;
 apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, SW[0], aout);
 
-// Video frame buffer
-logic [23:0] video_rgb;
-logic video_vblank, video_hblank, fb_empty, fb_full;
-ppu_fb #(AN, DN, TFT_BASE, 9, 9,
-	PPU_X, PPU_Y, TFT_LS) fb0 (clkSYS, clkPPU, n_reset,
-	arb_addr[ppu], arb_data[ppu], arb_req[ppu], arb_wr[ppu], arb_ack[ppu],
-	video_rgb, video_vblank, video_hblank, fb_empty, fb_full);
-
-// System
-system sys0 (.*);
-
 // Debugging LEDs
-assign LED[7:0] = {clk, test_fail, fb_full, fb_empty, tft_full, tft_empty, sdram_full, sdram_empty};
+assign LED[7:0] = {clk, test_fail, fb_full, fb_empty,
+	tft_full, tft_empty, sdram_full, sdram_empty};
 
 endmodule

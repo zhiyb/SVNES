@@ -57,7 +57,7 @@ end
 
 logic lfsr_fb;
 logic [17:0] lfsr;
-lfsr #(18, 0) (~active, n_reset, lfsr_fb, lfsr);
+lfsr #(18, 0) lfsr0 (~active, n_reset, lfsr_fb, lfsr);
 assign lfsr_fb = ~lfsr[17] ^ lfsr[10];
 
 assign data = lfsr[17:2];

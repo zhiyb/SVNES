@@ -61,12 +61,9 @@ logic [DN - 1:0] mem_data_out;
 logic [IN - 1:0] mem_id_out;
 logic mem_valid;
 
-// Data output buffering
-always_ff @(posedge clkSYS)
-begin
-	arb_data_out <= mem_data_out;
-	arb_valid <= mem_id_out & {IN{mem_valid}};
-end
+// Data output
+assign arb_data_out = mem_data_out;
+assign arb_valid = mem_id_out & {IN{mem_valid}};
 
 // SDRAM
 sdram #(AN, DN, IN, BURST) sdram0

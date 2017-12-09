@@ -2,14 +2,17 @@ import sdram_types::*;
 
 module sdram_io #(
 	parameter IN, BURST,
-	tRC = 8, tRAS = 6, tRP = 2, tRCD = 2,
+	// CAS = 3
+	tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
+	// CAS = 2
+	//tRC = 8, tRAS = 6, tRP = 2, tRCD = 2,
 	tRRD_tMRD = 2, tDPL = 2, tQMD = 2,
 `ifdef MODEL_TECH
 	tINIT = 10, tREF = 704,
 `else
-	tINIT = 12000, tREF = 938,
+	tINIT = 14250, tREF = 1114,
 `endif
-	logic [2:0] CAS = 2
+	logic [2:0] CAS = 3
 ) (
 	input logic clkSDRAMIO, clkSDRAM, n_reset,
 

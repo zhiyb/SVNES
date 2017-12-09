@@ -107,14 +107,14 @@ sdram_shared #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
 localparam tft = 0, ppu = 1, rect = 2, test = 3;
 
 // TFT
-localparam TFT_BASE = 24'hfa0000, TFT_LS = 480;
+localparam TFT_BASE = 24'hfa0000, TFT_LS = 800;
 logic [5:0] tft_level;
 logic tft_empty, tft_full;
 `ifdef MODEL_TECH
 tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 1, 256, 1}, 10, '{1, 1, 128, 1}) tft0
 `else
-tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 40, 479, 1}, 10, '{1, 9, 271, 1}) tft0
-//tft #(AN, DN, BURST, 24'hfa0000, 10, '{1, 43, 799, 15}, 10, '{1, 20, 479, 6}) tft0
+//tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 40, 479, 1}, 10, '{1, 9, 271, 1}) tft0
+tft #(AN, DN, BURST, TFT_BASE, 10, '{1, 43, 799, 15}, 10, '{1, 20, 479, 6}) tft0
 `endif
 	(.clkSYS(clkSYS), .clkTFT(clkTFT), .n_reset(n_reset),
 	.mem_data(arb_data_out), .mem_valid(arb_valid[tft]),

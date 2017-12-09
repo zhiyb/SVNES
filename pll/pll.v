@@ -39,44 +39,24 @@
 // synopsys translate_on
 module pll (
 	inclk0,
-	phasecounterselect,
-	phasestep,
-	phaseupdown,
-	scanclk,
 	c0,
 	c1,
 	c2,
 	c3,
 	c4,
-	locked,
-	phasedone);
+	locked);
 
 	input	  inclk0;
-	input	[2:0]  phasecounterselect;
-	input	  phasestep;
-	input	  phaseupdown;
-	input	  scanclk;
 	output	  c0;
 	output	  c1;
 	output	  c2;
 	output	  c3;
 	output	  c4;
 	output	  locked;
-	output	  phasedone;
-`ifndef ALTERA_RESERVED_QIS
-// synopsys translate_off
-`endif
-	tri0	[2:0]  phasecounterselect;
-	tri0	  phasestep;
-	tri0	  phaseupdown;
-`ifndef ALTERA_RESERVED_QIS
-// synopsys translate_on
-`endif
 
 	wire [0:0] sub_wire2 = 1'h0;
 	wire [4:0] sub_wire3;
 	wire  sub_wire9;
-	wire  sub_wire10;
 	wire  sub_wire0 = inclk0;
 	wire [1:0] sub_wire1 = {sub_wire2, sub_wire0};
 	wire [4:4] sub_wire8 = sub_wire3[4:4];
@@ -90,17 +70,11 @@ module pll (
 	wire  c3 = sub_wire7;
 	wire  c4 = sub_wire8;
 	wire  locked = sub_wire9;
-	wire  phasedone = sub_wire10;
 
 	altpll	altpll_component (
 				.inclk (sub_wire1),
-				.phasecounterselect (phasecounterselect),
-				.phasestep (phasestep),
-				.phaseupdown (phaseupdown),
-				.scanclk (scanclk),
 				.clk (sub_wire3),
 				.locked (sub_wire9),
-				.phasedone (sub_wire10),
 				.activeclock (),
 				.areset (1'b0),
 				.clkbad (),
@@ -118,8 +92,13 @@ module pll (
 				.fref (),
 				.icdrclk (),
 				.pfdena (1'b1),
+				.phasecounterselect ({4{1'b1}}),
+				.phasedone (),
+				.phasestep (1'b1),
+				.phaseupdown (1'b1),
 				.pllena (1'b1),
 				.scanaclr (1'b0),
+				.scanclk (1'b0),
 				.scanclkena (1'b1),
 				.scandata (1'b0),
 				.scandataout (),
@@ -171,13 +150,13 @@ module pll (
 		altpll_component.port_inclk1 = "PORT_UNUSED",
 		altpll_component.port_locked = "PORT_USED",
 		altpll_component.port_pfdena = "PORT_UNUSED",
-		altpll_component.port_phasecounterselect = "PORT_USED",
-		altpll_component.port_phasedone = "PORT_USED",
-		altpll_component.port_phasestep = "PORT_USED",
-		altpll_component.port_phaseupdown = "PORT_USED",
+		altpll_component.port_phasecounterselect = "PORT_UNUSED",
+		altpll_component.port_phasedone = "PORT_UNUSED",
+		altpll_component.port_phasestep = "PORT_UNUSED",
+		altpll_component.port_phaseupdown = "PORT_UNUSED",
 		altpll_component.port_pllena = "PORT_UNUSED",
 		altpll_component.port_scanaclr = "PORT_UNUSED",
-		altpll_component.port_scanclk = "PORT_USED",
+		altpll_component.port_scanclk = "PORT_UNUSED",
 		altpll_component.port_scanclkena = "PORT_UNUSED",
 		altpll_component.port_scandata = "PORT_UNUSED",
 		altpll_component.port_scandataout = "PORT_UNUSED",
@@ -201,10 +180,7 @@ module pll (
 		altpll_component.port_extclk2 = "PORT_UNUSED",
 		altpll_component.port_extclk3 = "PORT_UNUSED",
 		altpll_component.self_reset_on_loss_lock = "ON",
-		altpll_component.vco_frequency_control = "MANUAL_PHASE",
-		altpll_component.vco_phase_shift_step = 1000,
-		altpll_component.width_clock = 5,
-		altpll_component.width_phasecounterselect = 3;
+		altpll_component.width_clock = 5;
 
 
 endmodule
@@ -267,8 +243,6 @@ endmodule
 // Retrieval info: PRIVATE: LVDS_PHASE_SHIFT_UNIT2 STRING "deg"
 // Retrieval info: PRIVATE: LVDS_PHASE_SHIFT_UNIT3 STRING "deg"
 // Retrieval info: PRIVATE: LVDS_PHASE_SHIFT_UNIT4 STRING "ps"
-// Retrieval info: PRIVATE: MANUAL_PHASE_SHIFT_STEP_EDIT STRING "1.00000000"
-// Retrieval info: PRIVATE: MANUAL_PHASE_SHIFT_STEP_UNIT STRING "ns"
 // Retrieval info: PRIVATE: MIG_DEVICE_SPEED_GRADE STRING "Any"
 // Retrieval info: PRIVATE: MIRROR_CLK0 STRING "0"
 // Retrieval info: PRIVATE: MIRROR_CLK1 STRING "0"
@@ -297,13 +271,13 @@ endmodule
 // Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT3 STRING "MHz"
 // Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT4 STRING "MHz"
 // Retrieval info: PRIVATE: PHASE_RECONFIG_FEATURE_ENABLED STRING "1"
-// Retrieval info: PRIVATE: PHASE_RECONFIG_INPUTS_CHECK STRING "1"
+// Retrieval info: PRIVATE: PHASE_RECONFIG_INPUTS_CHECK STRING "0"
 // Retrieval info: PRIVATE: PHASE_SHIFT0 STRING "-0.75000000"
 // Retrieval info: PRIVATE: PHASE_SHIFT1 STRING "0.00000000"
 // Retrieval info: PRIVATE: PHASE_SHIFT2 STRING "0.00000000"
 // Retrieval info: PRIVATE: PHASE_SHIFT3 STRING "0.00000000"
 // Retrieval info: PRIVATE: PHASE_SHIFT4 STRING "0.00000000"
-// Retrieval info: PRIVATE: PHASE_SHIFT_STEP_ENABLED_CHECK STRING "1"
+// Retrieval info: PRIVATE: PHASE_SHIFT_STEP_ENABLED_CHECK STRING "0"
 // Retrieval info: PRIVATE: PHASE_SHIFT_UNIT0 STRING "ns"
 // Retrieval info: PRIVATE: PHASE_SHIFT_UNIT1 STRING "deg"
 // Retrieval info: PRIVATE: PHASE_SHIFT_UNIT2 STRING "deg"
@@ -390,13 +364,13 @@ endmodule
 // Retrieval info: CONSTANT: PORT_INCLK1 STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_LOCKED STRING "PORT_USED"
 // Retrieval info: CONSTANT: PORT_PFDENA STRING "PORT_UNUSED"
-// Retrieval info: CONSTANT: PORT_PHASECOUNTERSELECT STRING "PORT_USED"
-// Retrieval info: CONSTANT: PORT_PHASEDONE STRING "PORT_USED"
-// Retrieval info: CONSTANT: PORT_PHASESTEP STRING "PORT_USED"
-// Retrieval info: CONSTANT: PORT_PHASEUPDOWN STRING "PORT_USED"
+// Retrieval info: CONSTANT: PORT_PHASECOUNTERSELECT STRING "PORT_UNUSED"
+// Retrieval info: CONSTANT: PORT_PHASEDONE STRING "PORT_UNUSED"
+// Retrieval info: CONSTANT: PORT_PHASESTEP STRING "PORT_UNUSED"
+// Retrieval info: CONSTANT: PORT_PHASEUPDOWN STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_PLLENA STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_SCANACLR STRING "PORT_UNUSED"
-// Retrieval info: CONSTANT: PORT_SCANCLK STRING "PORT_USED"
+// Retrieval info: CONSTANT: PORT_SCANCLK STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_SCANCLKENA STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_SCANDATA STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_SCANDATAOUT STRING "PORT_UNUSED"
@@ -420,10 +394,7 @@ endmodule
 // Retrieval info: CONSTANT: PORT_extclk2 STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: PORT_extclk3 STRING "PORT_UNUSED"
 // Retrieval info: CONSTANT: SELF_RESET_ON_LOSS_LOCK STRING "ON"
-// Retrieval info: CONSTANT: VCO_FREQUENCY_CONTROL STRING "MANUAL_PHASE"
-// Retrieval info: CONSTANT: VCO_PHASE_SHIFT_STEP NUMERIC "1000"
 // Retrieval info: CONSTANT: WIDTH_CLOCK NUMERIC "5"
-// Retrieval info: CONSTANT: WIDTH_PHASECOUNTERSELECT NUMERIC "3"
 // Retrieval info: USED_PORT: @clk 0 0 5 0 OUTPUT_CLK_EXT VCC "@clk[4..0]"
 // Retrieval info: USED_PORT: c0 0 0 0 0 OUTPUT_CLK_EXT VCC "c0"
 // Retrieval info: USED_PORT: c1 0 0 0 0 OUTPUT_CLK_EXT VCC "c1"
@@ -432,24 +403,14 @@ endmodule
 // Retrieval info: USED_PORT: c4 0 0 0 0 OUTPUT_CLK_EXT VCC "c4"
 // Retrieval info: USED_PORT: inclk0 0 0 0 0 INPUT_CLK_EXT GND "inclk0"
 // Retrieval info: USED_PORT: locked 0 0 0 0 OUTPUT GND "locked"
-// Retrieval info: USED_PORT: phasecounterselect 0 0 3 0 INPUT GND "phasecounterselect[2..0]"
-// Retrieval info: USED_PORT: phasedone 0 0 0 0 OUTPUT GND "phasedone"
-// Retrieval info: USED_PORT: phasestep 0 0 0 0 INPUT GND "phasestep"
-// Retrieval info: USED_PORT: phaseupdown 0 0 0 0 INPUT GND "phaseupdown"
-// Retrieval info: USED_PORT: scanclk 0 0 0 0 INPUT_CLK_EXT VCC "scanclk"
 // Retrieval info: CONNECT: @inclk 0 0 1 1 GND 0 0 0 0
 // Retrieval info: CONNECT: @inclk 0 0 1 0 inclk0 0 0 0 0
-// Retrieval info: CONNECT: @phasecounterselect 0 0 3 0 phasecounterselect 0 0 3 0
-// Retrieval info: CONNECT: @phasestep 0 0 0 0 phasestep 0 0 0 0
-// Retrieval info: CONNECT: @phaseupdown 0 0 0 0 phaseupdown 0 0 0 0
-// Retrieval info: CONNECT: @scanclk 0 0 0 0 scanclk 0 0 0 0
 // Retrieval info: CONNECT: c0 0 0 0 0 @clk 0 0 1 0
 // Retrieval info: CONNECT: c1 0 0 0 0 @clk 0 0 1 1
 // Retrieval info: CONNECT: c2 0 0 0 0 @clk 0 0 1 2
 // Retrieval info: CONNECT: c3 0 0 0 0 @clk 0 0 1 3
 // Retrieval info: CONNECT: c4 0 0 0 0 @clk 0 0 1 4
 // Retrieval info: CONNECT: locked 0 0 0 0 @locked 0 0 0 0
-// Retrieval info: CONNECT: phasedone 0 0 0 0 @phasedone 0 0 0 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL pll.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL pll.ppf TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL pll.inc FALSE

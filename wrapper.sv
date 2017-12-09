@@ -21,8 +21,7 @@ end
 logic clk10M, clk50M, clkSYS1;
 assign clk50M = CLOCK_50;
 assign clkAudio = clk10M;
-pll pll0 (.inclk0(clk50M), .locked(), .scanclk(clk10M),
-	.phasecounterselect(SW[2:0]), .phasestep(~KEY[0]), .phaseupdown(SW[3]),
+pll pll0 (.inclk0(clk50M), .locked(),
 	.c0(clkSDRAMIO), .c1(clkSDRAM), .c2(clk10M), .c3(clkTFT), .c4(clkSYS1));
 
 // System interface clock switch for debugging

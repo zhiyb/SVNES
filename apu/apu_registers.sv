@@ -10,13 +10,13 @@ module apu_registers (
 	output logic [7:0] regs[4]
 );
 
-assign we = sel & sys_rw;
-
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		for (int i = 0; i != 4; i++)
 			regs[i] <= 8'b0;
-	else if (we)
+	else if (sel & sys_rw)
 		regs[sys_addr[1:0]] <= sys_data;
+
+assign sys_data = sel & ~sys_rw ? regs[sys_addr[1:0]] : 8'bz;
 
 endmodule

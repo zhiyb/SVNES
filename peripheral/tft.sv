@@ -33,20 +33,24 @@ tft_fifo fifo0 (.aclr(aclr), .data(mem_data),
 	.rdclk(clkTFT), .rdreq(rdreq), .q(fifo), .rdempty(empty),
 	.wrclk(clkSYS), .wrreq(wrreq), .wrfull(full), .wrusedw(level));
 
+logic [1:0] clr;
+always_ff @(posedge clkSYS)
+	clr <= {clr[0], aclr};
+
 // Memory request
 logic [AN - 1:0] req_addrn;
 always_ff @(posedge clkSYS)
 	req_addrn <= req_addr + BURST;
-always_ff @(posedge clkSYS, posedge aclr)
-	if (aclr)
+always_ff @(posedge clkSYS)
+	if (clr[1])
 		req_addr <= BASE;
 	else if (req_ack)
 		req_addr <= req_addrn;
 
 logic [4:0] empty_req;
 logic [2:0] empty_level;
-always_ff @(posedge clkTFT, posedge aclr)
-	if (aclr) begin
+always_ff @(posedge clkTFT)
+	if (clr[1]) begin
 		empty_req[0] <= 1'b0;
 		empty_level <= 3'h0;
 	end else if (rdreq) begin
@@ -62,8 +66,8 @@ begin
 end
 
 logic [5:0] fill_level;
-always_ff @(posedge clkSYS, posedge aclr)
-	if (aclr)
+always_ff @(posedge clkSYS)
+	if (clr[1])
 		fill_level <= 0;
 	else if (req_ack) begin
 		if (!empty_req[4])
@@ -71,8 +75,8 @@ always_ff @(posedge clkSYS, posedge aclr)
 	end else if (empty_req[4])
 		fill_level <= fill_level - BURST;
 
-always_ff @(posedge clkSYS, posedge aclr)
-	if (aclr)
+always_ff @(posedge clkSYS)
+	if (clr[1])
 		req <= 1'b0;
 	else if (fill_level[5:4] != 2'b11)
 		req <= 1'b1;

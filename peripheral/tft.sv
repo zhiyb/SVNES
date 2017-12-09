@@ -64,7 +64,7 @@ end
 logic [5:0] fill_level;
 always_ff @(posedge clkSYS, posedge aclr)
 	if (aclr)
-		fill_level <= 5'h0;
+		fill_level <= 0;
 	else if (req_ack) begin
 		if (!empty_req[4])
 			fill_level <= fill_level + BURST;

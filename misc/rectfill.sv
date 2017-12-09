@@ -1,7 +1,7 @@
 // Rectangular memory fill
 module rectfill #(
-	// Address bus size, data bus size, fill colour
-	parameter AN = 24, DN = 16, BASE, CLR = 0,
+	// Address bus size, data bus size
+	parameter AN = 24, DN = 16, BASE,
 	// x-counter bits, y-counter btis, line size
 	XN = 8, YN = 8, LS = 480,
 	// x-offset, y-offset, x-length, y-length, line size
@@ -83,8 +83,8 @@ always_ff @(posedge clkSYS, negedge n_reset)
 		req <= 1'b0;
 	else if (req)
 		req <= ~ack;
-	else if (active)
-		req <= 1'b1;
+	else 
+		req <= active & ~update;
 
 // Address generation
 

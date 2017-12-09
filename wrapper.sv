@@ -133,7 +133,7 @@ assign tft_pwm = n_reset;
 // Rectangular background fill
 localparam PPU_X = 272, PPU_Y = 120, PPU_W = 256, PPU_H = 240, MARGIN = 8;
 logic rect_active;
-rectfill #(AN, DN, TFT_BASE, 16'h0841, 9, 9, TFT_LS,
+rectfill #(AN, DN, TFT_BASE, 9, 9, TFT_LS,
 	// x-offset, y-offset, x-length, y-length
 	PPU_X - MARGIN, PPU_Y - MARGIN, PPU_W + MARGIN * 2, PPU_H + MARGIN * 2)
 	rect0 (clkSYS, n_reset, arb_addr[rect], arb_data[rect],

@@ -25,40 +25,24 @@ loop:	; Render a string
 	_CPA	r_w, #str_hw, 2
 	jsr	render_string
 
+	; Render a number as hex
+	_CPA	r_c, #white, 2
+	lda	#$02
+	jsr	render_hex
+
+	_CPA	r_c, #red, 2
+	lda	#$46
+	jsr	render_hex
+
+	_CPA	r_c, #green, 2
+	lda	#$8a
+	jsr	render_hex
+
+	_CPA	r_c, #blue, 2
+	lda	#$ce
+	jsr	render_hex
+
 	jmp	loop
-.endproc
-
-.proc	num16	; Convert a number {X} to a string {Y, X} (base 16)
-	pha
-
-	; Higher digit
-	txa
-	lsr
-	lsr
-	lsr
-	lsr
-	jsr	digit16
-	tay
-
-	; Lower digit
-	txa
-	and	#$0f
-	jsr	digit16
-	tax
-
-	pla
-	rts
-.endproc
-
-.proc	digit16	; Convert a single digit {A} to a character {A} (base 16)
-	cmp	#$0a
-	bmi	@mi
-	clc
-	adc	#('A' - $0a)
-	rts
-@mi:	clc
-	adc	#('0')
-	rts
 .endproc
 
 	.rodata

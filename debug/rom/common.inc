@@ -13,6 +13,9 @@
 	bg	= $18c3
 	text_bg	= $0841
 	white	= $ffff
+	red	= $f800
+	green	= $07c0
+	blue	= $001f
 	test	= $667f
 
 ; dst = dst + src + C

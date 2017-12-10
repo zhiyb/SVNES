@@ -14,10 +14,15 @@
 
 	; Render a character
 	; Parameters: r_s, r_c, A
-	; Modifies: r_s
+	; Modifies: r_s(next character)
 	.import render_char
 
 	; Render a string
 	; Parameters: r_s, r_c, r_w(ptr)
-	; Modifies: r_s
+	; Modifies: r_s(next character)
 	.import render_string
+
+	; Render a byte as hexadecimal
+	; Parameters: r_s, r_c, A
+	; Modifies: r_s(next character)
+	.import render_hex

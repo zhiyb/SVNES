@@ -12,39 +12,18 @@
 	.code
 
 .proc	main
-loop:
 	; Render background rectangle
-	lda	#<offset
-	sta	r_s
-	lda	#>offset
-	sta	r_s + 1
-	lda	#offset >> 16
-	sta	r_s + 2
-	lda	#<background
-	sta	r_c
-	lda	#>background
-	sta	r_c + 1
-	lda	#<width
-	sta	r_w
-	lda	#>width
-	sta	r_w + 1
-	lda	#<height
-	sta	r_h
-	lda	#>height
-	sta	r_h + 1
+	_CPA	r_s, #offset, 3
+	_CPA	r_c, #bg, 2
+	_CPA	r_w, #width, 2
+	_CPA	r_h, #height, 2
 	jsr	render_rect
 
-	lda	#<offset
-	sta	r_s
-	lda	#>offset
-	sta	r_s + 1
-	lda	#offset >> 16
-	sta	r_s + 2
-	lda	#<test
-	sta	r_c
-	lda	#>test
-	sta	r_c + 1
-	jsr	render_rect
+loop:	; Render a string
+	_CPA	r_s, #offset, 3
+	_CPA	r_c, #test, 2
+	_CPA	r_w, #str_hw, 2
+	jsr	render_string
 
 	jmp	loop
 .endproc
@@ -83,3 +62,4 @@ loop:
 .endproc
 
 	.rodata
+str_hw:	.byte	"Hello, world!", 0

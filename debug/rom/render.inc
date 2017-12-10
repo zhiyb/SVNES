@@ -14,4 +14,10 @@
 
 	; Render a character
 	; Parameters: r_s, r_c, A
+	; Modifies: r_s
 	.import render_char
+
+	; Render a string
+	; Parameters: r_s, r_c, r_w(ptr)
+	; Modifies: r_s
+	.import render_string

@@ -1,4 +1,4 @@
-SRC	= rom.s data.s render.s ascii.s
+SRC	= rom.s render.s ascii.s
 TRG	= rom
 LDFILE	= linker.ld
 CPU	= 6502
@@ -13,8 +13,8 @@ render.o: common.inc debug.inc
 %.o: %.s
 	ca65 --cpu $(CPU) -o $@ $<
 
-$(TRG).bin: $(OBJ) $(LDFILE)
-	ld65 -C $(LDFILE) -o $@ $(OBJ)
+$(TRG).map $(TRG).bin: $(OBJ) $(LDFILE)
+	ld65 -C $(LDFILE) -o $@ $(OBJ) -m $(TRG).map
 
 %.hex: %.bin
 	srec_cat $< -binary -o $@ -intel

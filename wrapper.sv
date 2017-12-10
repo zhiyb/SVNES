@@ -105,17 +105,7 @@ logic sdram_empty, sdram_full;
 sdram_shared #(AN, DN, IN, BURST) mem0 (.n_reset(n_reset_ext), .*);
 
 // Memory access arbiter assignments
-localparam tft = 0, disp = 3;
-
-assign arb_addr[1] = 'bx;
-assign arb_data[1] = 'bx;
-assign arb_wr[1] = 'bx;
-assign arb_req[1] = 0;
-
-assign arb_addr[2] = 'bx;
-assign arb_data[2] = 'bx;
-assign arb_wr[2] = 'bx;
-assign arb_req[2] = 1'b0;
+localparam tft = 0, cpu = 1, ppu = 2, disp = 3;
 
 // TFT frame buffer
 localparam TFT_BASE = 24'hfa0000, TFT_LS = 800;
@@ -168,6 +158,34 @@ logic [7:0] audio;
 system sys0 (.*);
 
 // Mappers
+// Memory interface - CPU
+logic [23:0] mem_addr;
+logic [15:0] mem_data;
+logic mem_req, mem_wr;
+logic mem_ack;
+logic [15:0] mem_out;
+logic mem_valid;
+assign arb_addr[cpu] = mem_addr;
+assign arb_data[cpu] = mem_data;
+assign arb_req[cpu] = mem_req;
+assign arb_wr[cpu] = mem_wr;
+assign mem_ack = arb_ack[cpu];
+assign mem_out = arb_data_out;
+assign mem_valid = arb_valid[cpu];
+// Memory interface - PPU
+logic [23:0] mem_ppu_addr;
+logic [15:0] mem_ppu_data;
+logic mem_ppu_req, mem_ppu_wr;
+logic mem_ppu_ack;
+logic [15:0] mem_ppu_out;
+logic mem_ppu_valid;
+assign arb_addr[ppu] = mem_ppu_addr;
+assign arb_data[ppu] = mem_ppu_data;
+assign arb_req[ppu] = mem_ppu_req;
+assign arb_wr[ppu] = mem_ppu_wr;
+assign mem_ppu_ack = arb_ack[ppu];
+assign mem_ppu_out = arb_data_out;
+assign mem_ppu_valid = arb_valid[ppu];
 mapper map0 (.*);
 
 // }}}

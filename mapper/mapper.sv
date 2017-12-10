@@ -11,7 +11,21 @@ module mapper (
 	input logic ppu_rd, ppu_wr,
 	// System control
 	output logic sys_reset,
-	output wire sys_irq
+	output wire sys_irq,
+	// Memory interface - CPU
+	output logic [23:0] mem_addr,
+	output logic [15:0] mem_data,
+	output logic mem_req, mem_wr,
+	input logic mem_ack,
+	input logic [15:0] mem_out,
+	input logic mem_valid,
+	// Memory interface - PPU
+	output logic [23:0] mem_ppu_addr,
+	output logic [15:0] mem_ppu_data,
+	output logic mem_ppu_req, mem_ppu_wr,
+	input logic mem_ppu_ack,
+	input logic [15:0] mem_ppu_out,
+	input logic mem_ppu_valid
 );
 
 // {{{ Common elements at CPU bus
@@ -27,6 +41,12 @@ ram8k ram0 (.clock(clkRAM), .aclr(~n_reset),
 	.wren(ram0sel & ~sys_rw), .q(ram0q));
 assign sys_data = ram0sel & sys_rw ? ram0q : 8'bz;
 
+// Memory access controller
+assign mem_addr = 'bx;
+assign mem_data = 'bx;
+assign mem_wr = 'bx;
+assign mem_req = 0;
+
 // }}}
 
 // {{{ Common elements at PPU bus
@@ -41,6 +61,12 @@ ram8k ppu_ram0 (
 	.address(ppu_addr[12:0]), .data(ppu_data),
 	.wren(ppu_ram0sel && ~ppu_wr), .q(ppu_ram0q));
 assign ppu_data = ppu_ram0sel & ~ppu_rd ? ppu_ram0q : 8'bz;
+
+// Memory access controller
+assign mem_ppu_addr = 'bx;
+assign mem_ppu_data = 'bx;
+assign mem_ppu_wr = 'bx;
+assign mem_ppu_req = 0;
 
 // }}}
 

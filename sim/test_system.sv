@@ -2,6 +2,7 @@
 
 module test_system;
 
+// Main system
 logic clkCPU2, clkPPU, n_reset;
 // External interface
 logic clkCPU, clkCPUn, clkRAM;
@@ -23,6 +24,28 @@ logic [23:0] video_rgb;
 logic video_vblank, video_hblank;
 
 system sys0 (.*);
+
+// Mappers
+// Memory interface - CPU
+logic [23:0] mem_addr;
+logic [15:0] mem_data;
+logic mem_req, mem_wr;
+logic mem_ack;
+logic [15:0] mem_out;
+logic mem_valid;
+assign mem_ack = 1'b0;
+assign mem_out = 0;
+assign mem_valid = 1'b0;
+// Memory interface - PPU
+logic [23:0] mem_ppu_addr;
+logic [15:0] mem_ppu_data;
+logic mem_ppu_req, mem_ppu_wr;
+logic mem_ppu_ack;
+logic [15:0] mem_ppu_out;
+logic mem_ppu_valid;
+assign mem_ppu_ack = 1'b0;
+assign mem_ppu_out = 0;
+assign mem_ppu_valid = 1'b0;
 mapper map0 (.*);
 
 initial

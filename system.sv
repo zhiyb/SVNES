@@ -33,11 +33,12 @@ arbiter #(.N(2)) arb_mem (arb_req, arb_grant, arb_rot, 2'b11, , );
 // DMA
 
 // CPU
-logic nmi, irq, sys_rw;
+logic reset, nmi, irq, sys_rw;
 wire sys_rdy;
 logic [15:0] sys_addr;
 wire [7:0] sys_data;
-cpu cpu0 (clk, dclk, n_reset, nmi, irq, sys_rdy, sys_addr, sys_data, sys_rw);
+cpu cpu0 (clk, dclk, n_reset, reset, nmi, irq,
+	sys_rdy, sys_addr, sys_data, sys_rw);
 assign arb_req[1] = 1'b1;
 
 // APU
@@ -61,37 +62,18 @@ ram2k ram0 (.clock(clkRAM), .aclr(~n_reset),
 	.wren(ram0sel & ~sys_rw), .q(ram0q));
 assign sys_data = (ram0sel & sys_rw) ? ram0q : 8'bz;
 
-// SRAM at $6000 to $8000 of size $2000 (8kB)
-logic ram1sel;
-assign ram1sel = (sys_addr & ~16'h1fff) == 16'h6000;
-assign sys_rdy = ram1sel ? 1'b1 : 1'bz;
-logic [7:0] ram1q;
-ram8k ram1 (.clock(clkRAM), .aclr(~n_reset),
-	.address(sys_addr[12:0]), .data(sys_data),
-	.wren(ram1sel & ~sys_rw), .q(ram1q));
-assign sys_data = (ram1sel & sys_rw) ? ram1q : 8'bz;
-
-// Startup ROM at $8000 to $10000 of size $8000 (32kB)
-logic rom0sel;
-assign rom0sel = (sys_addr & ~16'h7fff) == 16'h8000;
-assign sys_rdy = rom0sel ? 1'b1 : 1'bz;
-logic [7:0] rom0q;
-rom4k rom0 (.clock(clkRAM), .aclr(~n_reset),
-	.address(sys_addr[11:0]), .q(rom0q));
-assign sys_data = (rom0sel & sys_rw) ? rom0q : 8'bz;
-
 // PPU
 logic ppu_nmi;
 logic [13:0] ppu_addr;
 wire [7:0] ppu_data;
 logic ppu_rd, ppu_wr;
-ppu ppu0 (clk, dclk, clkPPU, n_reset, ppu_nmi,
+ppu ppu0 (clk, dclk, clkPPU, n_reset, reset, ppu_nmi,
 	sys_addr, sys_data, sys_rdy, sys_rw,
 	ppu_addr, ppu_data, ppu_rd, ppu_wr,
 	video_rgb, video_vblank, video_hblank);
 assign nmi = ppu_nmi;
 
-// PPU pattern table RAM
+// PPU pattern table RAM at $0000 to $2000 of size $2000 (8kB)
 logic [7:0] ppu_ram0q;
 assign ppu_data = ppu_wr && ppu_addr[13] == 1'b0 ? ppu_ram0q : 8'bz;
 ram8k ppu_ram0 (
@@ -99,12 +81,15 @@ ram8k ppu_ram0 (
 	.address(ppu_addr[12:0]), .data(ppu_data),
 	.wren(~ppu_wr && ppu_addr[13] == 1'b0), .q(ppu_ram0q));
 
-// PPU nametable RAM
+// PPU nametable RAM at $2000 to $3000 of size $1000 (4kB)
 logic [7:0] ppu_ram1q;
 assign ppu_data = ppu_wr && ppu_addr[13] == 1'b1 ? ppu_ram1q : 8'bz;
 ram4k ppu_ram1 (
 	.aclr(~n_reset), .clock(clkPPU),
 	.address(ppu_addr[11:0]), .data(ppu_data),
 	.wren(~ppu_wr && ppu_addr[13] == 1'b1), .q(ppu_ram1q));
+
+// Mappers
+mapper map0 (.*);
 
 endmodule

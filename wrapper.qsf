@@ -65,6 +65,9 @@ set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
 set_global_assignment -name SMART_RECOMPILE ON
 
 
+
+set_global_assignment -name SYSTEMVERILOG_FILE mapper/mapper_boot.sv
+set_global_assignment -name SYSTEMVERILOG_FILE mapper/mapper.sv
 set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_fb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE display.sv
 set_global_assignment -name SYSTEMVERILOG_FILE memory/sdram_shared_arbiter.sv
@@ -156,6 +159,5 @@ set_global_assignment -name QIP_FILE cpu/rom_mop.qip
 set_global_assignment -name QIP_FILE cpu/rom_mop_dispatch.qip
 set_global_assignment -name QIP_FILE ppu/ppu_fb_fifo.qip
 set_global_assignment -name QIP_FILE peripheral/sdram_out_fifo.qip
-
 set_global_assignment -name SLD_FILE db/tap_auto_stripped.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

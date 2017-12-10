@@ -1,6 +1,6 @@
 module cpu (
 	input logic clk, dclk, n_reset,
-	input logic nmi, irq, ready,
+	input logic reset, nmi, irq, ready,
 	output logic [15:0] addr,
 	inout wire [7:0] data,
 	output logic rw
@@ -279,7 +279,7 @@ always_ff @(posedge clk, negedge n_reset)
 		irq_pending <= 1'b1;
 		irq_jump <= 1'b0;
 	end else begin
-		if (mop_rst)
+		if (mop_rst | reset)
 			rst_act <= 1'b1;
 		else if (irq_jump)
 			rst_act <= 1'b0;

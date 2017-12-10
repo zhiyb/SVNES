@@ -3,6 +3,7 @@
 	.include "apu.inc"
 	.include "ppu.inc"
 	.include "data.inc"
+	.include "mapper_boot.inc"
 
 	.bss
 nmicnt:	.byte	0
@@ -105,7 +106,12 @@ count:	lda	#15
 	inc	cnt
 	lda	#$10
 	sta	apu_pulse1_lc
-	jmp	count
+
+	; Reset if counter == #$10
+	cmp	cnt
+	bne	count
+	lda	#$00
+	sta	map_id
 
 	jmp	*
 .endproc

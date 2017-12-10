@@ -1,5 +1,6 @@
 module ppu (
 	input logic clk, dclk, clkPPU, n_reset,
+	input logic sys_reset,
 	output logic nmi,
 
 	input logic [15:0] sys_addr,
@@ -32,6 +33,9 @@ assign sys_rdy = sel ? 1'b1 : 1'bz;
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
+		for (int i = 0; i != 8; i++)
+			regs[i] <= 8'h0;
+	else if (sys_reset)
 		for (int i = 0; i != 8; i++)
 			regs[i] <= 8'h0;
 	else if (sel & ~sys_rw)
@@ -368,6 +372,8 @@ always_ff @(posedge clkPPU, negedge n_reset)
 		reset <= 1'b1;
 	else if (x == 0 && y == vlines - 1)
 		reset <= 1'b0;
+	else
+		reset <= sys_reset;
 
 // TODO
 assign sp_hit0 = 1'b0, sp_ovf = 1'b0;

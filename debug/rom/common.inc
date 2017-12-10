@@ -22,16 +22,16 @@
 .macro	_ADCA	dst, src, size
 	.if (.match(.left(1, {src}), #))
 		; Immediate mode
-		lda	#<.right(.tcount({src}) - 1, {src})
+		lda	#<(.right(.tcount({src}) - 1, {src}))
 		adc	dst
 		sta	dst
 		.if (size >= 2)
-			lda	#>.right(.tcount({src}) - 1, {src})
+			lda	#>(.right(.tcount({src}) - 1, {src}))
 			adc	dst + 1
 			sta	dst + 1
 		.endif
 		.if (size >= 3)
-			lda	#.right(.tcount({src}) - 1, {src}) >> 16
+			lda	#((.right(.tcount({src}) - 1, {src})) >> 16)
 			adc	dst + 2
 			sta	dst + 2
 		.endif
@@ -57,18 +57,18 @@
 	.if (.match(.left(1, {src}), #))
 		; Immediate mode
 		.if (size >= 4)
-			lda	#.right(.tcount({src}) - 1, {src}) >> 24
+			lda	#((.right(.tcount({src}) - 1, {src})) >> 24)
 			sta	dst + 3
 		.endif
 		.if (size >= 3)
-			lda	#.right(.tcount({src}) - 1, {src}) >> 16
+			lda	#((.right(.tcount({src}) - 1, {src})) >> 16)
 			sta	dst + 2
 		.endif
 		.if (size >= 2)
-			lda	#>.right(.tcount({src}) - 1, {src})
+			lda	#>(.right(.tcount({src}) - 1, {src}))
 			sta	dst + 1
 		.endif
-		lda	#<.right(.tcount({src}) - 1, {src})
+		lda	#<(.right(.tcount({src}) - 1, {src}))
 		sta	dst
 	.else
 		.if (size >= 4)

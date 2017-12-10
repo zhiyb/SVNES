@@ -24,6 +24,7 @@ cnty:	.word	0
 	bne	start
 	lda	cntx + 1
 	beq	ret
+	dec	cntx + 1
 start:	; Set start address
 	_CPA	dbg_addr, r_s, 3
 	_CPA	dbg_data + 1, r_c + 1, 1
@@ -49,6 +50,7 @@ ret:	; Finished, return
 	bne	next
 	lda	cnty + 1
 	beq	ret
+	dec	cnty + 1
 next:	; Draw line
 	jsr	render_dots
 	dec	cnty

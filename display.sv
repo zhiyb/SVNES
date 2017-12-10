@@ -1,5 +1,5 @@
 module display #(parameter AN, DN, BURST, TFT_BASE, TFT_LS) (
-	input logic clkSYS, clkPPU, n_reset,
+	input logic clkSYS, clkPPU, clkDebug, n_reset,
 
 	// Memory interface
 	output logic [AN - 1:0] addr,
@@ -14,17 +14,23 @@ module display #(parameter AN, DN, BURST, TFT_BASE, TFT_LS) (
 	input logic [23:0] video_rgb,
 	input logic video_vblank, video_hblank,
 
+	// Debug processor
+	input logic [19:0] dbg_addr,
+	input logic [15:0] dbg_data,
+	input logic dbg_req,
+
 	// Switches
 	input logic [1:0] KEY,
 	input logic [3:0] SW,
 
 	// Status
 	output logic fb_empty, fb_full,
+	output logic dbg_empty, dbg_full,
 	output logic test_fail
 );
 
 localparam IN = 4;
-localparam PPU_X = 272, PPU_Y = 120, PPU_W = 256, PPU_H = 240, MARGIN = 8;
+localparam PPU_X = 120, PPU_Y = 120, PPU_W = 256, PPU_H = 240, MARGIN = 8;
 
 // Memory access arbitration
 logic [AN - 1:0] arb_addr[IN];
@@ -33,12 +39,7 @@ logic arb_wr[IN];
 logic [IN - 1:0] arb_req;
 logic [IN - 1:0] arb_ack;
 
-localparam ppu = 0, rect = 1, test = 3;
-
-assign arb_addr[2] = 'bx;
-assign arb_data[2] = 'bx;
-assign arb_wr[2] = 'bx;
-assign arb_req[2] = 0;
+localparam ppu = 0, dbg = 1, rect = 2, test = 3;
 
 // Access request buffering
 logic [AN - 1:0] in_addr[IN];
@@ -60,6 +61,11 @@ ppu_fb #(AN, DN, TFT_BASE, 9, 9,
 	PPU_X, PPU_Y, TFT_LS) fb0 (clkSYS, clkPPU, n_reset,
 	arb_addr[ppu], arb_data[ppu], arb_req[ppu], arb_wr[ppu], arb_ack[ppu],
 	video_rgb, video_vblank, video_hblank, fb_empty, fb_full);
+
+// Debug processor frame buffer
+debug_fb #(AN, DN, TFT_BASE) debug0 (clkSYS, clkDebug, n_reset,
+	arb_addr[dbg], arb_data[dbg], arb_req[dbg], arb_wr[dbg], arb_ack[dbg],
+	dbg_addr, dbg_data, dbg_req, dbg_empty, dbg_full);
 
 // Rectangular background fill
 logic rect_active;

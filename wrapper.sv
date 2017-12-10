@@ -1,7 +1,7 @@
 // {{{ Clocks and reset control
 module clk_reset (
 	input logic CLOCK_50,
-	output logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio,
+	output logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio, clkDebug,
 	output logic clkMaster, clkPPU, clkCPU2,
 	input logic [1:0] KEY,
 	input logic [3:0] SW,
@@ -21,6 +21,7 @@ end
 logic clk10M, clk50M, clkSYS1;
 assign clk50M = CLOCK_50;
 assign clkAudio = clk10M;
+assign clkDebug = clk50M;
 pll pll0 (.inclk0(clk50M), .locked(),
 	.c0(clkSDRAMIO), .c1(clkSDRAM), .c2(clk10M), .c3(clkTFT), .c4(clkSYS1));
 
@@ -82,7 +83,7 @@ module wrapper (
 );
 
 // Clocks and reset control
-logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio;
+logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio, clkDebug;
 logic clkMaster, clkPPU, clkCPU2;
 logic clk;
 logic n_reset, n_reset_ext, n_reset_mem;
@@ -120,20 +121,29 @@ assign arb_wr[tft] = 1'b0;
 assign arb_data[tft] = 'bx;
 
 // Display elements
+// PPU frame buffer
 logic [23:0] video_rgb;
 logic video_vblank, video_hblank;
 logic fb_empty, fb_full, test_fail;
-display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (clkSYS, clkPPU, n_reset,
+// Debug processor frame buffer
+logic [19:0] dbg_addr;
+logic [15:0] dbg_data;
+logic dbg_req;
+logic dbg_empty, dbg_full;
+display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (
+	clkSYS, clkPPU, clkDebug, n_reset,
 	// Memory interface
 	arb_addr[disp], arb_data[disp],
 	arb_req[disp], arb_wr[disp], arb_ack[disp],
 	arb_data_out, arb_valid[disp],
 	// PPU video
 	video_rgb, video_vblank, video_hblank,
+	// Debug processor
+	dbg_addr, dbg_data, dbg_req,
 	// Switches
 	KEY, SW,
 	// Status
-	fb_empty, fb_full, test_fail
+	fb_empty, fb_full, dbg_empty, dbg_full, test_fail
 );
 
 // }}}
@@ -190,6 +200,10 @@ mapper map0 (.*);
 
 // }}}
 
+// Debug processor
+debug debug0 (clkDebug, n_reset,
+	dbg_addr, dbg_data, dbg_req);
+
 // {{{ Hardware controllers
 
 // TFT controller
@@ -225,7 +239,7 @@ apu_pwm #(.N(8)) pwm0 (clkAudio, n_reset, audio, SW[0], aout);
 // }}}
 
 // Debugging LEDs
-assign LED[7:0] = {clk, test_fail, fb_full, fb_empty,
-	tft_full, tft_empty, sdram_full, sdram_empty};
+assign LED[7:0] = {clk, test_fail, dbg_full, dbg_empty,
+	fb_full, tft_empty, sdram_full, sdram_empty};
 
 endmodule

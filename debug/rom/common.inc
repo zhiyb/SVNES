@@ -1,5 +1,6 @@
 ; asmsyntax=asmM6502
 
+	margin	= 8
 	top	= 120
 	left	= 406
 	width	= 274
@@ -10,12 +11,14 @@
 	text_w	= 6
 	text_h	= 8
 
-	bg	= $18c3
-	text_bg	= $0841
 	white	= $ffff
+	black	= $0000
 	red	= $f800
 	green	= $07c0
 	blue	= $001f
+
+	bg	= black
+	text_bg	= $0841
 	test	= $667f
 
 ; dst = dst + src + C

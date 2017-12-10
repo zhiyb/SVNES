@@ -13,10 +13,10 @@
 
 .proc	main
 	; Render background rectangle
-	_CPA	r_s, #offset, 3
+	_CPA	r_s, #offset - margin * lsize - margin, 3
+	_CPA	r_w, #width + margin * 2, 2
+	_CPA	r_h, #height + margin * 2, 2
 	_CPA	r_c, #bg, 2
-	_CPA	r_w, #width, 2
-	_CPA	r_h, #height, 2
 	jsr	render_rect
 
 loop:	; Render a string

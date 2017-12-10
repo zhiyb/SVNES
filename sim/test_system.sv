@@ -3,6 +3,19 @@
 module test_system;
 
 logic clkCPU2, clkPPU, n_reset;
+// External interface
+logic clkCPU, clkCPUn, clkRAM;
+logic sys_reset;
+wire sys_irq;
+// CPU bus
+logic [15:0] sys_addr;
+wire [7:0] sys_data;
+logic sys_rw;
+wire sys_rdy;
+// PPU bus
+logic [13:0] ppu_addr;
+wire [7:0] ppu_data;
+logic ppu_rd, ppu_wr;
 // Audio
 logic [7:0] audio;
 // Video
@@ -10,6 +23,7 @@ logic [23:0] video_rgb;
 logic video_vblank, video_hblank;
 
 system sys0 (.*);
+mapper map0 (.*);
 
 initial
 begin

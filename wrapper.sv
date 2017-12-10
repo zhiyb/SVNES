@@ -88,12 +88,6 @@ logic clk;
 logic n_reset, n_reset_ext, n_reset_mem;
 clk_reset cr0 (.*);
 
-// NES system
-logic [7:0] audio;
-logic [23:0] video_rgb;
-logic video_vblank, video_hblank;
-system sys0 (.*);
-
 // {{{ Memory subsystem
 
 localparam AN = 24, DN = 16, IN = 4, BURST = 8;
@@ -136,6 +130,8 @@ assign arb_wr[tft] = 1'b0;
 assign arb_data[tft] = 'bx;
 
 // Display elements
+logic [23:0] video_rgb;
+logic video_vblank, video_hblank;
 logic fb_empty, fb_full, test_fail;
 display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (clkSYS, clkPPU, n_reset,
 	// Memory interface
@@ -149,6 +145,30 @@ display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (clkSYS, clkPPU, n_reset,
 	// Status
 	fb_empty, fb_full, test_fail
 );
+
+// }}}
+
+// {{{ NES system
+
+// Main system
+logic clkCPU, clkCPUn, clkRAM;
+logic sys_reset;
+wire sys_irq;
+// CPU bus
+logic [15:0] sys_addr;
+wire [7:0] sys_data;
+logic sys_rw;
+wire sys_rdy;
+// PPU bus
+logic [13:0] ppu_addr;
+wire [7:0] ppu_data;
+logic ppu_rd, ppu_wr;
+// Audio
+logic [7:0] audio;
+system sys0 (.*);
+
+// Mappers
+mapper map0 (.*);
 
 // }}}
 

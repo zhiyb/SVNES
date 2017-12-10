@@ -7,9 +7,11 @@ module mapper_boot (
 	input logic sys_rw,
 	inout wire sys_rdy,
 	// System control
-	output logic reset,
+	output logic sys_reset,
+	output wire sys_irq,
 	// Common mapper elements
 	output wire map_ram0_enable,
+	output wire map_ppu_ram0_enable,
 	// Mapper control
 	output logic [7:0] map_id,
 	input logic enable
@@ -21,9 +23,11 @@ always_ff @(posedge clkRAM)
 
 wire [7:0] data;
 assign sys_data = en ? data : 8'bz;
+assign sys_irq = en ? 1'b1 : 1'bz;
 
 // Common elements
 assign map_ram0_enable = en ? 1'b1 : 1'bz;
+assign map_ppu_ram0_enable = en ? 1'b1 : 1'bz;
 
 // Startup ROM at $8000 to $10000 of size $8000 (32kB)
 logic rom0sel;
@@ -52,12 +56,12 @@ assign data = map_sel && map_addr == 8'h00 ? map_id : 8'bz;
 always_ff @(posedge clkRAM, negedge n_reset)
 	if (~n_reset) begin
 		map_id <= 0;
-		reset <= 1'b0;
+		sys_reset <= 1'b0;
 	end else if (map_sel && map_addr == 8'h00) begin
 		map_id <= sys_data;
-		reset <= 1'b1;
+		sys_reset <= 1'b1;
 	end else begin
-		reset <= 1'b0;
+		sys_reset <= 1'b0;
 	end
 
 endmodule

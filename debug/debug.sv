@@ -36,7 +36,8 @@ logic [15:0] sys_addr;
 wire [7:0] sys_data;
 logic sys_rw;
 cpu cpu0 (clk, dclk, n_reset, reset, nmi, irq,
-	sys_rdy, sys_addr, sys_data, sys_rw);
+	sys_rdy, sys_addr, sys_data, sys_rw,
+	1'b0, 1'b0, 1'b0, 1'b0, );
 
 assign sys_reset = 1'b0;
 assign nmi = 1'b1;

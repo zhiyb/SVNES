@@ -3,7 +3,12 @@ module cpu (
 	input logic reset, nmi, irq, ready,
 	output logic [15:0] addr,
 	inout wire [7:0] data,
-	output logic rw
+	output logic rw,
+	// Debug info scan chain
+	input logic clkDebug,
+	input logic dbg_load, dbg_shift,
+	input logic dbg_din,
+	output logic dbg_dout
 );
 
 logic [7:0] bus_db, bus_sb, bus_adh, bus_adl, int_addr;
@@ -11,6 +16,21 @@ logic [7:0] abh, abl, dl, dout, alu;
 logic [7:0] y, x, sp, a, p, pch, pcl;
 // Overflow, carry out, relative carry out, branch, IRQ pending
 logic avr, acr, arc, br, irq_pending;
+
+// Debug info scan
+localparam DBGN = 8 * 10;
+logic [DBGN - 1:0] dbg, dbg_sr;
+assign dbg_dout = dbg_sr[DBGN - 1];
+always_ff @(posedge clkDebug, negedge n_reset)
+	if (~n_reset)
+		dbg_sr <= 0;
+	else if (dbg_load)
+		dbg_sr <= dbg;
+	else if (dbg_shift)
+		dbg_sr <= {dbg_sr[DBGN - 2:0], dbg_din};
+
+always_ff @(posedge clkDebug)
+	dbg <= {addr, data, a, x, y, sp, p, pch, pcl};
 
 // Halting control
 logic run, runc;

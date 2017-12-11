@@ -108,14 +108,14 @@ module wrapper (
 
 // Debug info scan chain
 logic dbg_load, dbg_shift;
-logic dbg_din, dbg_cr_din, dbg_dout;
+logic dbg_d[8];
 
 // Clocks and reset control
 logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio, clkDebug;
 logic clkMaster, clkPPU, clkCPU2;
 logic clk;
 logic n_reset, n_reset_ext, n_reset_mem;
-clk_reset cr0 (.dbg_din(dbg_cr_din), .dbg_dout(dbg_din), .*);
+clk_reset cr0 (.dbg_din(dbg_d[1]), .dbg_dout(dbg_d[0]), .*);
 
 // {{{ Memory subsystem
 
@@ -171,7 +171,7 @@ display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (
 	// Switches
 	KEY, SW,
 	// Debug info scan chain
-	dbg_load, dbg_shift, dbg_dout, dbg_cr_din,
+	dbg_load, dbg_shift, dbg_d[2], dbg_d[1],
 	// Status
 	fb_empty, fb_full, dbg_empty, dbg_full, test_fail
 );
@@ -195,7 +195,7 @@ wire [7:0] ppu_data;
 logic ppu_rd, ppu_wr;
 // Audio
 logic [7:0] audio;
-system sys0 (.*);
+system sys0 (.dbg_din(dbg_d[3]), .dbg_dout(dbg_d[2]), .*);
 
 // Mappers
 // Memory interface - CPU
@@ -233,7 +233,7 @@ mapper map0 (.*);
 // Debug processor
 debug debug0 (clkDebug, n_reset,
 	dbg_addr, dbg_data, dbg_req,
-	dbg_load, dbg_shift, dbg_din, dbg_dout);
+	dbg_load, dbg_shift, dbg_d[0], dbg_d[3]);
 
 // {{{ Hardware controllers
 

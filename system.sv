@@ -17,8 +17,18 @@ module system (
 	output logic [7:0] audio,
 	// Video
 	output logic [23:0] video_rgb,
-	output logic video_vblank, video_hblank
+	output logic video_vblank, video_hblank,
+	// Debug info scan chain
+	input logic clkDebug,
+	input logic dbg_load, dbg_shift,
+	input logic dbg_din,
+	output logic dbg_dout
 );
+
+// Debug info scan chain
+logic dbg_d[8];
+assign dbg_dout = dbg_d[0];
+assign dbg_d[1] = dbg_din;
 
 // Clock generation
 logic clk, dclk;
@@ -49,7 +59,8 @@ arbiter #(.N(2)) arb_mem (arb_req, arb_grant, arb_rot, 2'b11, , );
 // CPU
 logic nmi, irq;
 cpu cpu0 (clk, dclk, n_reset, sys_reset, nmi, irq,
-	sys_rdy, sys_addr, sys_data, sys_rw);
+	sys_rdy, sys_addr, sys_data, sys_rw,
+	clkDebug, dbg_load, dbg_shift, dbg_d[1], dbg_d[0]);
 assign arb_req[1] = 1'b1;
 
 // APU

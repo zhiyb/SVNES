@@ -16,9 +16,15 @@
 	red	= $f800
 	green	= $07c0
 	blue	= $001f
+	yellow	= red | green
+	cyan	= green | blue
+	magenta	= red | blue
 
 	bg	= black
+	text	= yellow
 	text_bg	= $0841
+	addr	= magenta
+	data	= cyan
 	test	= $667f
 
 ; dst = dst + src + C

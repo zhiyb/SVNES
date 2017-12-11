@@ -412,12 +412,92 @@ begin
 end
 // }}}
 
+// {{{ Debugging
+
+// Instruction capture
+logic dbg_ins_done;
+always_ff @(posedge clk)
+	dbg_ins_done <= rom_rden & runc;
+
+logic [2:0] dbg_cnt;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		dbg_cnt <= 0;
+	else if (dbg_ins_done)
+		dbg_cnt <= 0;
+	else if (runc)
+		dbg_cnt <= dbg_cnt + 1;
+
+localparam latch = 9;
+logic [15:0] dbg_addr[latch];
+logic [7:0] dbg_data[latch];
+logic dbg_rw[latch];
+always_ff @(posedge clk)
+	if (runc) begin
+		for (int i = 0; i != latch - 1; i++) begin
+			dbg_addr[i + 1] <= dbg_addr[i];
+			dbg_data[i + 1] <= dbg_data[i];
+			dbg_rw[i + 1] <= dbg_rw[i];
+		end
+		dbg_addr[0] <= addr;
+		dbg_data[0] <= data;
+		dbg_rw[0] <= rw;
+	end
+
+logic [7:0] dbg_ins_cnt;
+always_ff @(posedge clk, negedge n_reset)
+	if (~n_reset)
+		dbg_ins_cnt <= 0;
+	else if (rst_act)
+		dbg_ins_cnt <= 0;
+	else if (dbg_ins_done)
+		dbg_ins_cnt <= dbg_ins_cnt + 1;
+
+logic [7:0] dbg_cnt_out;
+logic [15:0] dbg_addr_out[8];
+logic [7:0] dbg_data_out[8];
+logic [7:0] dbg_rw_out;
+always_ff @(posedge clk)
+	if (dbg_ins_done) begin
+		dbg_cnt_out <= dbg_cnt;
+		for (int i = 0; i != 8; i++) begin
+			dbg_addr_out[i] <= dbg_addr[i + 1];
+			dbg_data_out[i] <= dbg_data[i + 1];
+			dbg_rw_out[i] <= dbg_rw[i + 1];
+		end
+	end
+
+localparam dbg_ins_num = 7, dbg_ins_bytes = 3 + dbg_ins_num * (2 + 1);
+localparam dbg_ins_N = 8 * dbg_ins_bytes;
+logic [dbg_ins_N - 1:0] dbg_ins;
+always_comb
+begin
+	int last;
+	last = dbg_ins_N - 1;
+	dbg_ins[last -: 8] = dbg_ins_cnt;
+	last -= 8;
+	dbg_ins[last -: 8] = dbg_cnt_out;
+	last -= 8;
+	dbg_ins[last -: 8] = dbg_rw_out;
+	last -= 8;
+	for (int i = 0; i != dbg_ins_num; i++) begin
+		dbg_ins[last -: 16] = dbg_addr_out[dbg_ins_num - i - 1];
+		last -= 16;
+	end
+	for (int i = 0; i != dbg_ins_num; i++) begin
+		dbg_ins[last -: 8] = dbg_data_out[dbg_ins_num - i - 1];
+		last -= 8;
+	end
+end
+
 // Debug info scan
-localparam DBGN = 10;
+localparam DBGN = 10 + dbg_ins_bytes;
 logic dbg_updated;
 logic [DBGN * 8 - 1:0] dbg, dbg_out;
 debug_scan #(DBGN) dbg0 (.*);
 always_ff @(posedge clkDebug)
-	dbg <= {addr, data, a, x, y, sp, p, pch, pcl};
+	dbg <= {addr, data, a, x, y, sp, p, pch, pcl, dbg_ins};
+
+// }}}
 
 endmodule

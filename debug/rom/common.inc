@@ -25,6 +25,8 @@
 	text_bg	= $0841
 	addr	= magenta
 	data	= cyan
+	read	= green
+	write	= red
 	test	= $667f
 
 ; dst = dst + src + C

@@ -10,6 +10,12 @@
 	.word	main	; Reset
 	.word	0	; IRQ
 
+	.zeropage
+t1:	.byte	0
+t2:	.byte	0
+t3:	.byte	0
+t4:	.byte	0
+
 	.code
 
 .macro	nextLineCalc
@@ -37,16 +43,26 @@
 	nextLineCalc
 .endmacro
 
+.macro	setClr	clr
+	.ifnblank	clr
+		_CPA	r_c, clr, 2
+	.endif
+.endmacro
+
 .macro	string	str, clr
-	_CPA	r_c, clr, 2
+	setClr	clr
 	_CPA	r_w, str, 2
 	jsr	render_string
 .endmacro
 
-.macro	scan	data, clr
-	_CPA	r_c, clr, 2
+.macro	dScan	data
 	lda	data
 	dbg_scan
+.endmacro
+
+.macro	scan	data, clr
+	setClr	clr
+	dScan	data
 	jsr	render_hex
 .endmacro
 
@@ -70,7 +86,7 @@ loop:	dbg_load
 	nextLine
 	string	#str_03, #text	; Address
 	scan	#$00, #addr
-	scan	#$00, #addr
+	scan	#$00
 	string	#str_04, #text	; Data
 	scan	#$00, #data
 
@@ -87,7 +103,91 @@ loop:	dbg_load
 	scan	#$00, #data
 	string	#str_10, #text	; PC
 	scan	#$00, #addr
-	scan	#$00, #addr
+	scan	#$00
+
+	nextLine
+	nextLine
+	string	#str_11, #text	; Instruction capture
+	scan	#$00, #test
+	nextLine
+
+_cnt:	dScan	#$00	; cnt
+	clc
+	sta	t1	; counter
+	lda	#7 - 1		; Maximum 7 cycles
+	sbc	t1	; counter
+	cmp	#7
+	bmi	@done
+	jmp	loop
+@done:	sta	t2	; extra
+
+_rw:	dScan	#$00	; rw
+	ldx	t2	; extra
+	beq	@done
+@shift:	asl
+	dex
+	bne	@shift
+@done:	sta	t3	; rw
+
+_addr:	ldx	t2	; extra
+	beq	@show
+@skip:	dScan	#$00	; addr
+	dScan	#$00	; addr
+	dex
+	bne	@skip
+
+@show:	setClr	#addr
+	ldx	t1	; counter
+@next:	scan	#$00	; addr
+	scan	#$00	; addr
+	lda	#' '
+	jsr	render_char
+	txa
+	beq	@done
+	dex
+	jmp	@next
+@done:
+_addre:	ldx	t2	; extra
+	beq	@done
+@draw:	string	#str_12
+	dex
+	bne	@draw
+@done:
+
+_data:	ldx	t2	; extra
+	beq	@show
+@skip:	dScan	#$00	; data
+	dex
+	bne	@skip
+
+@show:	nextLine
+	setClr	#data
+	lda	#' '
+	jsr	render_char
+	ldx	t1	; counter
+@next:	asl	t3	; rw
+	bcc	@write
+	setClr	#read
+	jmp	@disp
+@write:	setClr	#write
+@disp:	scan	#$00	; data
+	lda	#' '
+	jsr	render_char
+	jsr	render_char
+	jsr	render_char
+	txa
+	beq	@done
+	dex
+	jmp	@next
+@done:
+_datae:	ldx	t2	; extra
+	beq	@done
+	setClr	#data
+@draw:	string	#str_13
+	dex
+	bne	@draw
+@done:
+
 
 	jmp	loop
 .endproc
@@ -103,3 +203,6 @@ str_07:	.byte	" | Y ", 0
 str_08:	.byte	" | SP ", 0
 str_09:	.byte	" | P ", 0
 str_10:	.byte	" | PC ", 0
+str_11:	.byte	"Instruction capture ", 0
+str_12:	.byte	"---- ", 0
+str_13:	.byte	"--   ", 0

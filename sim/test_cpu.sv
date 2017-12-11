@@ -15,12 +15,12 @@ logic dbg_dout;
 cpu c0 (.dclk(qclk[1]), .*);
 
 assign reset = 1'b0;
-assign clkDebug = 1'b0;
 assign dbg_load = 1'b0;
 assign dbg_shift = 1'b0;
 assign dbg_din = 1'b0;
 
 logic clk4;
+assign clkDebug = clk4;
 initial
 begin
 	clk4 = 1'b0;

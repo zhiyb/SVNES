@@ -22,15 +22,9 @@ module mem_test #(parameter BURST, BASE, SIZE) (
 );
 
 // Debug info scan
-logic [7:0] dbg, dbg_sr;
-assign dbg_dout = dbg_sr[7];
-always_ff @(posedge clkDebug, negedge n_reset)
-	if (~n_reset)
-		dbg_sr <= 0;
-	else if (dbg_load)
-		dbg_sr <= dbg;
-	else if (dbg_shift)
-		dbg_sr <= {dbg_sr[6:0], dbg_din};
+logic dbg_updated;
+logic [7:0] dbg, dbg_out;
+debug_scan dbg0 (.*);
 
 // Data buffer FIFO
 logic rdreq, empty, full;
@@ -223,7 +217,7 @@ always_ff @(posedge clkSYS, negedge n_reset)
 always_ff @(posedge clkDebug)
 begin
 	dbg <= {fail, cnt_fail};
-	fail_clr <= dbg_load & dbg_sr[0];
+	fail_clr <= dbg_updated & dbg_out[0];
 end
 
 endmodule

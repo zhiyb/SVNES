@@ -17,21 +17,6 @@ logic [7:0] y, x, sp, a, p, pch, pcl;
 // Overflow, carry out, relative carry out, branch, IRQ pending
 logic avr, acr, arc, br, irq_pending;
 
-// Debug info scan
-localparam DBGN = 8 * 10;
-logic [DBGN - 1:0] dbg, dbg_sr;
-assign dbg_dout = dbg_sr[DBGN - 1];
-always_ff @(posedge clkDebug, negedge n_reset)
-	if (~n_reset)
-		dbg_sr <= 0;
-	else if (dbg_load)
-		dbg_sr <= dbg;
-	else if (dbg_shift)
-		dbg_sr <= {dbg_sr[DBGN - 2:0], dbg_din};
-
-always_ff @(posedge clkDebug)
-	dbg <= {addr, data, a, x, y, sp, p, pch, pcl};
-
 // Halting control
 logic run, runc;
 // Only halts at read cycles
@@ -426,5 +411,13 @@ begin
 		ai = ai_reg;
 end
 // }}}
+
+// Debug info scan
+localparam DBGN = 10;
+logic dbg_updated;
+logic [DBGN * 8 - 1:0] dbg, dbg_out;
+debug_scan #(DBGN) dbg0 (.*);
+always_ff @(posedge clkDebug)
+	dbg <= {addr, data, a, x, y, sp, p, pch, pcl};
 
 endmodule

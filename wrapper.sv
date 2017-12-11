@@ -15,15 +15,9 @@ module clk_reset (
 );
 
 // Debug info scan
-logic [7:0] dbg, dbg_sr;
-assign dbg_dout = dbg_sr[7];
-always_ff @(posedge clkDebug, negedge n_reset)
-	if (~n_reset)
-		dbg_sr <= 0;
-	else if (dbg_load)
-		dbg_sr <= dbg;
-	else if (dbg_shift)
-		dbg_sr <= {dbg_sr[6:0], dbg_din};
+logic dbg_updated;
+logic [7:0] dbg, dbg_out;
+debug_scan dbg0 (.*);
 
 // Reset control
 always_ff @(posedge clkSYS)

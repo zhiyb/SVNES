@@ -23,6 +23,11 @@ module display #(parameter AN, DN, BURST, TFT_BASE, TFT_LS) (
 	input logic [1:0] KEY,
 	input logic [3:0] SW,
 
+	// Debug info scan chain
+	input logic dbg_load, dbg_shift,
+	input logic dbg_din,
+	output logic dbg_dout,
+
 	// Status
 	output logic fb_empty, fb_full,
 	output logic dbg_empty, dbg_full,
@@ -79,13 +84,15 @@ rectfill #(AN, DN, TFT_BASE, 9, 9, TFT_LS,
 // Memory RW test client
 `ifdef MODEL_TECH
 mem_test #(BURST, TFT_BASE + 24'h010000, 24'h000010) test0 (clkSYS, n_reset,
-	mem, valid, arb_addr[test], arb_data[test],
-	arb_req[test], arb_wr[test], arb_ack[test],
+	arb_addr[test], arb_data[test],
+	arb_req[test], arb_wr[test], arb_ack[test], mem, valid,
+	clkDebug, dbg_load, dbg_shift, dbg_din, dbg_dout,
 	test_fail, SW[2], ~KEY[1], SW[3]);
 `else
 mem_test #(BURST, TFT_BASE + 24'h002000, 24'h010000) test0 (clkSYS, n_reset,
-	mem, valid, arb_addr[test], arb_data[test],
-	arb_req[test], arb_wr[test], arb_ack[test],
+	arb_addr[test], arb_data[test],
+	arb_req[test], arb_wr[test], arb_ack[test], mem, valid,
+	clkDebug, dbg_load, dbg_shift, dbg_din, dbg_dout,
 	test_fail, SW[2], ~KEY[1], SW[3]);
 `endif
 

@@ -7,7 +7,7 @@ OBJ	= $(SRC:.s=.o)
 
 all:	$(TRG).hex
 
-rom.o: common.inc render.inc
+rom.o: common.inc render.inc debug.inc
 render.o: common.inc debug.inc
 
 %.o: %.s

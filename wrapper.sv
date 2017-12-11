@@ -7,8 +7,23 @@ module clk_reset (
 	input logic [3:0] SW,
 	output logic clk,
 	input logic n_reset_mem,
-	output logic n_reset, n_reset_ext
+	output logic n_reset, n_reset_ext,
+	// Debug info scan chain
+	input logic dbg_load, dbg_shift,
+	input logic dbg_din,
+	output logic dbg_dout
 );
+
+// Debug info scan
+logic [7:0] dbg, dbg_sr;
+assign dbg_dout = dbg_sr[7];
+always_ff @(posedge clkDebug, negedge n_reset)
+	if (~n_reset)
+		dbg_sr <= 0;
+	else if (dbg_load)
+		dbg_sr <= dbg;
+	else if (dbg_shift)
+		dbg_sr <= {dbg_sr[6:0], dbg_din};
 
 // Reset control
 always_ff @(posedge clkSYS)
@@ -25,19 +40,28 @@ assign clkDebug = clk50M;
 pll pll0 (.inclk0(clk50M), .locked(),
 	.c0(clkSDRAMIO), .c1(clkSDRAM), .c2(clk10M), .c3(clkTFT), .c4(clkSYS1));
 
+// 1Hz counter
+logic [23:0] cnt;
+always_ff @(posedge clk10M)
+	if (cnt == 0)
+		cnt <= 10000000;
+	else
+		cnt <= cnt - 1;
+
+always_ff @(posedge clk10M, negedge n_reset)
+	if (~n_reset)
+		dbg <= 0;
+	else if (cnt == 0)
+		dbg <= dbg + 1;
+
 // System interface clock switch for debugging
 `ifdef MODEL_TECH
 assign clk = 0;
 assign clkSYS = clkSYS1;
 `else
-logic [23:0] cnt;
 always_ff @(posedge clk10M)
-	if (cnt == 0) begin
-		cnt <= 10000000;
-		if (~KEY[1])
-			clk <= ~clk;
-	end else
-		cnt <= cnt - 1;
+	if (cnt == 0 && ~KEY[1])
+		clk <= ~clk;
 
 logic sys[2];
 assign sys[0] = clkSYS1;
@@ -82,12 +106,16 @@ module wrapper (
 	// }}}
 );
 
+// Debug info scan chain
+logic dbg_load, dbg_shift;
+logic dbg_din, dbg_cr_din, dbg_dout;
+
 // Clocks and reset control
 logic clkSYS, clkSDRAMIO, clkSDRAM, clkTFT, clkAudio, clkDebug;
 logic clkMaster, clkPPU, clkCPU2;
 logic clk;
 logic n_reset, n_reset_ext, n_reset_mem;
-clk_reset cr0 (.*);
+clk_reset cr0 (.dbg_din(dbg_cr_din), .dbg_dout(dbg_din), .*);
 
 // {{{ Memory subsystem
 
@@ -142,6 +170,8 @@ display #(AN, DN, BURST, TFT_BASE, TFT_LS) disp0 (
 	dbg_addr, dbg_data, dbg_req,
 	// Switches
 	KEY, SW,
+	// Debug info scan chain
+	dbg_load, dbg_shift, dbg_dout, dbg_cr_din,
 	// Status
 	fb_empty, fb_full, dbg_empty, dbg_full, test_fail
 );
@@ -202,7 +232,8 @@ mapper map0 (.*);
 
 // Debug processor
 debug debug0 (clkDebug, n_reset,
-	dbg_addr, dbg_data, dbg_req);
+	dbg_addr, dbg_data, dbg_req,
+	dbg_load, dbg_shift, dbg_din, dbg_dout);
 
 // {{{ Hardware controllers
 

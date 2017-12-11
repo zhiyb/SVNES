@@ -1,17 +1,36 @@
 module mem_test #(parameter BURST, BASE, SIZE) (
 	input logic clkSYS, n_reset,
 
-	input logic [15:0] mem,
-	input logic valid,
-
+	// Memory interface
 	output logic [23:0] addr,
 	output logic [15:0] data,
 	output logic req, wr,
 	input logic ack,
 
+	input logic [15:0] mem,
+	input logic valid,
+
+	// Debug info scan chain
+	input logic clkDebug,
+	input logic dbg_load, dbg_shift,
+	input logic dbg_din,
+	output logic dbg_dout,
+
+	// Status
 	output logic fail,
 	input logic enable, reset, pattern
 );
+
+// Debug info scan
+logic [7:0] dbg, dbg_sr;
+assign dbg_dout = dbg_sr[7];
+always_ff @(posedge clkDebug, negedge n_reset)
+	if (~n_reset)
+		dbg_sr <= 0;
+	else if (dbg_load)
+		dbg_sr <= dbg;
+	else if (dbg_shift)
+		dbg_sr <= {dbg_sr[6:0], dbg_din};
 
 // Data buffer FIFO
 logic rdreq, empty, full;
@@ -183,12 +202,28 @@ begin
 	failed <= verify && (fifo_q != data);
 end
 
+logic fail_clr;
 always_ff @(posedge clkSYS, negedge n_reset)
 	if (~n_reset)
 		fail <= 0;
-	else if (reset)
+	else if (reset | fail_clr)
 		fail <= 0;
 	else if (failed)
 		fail <= 1;
+
+logic [6:0] cnt_fail;
+always_ff @(posedge clkSYS, negedge n_reset)
+	if (~n_reset)
+		cnt_fail <= 0;
+	else if (fail_clr)
+		cnt_fail <= 0;
+	else if (failed)
+		cnt_fail <= cnt_fail + 1;
+
+always_ff @(posedge clkDebug)
+begin
+	dbg <= {fail, cnt_fail};
+	fail_clr <= dbg_load & dbg_sr[0];
+end
 
 endmodule

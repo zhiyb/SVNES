@@ -6,8 +6,12 @@ logic clkDebug, n_reset;
 logic [19:0] addr;
 logic [15:0] data;
 logic req;
+// Debug info scan chain
+logic dbg_load, dbg_shift;
+logic dbg_din, dbg_dout;
 
-debug d0 (clkDebug, n_reset, addr, data, req);
+debug d0 (clkDebug, n_reset, addr, data, req,
+	dbg_load, dbg_shift, dbg_dout, dbg_din);
 
 localparam AN = 24, DN = 16, BASE = 24'hfa0000;
 
@@ -27,6 +31,20 @@ debug_fb #(AN, DN, BASE) fb0 (clkSYS, clkDebug, n_reset,
 
 always_ff @(posedge clkSYS)
 	mem_ack <= ~mem_ack & mem_req;
+
+// Debug info scan
+logic [7:0] dbg, dbg_sr;
+assign dbg = 8'ha5;
+assign dbg_dout = dbg_sr[7];
+always_ff @(posedge clkDebug, negedge n_reset)
+	if (~n_reset)
+		dbg_sr <= 0;
+	else if (dbg_load)
+		dbg_sr <= dbg;
+	else if (dbg_shift)
+		dbg_sr <= {dbg_sr[6:0], dbg_din};
+
+// Clock and reset
 
 initial
 begin

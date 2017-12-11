@@ -2,6 +2,7 @@
 
 	.include "common.inc"
 	.include "render.inc"
+	.include "debug.inc"
 	.reloc
 
 	.segment "VECT"	; Interrupt vectors
@@ -19,31 +20,34 @@
 	_CPA	r_c, #bg, 2
 	jsr	render_rect
 
-loop:	; Render a string
+loop:	dbg_load
+
+	; Runtime
 	_CPA	r_s, #offset, 3
 	_CPA	r_c, #test, 2
-	_CPA	r_w, #str_hw, 2
+	_CPA	r_w, #str_1, 2
 	jsr	render_string
 
-	; Render a number as hex
-	_CPA	r_c, #white, 2
-	lda	#$02
+	_CPA	r_c, #green, 2
+	lda	#$00
+	dbg_scan
 	jsr	render_hex
+
+	; Memtest
+	_CPA	r_c, #test, 2
+	_CPA	r_w, #str_2, 2
+	jsr	render_string
 
 	_CPA	r_c, #red, 2
-	lda	#$46
-	jsr	render_hex
-
-	_CPA	r_c, #green, 2
-	lda	#$8a
-	jsr	render_hex
-
-	_CPA	r_c, #blue, 2
-	lda	#$ce
+	lda	#$00
+	dbg_scan
 	jsr	render_hex
 
 	jmp	loop
 .endproc
 
 	.rodata
-str_hw:	.byte	"Hello, world!", 0
+str_1:
+	.byte	"Runtime: ", 0
+str_2:
+	.byte	" s, memtest fail: ", 0

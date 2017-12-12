@@ -68,7 +68,12 @@ soff:	.dword	0
 .endproc
 
 .proc	main
-	; Render background rectangle
+	; Render background rectangles
+	_CPA	r_s, #ppu_o - ppu_m * lsize - ppu_m, 3
+	_CPA	r_w, #ppu_w + ppu_m * 2, 2
+	_CPA	r_h, #ppu_h + ppu_m * 2, 2
+	_CPA	r_c, #bg, 2
+	jsr	render_rect
 	_CPA	r_s, #offset - margin * lsize - margin, 3
 	_CPA	r_w, #width + margin * 2, 2
 	_CPA	r_h, #height + margin * 2, 2

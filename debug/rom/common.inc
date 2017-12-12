@@ -1,12 +1,21 @@
 ; asmsyntax=asmM6502
 
+	tft	= $fa0000
+	lsize	= 800
+
 	margin	= 8
 	top	= 120
 	left	= 406
 	width	= 274
 	height	= 240
-	lsize	= 800
-	offset	= $fa0000 + top * lsize + left
+	offset	= tft + top * lsize + left
+
+	ppu_m	= 8
+	ppu_t	= 120
+	ppu_l	= 120
+	ppu_w	= 256
+	ppu_h	= 240
+	ppu_o	= tft + ppu_t * lsize + ppu_l
 
 	text_w	= 6
 	text_h	= 8

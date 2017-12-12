@@ -44,7 +44,11 @@ logic arb_wr[IN];
 logic [IN - 1:0] arb_req;
 logic [IN - 1:0] arb_ack;
 
-localparam ppu = 0, dbg = 1, rect = 2, test = 3;
+localparam ppu = 0, dbg = 1, test = 3;
+assign arb_addr[2] = 'bx;
+assign arb_data[2] = 'bx;
+assign arb_wr[2] = 'bx;
+assign arb_req[2] = 1'b0;
 
 // Access request buffering
 logic [AN - 1:0] in_addr[IN];
@@ -71,15 +75,6 @@ ppu_fb #(AN, DN, TFT_BASE, 9, 9,
 debug_fb #(AN, DN, TFT_BASE) debug0 (clkSYS, clkDebug, n_reset,
 	arb_addr[dbg], arb_data[dbg], arb_req[dbg], arb_wr[dbg], arb_ack[dbg],
 	dbg_addr, dbg_data, dbg_req, dbg_empty, dbg_full);
-
-// Rectangular background fill
-logic rect_active;
-rectfill #(AN, DN, TFT_BASE, 9, 9, TFT_LS,
-	// x-offset, y-offset, x-length, y-length
-	PPU_X - MARGIN, PPU_Y - MARGIN, PPU_W + MARGIN * 2, PPU_H + MARGIN * 2)
-	rect0 (clkSYS, n_reset, arb_addr[rect], arb_data[rect],
-	arb_req[rect], arb_wr[rect], arb_ack[rect],
-	~KEY[0], rect_active);
 
 // Memory RW test client
 `ifdef MODEL_TECH

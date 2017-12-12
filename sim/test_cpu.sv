@@ -7,6 +7,8 @@ logic reset, nmi, irq, ready;
 logic [15:0] addr;
 wire [7:0] data;
 logic rw;
+// Halting control
+logic sync, halt;
 // Debug info scan chain
 logic clkDebug;
 logic dbg_load, dbg_shift;
@@ -14,11 +16,15 @@ logic dbg_din;
 logic dbg_dout;
 cpu c0 (.dclk(qclk[1]), .*);
 
+logic step, step_en;
+cpu_step step0 (.*);
+
 assign reset = 1'b0;
 assign dbg_load = 1'b0;
 assign dbg_shift = 1'b0;
 assign dbg_din = 1'b0;
 
+// Clock generation
 logic clk4;
 assign clkDebug = clk4;
 initial
@@ -54,9 +60,28 @@ initial
 begin
 	nmi = 1'b1;
 	irq = 1'b1;
+	#150ns nmi = 1'b0;
+	#10ns nmi = 1'b1;
+end
+
+initial
+begin
 	ready = 1'b1;
 	#80ns ready = 1'b0;
 	#5ns ready = 1'b1;
+end
+
+// Stepping control
+initial
+begin
+	step_en = 1'b0;
+	#100ns step_en = 1'b1;
+end
+
+initial
+begin
+	step = 1'b0;
+	forever #50ns step = ~step;
 end
 
 always_ff @(posedge clk4, negedge n_reset_async)
@@ -68,7 +93,7 @@ always_ff @(posedge clk4, negedge n_reset_async)
 logic [7:0] ram[1024];
 
 logic [7:0] vector[6] = '{
-	'h12, 'h34,	// NMI (0xfffa)
+	'h00, 'h00,	// NMI (0xfffa)
 	'h01, 'h00,	// RST (0xfffc)
 	'h00, 'h00	// IRQ (0xfffe)
 };

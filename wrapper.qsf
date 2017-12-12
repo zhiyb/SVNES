@@ -66,6 +66,7 @@ set_global_assignment -name SMART_RECOMPILE ON
 
 
 
+set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu_step.sv
 set_global_assignment -name SYSTEMVERILOG_FILE debug/debug_scan.sv
 set_global_assignment -name SYSTEMVERILOG_FILE debug/debug_fb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE debug/debug.sv

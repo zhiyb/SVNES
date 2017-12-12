@@ -4,6 +4,9 @@ module cpu (
 	output logic [15:0] addr,
 	inout wire [7:0] data,
 	output logic rw,
+	// Halting control
+	input logic halt,
+	output logic sync,
 	// Debug info scan chain
 	input logic clkDebug,
 	input logic dbg_load, dbg_shift,
@@ -20,7 +23,7 @@ logic avr, acr, arc, br, irq_pending;
 // Halting control
 logic run, runc;
 // Only halts at read cycles
-assign run = ~rw | ready;
+assign run = ~rw | (ready & ~halt);
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
 		runc <= 1'b0;
@@ -72,6 +75,7 @@ assign mop = rom_mop[31:0];
 
 logic rom_rden;
 assign rom_rden = mop.seq_rom && mop.seq == 0;
+assign sync = rom_rden;
 logic [7:0] rom_dl;
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)
@@ -156,13 +160,15 @@ assign addr = {abh, abl};
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		{abh, abl} <= 0;
-	else if (~mop.ad_sp) begin
-		if (mop.ad[0])
-			abl <= bus_adl;
-		if (mop.ad[1])
-			abh <= bus_adh;
-	end else
-		{abh, abl} <= {bus_adh, bus_adl};
+	else if (runc) begin
+		if (~mop.ad_sp) begin
+			if (mop.ad[0])
+				abl <= bus_adl;
+			if (mop.ad[1])
+				abh <= bus_adh;
+		end else
+			{abh, abl} <= {bus_adh, bus_adl};
+	end
 
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
@@ -417,13 +423,18 @@ end
 // Instruction capture
 logic dbg_ins_done;
 always_ff @(posedge clk)
-	dbg_ins_done <= rom_rden & runc;
+	dbg_ins_done <= sync & runc;
+
+logic _sync;
+always_ff @(posedge clk)
+	if (runc)
+		_sync <= sync;
 
 logic [2:0] dbg_cnt;
 always_ff @(posedge clk, negedge n_reset)
 	if (~n_reset)
 		dbg_cnt <= 0;
-	else if (dbg_ins_done)
+	else if (_sync)
 		dbg_cnt <= 0;
 	else if (runc)
 		dbg_cnt <= dbg_cnt + 1;
@@ -459,7 +470,7 @@ logic [7:0] dbg_data_out[8];
 logic [7:0] dbg_rw_out;
 always_ff @(posedge clk)
 	if (dbg_ins_done) begin
-		dbg_cnt_out <= dbg_cnt;
+		dbg_cnt_out <= {dbg_cnt, runc};
 		for (int i = 0; i != 8; i++) begin
 			dbg_addr_out[i] <= dbg_addr[i + 1];
 			dbg_data_out[i] <= dbg_data[i + 1];

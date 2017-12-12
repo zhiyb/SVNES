@@ -18,6 +18,9 @@ module system (
 	// Video
 	output logic [23:0] video_rgb,
 	output logic video_vblank, video_hblank,
+	// Switches
+	input logic [1:0] KEY,
+	input logic [3:0] SW,
 	// Debug info scan chain
 	input logic clkDebug,
 	input logic dbg_load, dbg_shift,
@@ -58,8 +61,9 @@ arbiter #(.N(2)) arb_mem (arb_req, arb_grant, arb_rot, 2'b11, , );
 
 // CPU
 logic nmi, irq;
+logic halt, sync;
 cpu cpu0 (clk, dclk, n_reset, sys_reset, nmi, irq,
-	sys_rdy, sys_addr, sys_data, sys_rw,
+	sys_rdy, sys_addr, sys_data, sys_rw, halt, sync,
 	clkDebug, dbg_load, dbg_shift, dbg_d[1], dbg_d[0]);
 assign arb_req[1] = 1'b1;
 
@@ -99,5 +103,11 @@ ram4k ppu_ram1 (
 	.aclr(~n_reset), .clock(clkPPU),
 	.address(ppu_addr[11:0]), .data(ppu_data),
 	.wren(~ppu_wr && ppu_addr[13] == 1'b1), .q(ppu_ram1q));
+
+// Debug stepping control
+logic step, step_en;
+assign step_en = SW[1];
+assign step = ~KEY[0];
+cpu_step step0 (.*);
 
 endmodule

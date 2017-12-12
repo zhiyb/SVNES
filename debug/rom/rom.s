@@ -15,32 +15,21 @@ t1:	.byte	0
 t2:	.byte	0
 t3:	.byte	0
 t4:	.byte	0
+soff:	.dword	0
 
 	.code
 
-.macro	nextLineCalc
+.proc	_nextLine
+	; Update start offset
+	_CPA	r_s, soff, 3
 	; Calculate offset for next line
 	clc
-	lda	#<(lsize * text_h)
-	adc	r_s + 0
-	pha
-	lda	#>(lsize * text_h)
-	adc	r_s + 1
-	pha
-	lda	#0
-	adc	r_s + 2
-	pha
-.endmacro
+	_ADCA	soff, #lsize * text_h, 3
+	rts
+.endproc
 
 .macro	nextLine
-	; Next line
-	pla
-	sta	r_s + 2
-	pla
-	sta	r_s + 1
-	pla
-	sta	r_s + 0
-	nextLineCalc
+	jsr	_nextLine
 .endmacro
 
 .macro	setClr	clr
@@ -55,9 +44,14 @@ t4:	.byte	0
 	jsr	render_string
 .endmacro
 
-.macro	dScan	data
+.proc	_dScan
 	lda	data
 	dbg_scan
+	rts
+.endproc
+
+.macro	dScan	data
+	jsr	_dScan
 .endmacro
 
 .macro	scan	data, clr
@@ -74,10 +68,10 @@ t4:	.byte	0
 	_CPA	r_c, #bg, 2
 	jsr	render_rect
 
-loop:	dbg_load
-	_CPA	r_s, #offset, 3
+loop:	_CPA	soff, #offset, 3
+	dbg_load
 
-	nextLineCalc
+	nextLine
 	string	#str_01, #text	; Runtime
 	scan	#$00, #green
 	string	#str_02, #text	; Memtest
@@ -109,11 +103,17 @@ loop:	dbg_load
 	nextLine
 	string	#str_11, #text	; Instruction capture
 	scan	#$00, #test
-	nextLine
 
 _cnt:	dScan	#$00	; cnt
-	clc
+	lsr		; run
 	sta	t1	; counter
+	bcc	@stop
+@run:	string	#str_14, #green	; RUN
+	jmp	@next
+@stop:	string	#str_15, #red	; STOP
+@next:	nextLine
+
+	clc
 	lda	#7 - 1		; Maximum 7 cycles
 	sbc	t1	; counter
 	cmp	#7
@@ -122,8 +122,8 @@ _cnt:	dScan	#$00	; cnt
 @done:	sta	t2	; extra
 
 _rw:	dScan	#$00	; rw
-	ldx	t2	; extra
-	beq	@done
+	ldx	t2	; extra - 1
+	inx		; rw is 8-bit
 @shift:	asl
 	dex
 	bne	@shift
@@ -206,3 +206,5 @@ str_10:	.byte	" | PC ", 0
 str_11:	.byte	"Instruction capture ", 0
 str_12:	.byte	"---- ", 0
 str_13:	.byte	"--   ", 0
+str_14:	.byte	" RUN ", 0
+str_15:	.byte	" STOP", 0

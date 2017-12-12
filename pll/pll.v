@@ -131,7 +131,7 @@ module pll (
 		altpll_component.clk4_duty_cycle = 50,
 		altpll_component.clk4_multiply_by = 57,
 		altpll_component.clk4_phase_shift = "0",
-		altpll_component.compensate_clock = "CLK0",
+		altpll_component.compensate_clock = "CLK1",
 		altpll_component.inclk0_input_frequency = 20000,
 		altpll_component.intended_device_family = "Cyclone IV E",
 		altpll_component.lpm_hint = "CBX_MODULE_PREFIX=pll",
@@ -201,7 +201,7 @@ endmodule
 // Retrieval info: PRIVATE: CNX_NO_COMPENSATE_RADIO STRING "0"
 // Retrieval info: PRIVATE: CREATE_CLKBAD_CHECK STRING "0"
 // Retrieval info: PRIVATE: CREATE_INCLK1_CHECK STRING "0"
-// Retrieval info: PRIVATE: CUR_DEDICATED_CLK STRING "c0"
+// Retrieval info: PRIVATE: CUR_DEDICATED_CLK STRING "c1"
 // Retrieval info: PRIVATE: CUR_FBIN_CLK STRING "c0"
 // Retrieval info: PRIVATE: DEVICE_SPEED_GRADE STRING "6"
 // Retrieval info: PRIVATE: DIV_FACTOR0 NUMERIC "60"
@@ -346,7 +346,7 @@ endmodule
 // Retrieval info: CONSTANT: CLK4_DUTY_CYCLE NUMERIC "50"
 // Retrieval info: CONSTANT: CLK4_MULTIPLY_BY NUMERIC "57"
 // Retrieval info: CONSTANT: CLK4_PHASE_SHIFT STRING "0"
-// Retrieval info: CONSTANT: COMPENSATE_CLOCK STRING "CLK0"
+// Retrieval info: CONSTANT: COMPENSATE_CLOCK STRING "CLK1"
 // Retrieval info: CONSTANT: INCLK0_INPUT_FREQUENCY NUMERIC "20000"
 // Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone IV E"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "altpll"

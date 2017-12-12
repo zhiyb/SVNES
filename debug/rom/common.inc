@@ -27,6 +27,7 @@
 	data	= cyan
 	read	= green
 	write	= red
+	intrpt	= white
 	test	= $667f
 
 ; dst = dst + src + C

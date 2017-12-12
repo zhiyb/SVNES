@@ -470,7 +470,7 @@ logic [7:0] dbg_data_out[8];
 logic [7:0] dbg_rw_out;
 always_ff @(posedge clk)
 	if (dbg_ins_done) begin
-		dbg_cnt_out <= {dbg_cnt, runc};
+		dbg_cnt_out <= {dbg_cnt, irq_act, nmi_act, rst_act, runc};
 		for (int i = 0; i != 8; i++) begin
 			dbg_addr_out[i] <= dbg_addr[i + 1];
 			dbg_data_out[i] <= dbg_data[i + 1];

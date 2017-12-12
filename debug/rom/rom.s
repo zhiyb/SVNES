@@ -60,6 +60,13 @@ soff:	.dword	0
 	jsr	render_hex
 .endmacro
 
+.proc	charCheck
+	bcs	@show
+	lda	#' '
+@show:	jsr	render_char
+	rts
+.endproc
+
 .proc	main
 	; Render background rectangle
 	_CPA	r_s, #offset - margin * lsize - margin, 3
@@ -105,15 +112,33 @@ loop:	_CPA	soff, #offset, 3
 	scan	#$00, #test
 
 _cnt:	dScan	#$00	; cnt
-	lsr		; run
-	sta	t1	; counter
+	lsr			; Run status
+	pha
 	bcc	@stop
 @run:	string	#str_14, #green	; RUN
-	jmp	@next
+	jmp	@done
 @stop:	string	#str_15, #red	; STOP
-@next:	nextLine
+@done:	setClr	#intrpt		; Interrupts
+	pla
+_reset:	lsr			; Reset interrupt
+	pha
+	lda	#'R'
+	jsr	charCheck
+	pla
+_nmi:	lsr			; NMI interrupt
+	pha
+	lda	#'N'
+	jsr	charCheck
+	pla
+_irq:	lsr			; IRQ interrupt
+	pha
+	lda	#'I'
+	jsr	charCheck
 
+_cycle:	nextLine
+	pla			; Instruction cycle counter
 	clc
+	sta	t1	; counter
 	lda	#7 - 1		; Maximum 7 cycles
 	sbc	t1	; counter
 	cmp	#7
@@ -206,5 +231,5 @@ str_10:	.byte	" | PC ", 0
 str_11:	.byte	"Instruction capture ", 0
 str_12:	.byte	"---- ", 0
 str_13:	.byte	"--   ", 0
-str_14:	.byte	" RUN ", 0
-str_15:	.byte	" STOP", 0
+str_14:	.byte	" RUN  ", 0
+str_15:	.byte	" STOP ", 0

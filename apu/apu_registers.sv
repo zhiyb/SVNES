@@ -11,7 +11,6 @@ module apu_registers (
 );
 
 assign we = sel & sys_rw;
-assign sys_data = sel & ~sys_rw ? regs[sys_addr[1:0]] : 8'bz;
 
 always_ff @(posedge dclk, negedge n_reset)
 	if (~n_reset)

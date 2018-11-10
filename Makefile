@@ -3,11 +3,11 @@ SIM_LIB		:= sim_lib
 DO		?= batch.do
 SIM_ARGS	?= -batch
 
-TEST		?= tb
+TEST		?= tb tb_sdram
 WAVE		?= $(TEST:%=sim/%.wlf)
 
-MODELSIM	:= /mnt/c/Programs/Quartus/18.1/modelsim_ase/win32aloem
-MODELSIM_SFX	:= .exe
+MODELSIM	?= /mnt/c/Programs/Quartus/18.1/modelsim_ase/win32aloem
+MODELSIM_SFX	?= .exe
 
 VLIB	:= $(MODELSIM)/vlib$(MODELSIM_SFX)
 VMAP	:= $(MODELSIM)/vmap$(MODELSIM_SFX)
@@ -24,9 +24,15 @@ include gmsl
 .DELETE_ON_ERROR:
 .SECONDARY:
 
+.PHONY: all
 all: test
 
+.PHONY: test
 test: $(WAVE)
+
+.PHONY: view
+view: $(WAVE)
+	$(VSIM) -work $(SIM_LIB) -gui -logfile sim/view.log -view $^
 
 CLEAN_DIRS	+= sim
 sim: %:
@@ -35,16 +41,12 @@ sim: %:
 sim/%.wlf: src/testbench/%.do $(SIM_LIB)/_lib.qdb | sim
 	$(VSIM) -work $(SIM_LIB) -wlf $@ -logfile sim/$*.log $(DO:%=-do %) -do $< $(call uc,$(notdir $*)) $(SIM_ARGS)
 
-view: $(WAVE)
-	$(VSIM) -gui -logfile sim/view.log -view $^
-
 $(SIM_LIB)/_lib.qdb: $(SOURCES) | modelsim.ini
 	$(VLOG) -work $(SIM_LIB) -sv $(filter %.sv,$(SOURCES))
 
 CLEAN_FILES	+= modelsim.ini
 modelsim.ini: $(SIM_LIB)/_info
 	$(VMAP) work $<
-	$(VMAP)
 
 CLEAN_DIRS	+= $(SIM_LIB)
 %/_info:

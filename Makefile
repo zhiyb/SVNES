@@ -6,14 +6,14 @@ SIM_ARGS	?= -batch
 TEST		?= tb tb_sdram
 WAVE		?= $(TEST:%=sim/%.wlf)
 
-MODELSIM	?= /mnt/c/Programs/Quartus/18.1/modelsim_ase/win32aloem
-MODELSIM_SFX	?= .exe
+MSIM		?= /mnt/c/Programs/Quartus/18.1/modelsim_ase/win32aloem
+MSIM_SFX	?= .exe
 
-VLIB	:= $(MODELSIM)/vlib$(MODELSIM_SFX)
-VMAP	:= $(MODELSIM)/vmap$(MODELSIM_SFX)
-VSIM	:= $(MODELSIM)/vsim$(MODELSIM_SFX)
-VLOG	:= $(MODELSIM)/vlog$(MODELSIM_SFX)
-VCOM	:= $(MODELSIM)/vcom$(MODELSIM_SFX)
+VLIB	:= $(MSIM)/vlib$(MSIM_SFX)
+VMAP	:= $(MSIM)/vmap$(MSIM_SFX)
+VSIM	:= $(MSIM)/vsim$(MSIM_SFX)
+VLOG	:= $(MSIM)/vlog$(MSIM_SFX)
+VCOM	:= $(MSIM)/vcom$(MSIM_SFX)
 
 ifeq ($(SOURCES),)
 $(error No source files)

@@ -46,7 +46,7 @@ $(SIM_LIB)/_lib.qdb: $(SOURCES) | modelsim.ini
 
 CLEAN_FILES	+= modelsim.ini
 modelsim.ini: $(SIM_LIB)/_info
-	$(VMAP) work $<
+	$(VMAP) work $(SIM_LIB)
 
 CLEAN_DIRS	+= $(SIM_LIB)
 %/_info:

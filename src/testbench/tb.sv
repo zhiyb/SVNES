@@ -1,5 +1,8 @@
 module TB;
 
+initial
+    #1ms $finish(0);
+
 logic CLK;
 
 initial

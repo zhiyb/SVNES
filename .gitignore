@@ -1,0 +1,9 @@
+sim_lib/
+sim/
+db/
+incremental_db/
+output_files/
+modelsim.ini
+*.bak
+wlft*
+transcript

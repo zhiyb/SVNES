@@ -1,0 +1,136 @@
+module PLL #(
+    parameter N_CLK_IN  = 2,
+    parameter N_CLK_OUT = 5
+) (
+    input  wire   [N_CLK_IN-1:0] CLK_IN,
+    input  logic                 RESET,
+
+    output wire  [N_CLK_OUT-1:0] CLK_OUT,
+    output logic                 LOCKED
+);
+
+generate
+if (`DEVICE == "CYCLONE_IV_E") begin: cyclone_iv
+    wire [1:0] ClockIn;
+    assign ClockIn = {{(N_CLK_IN - $bits(CLK_IN)){1'b0}}, CLK_IN};
+
+    wire [4:0] ClockOut;
+    assign CLK_OUT = ClockOut[0 +: N_CLK_OUT];
+
+    altpll #(
+        .bandwidth_type ("AUTO"),
+        .clk0_divide_by (20),
+        .clk0_duty_cycle (50),
+        .clk0_multiply_by (57),
+        .clk0_phase_shift ("-750"),
+        .clk1_divide_by (20),
+        .clk1_duty_cycle (50),
+        .clk1_multiply_by (57),
+        .clk1_phase_shift ("0"),
+        .clk2_divide_by (5),
+        .clk2_duty_cycle (50),
+        .clk2_multiply_by (1),
+        .clk2_phase_shift ("0"),
+        .clk3_divide_by (5),
+        .clk3_duty_cycle (50),
+        .clk3_multiply_by (3),
+        .clk3_phase_shift ("0"),
+        .clk4_divide_by (10),
+        .clk4_duty_cycle (50),
+        .clk4_multiply_by (57),
+        .clk4_phase_shift ("0"),
+        .compensate_clock ("CLK1"),
+        .inclk0_input_frequency (20000),
+        .intended_device_family ("Cyclone IV E"),
+        .lpm_hint ("CBX_MODULE_PREFIX=pll"),
+        .lpm_type ("altpll"),
+        .operation_mode ("NORMAL"),
+        .pll_type ("AUTO"),
+        .port_activeclock ("PORT_UNUSED"),
+        .port_areset ("PORT_USED"),
+        .port_clkbad0 ("PORT_UNUSED"),
+        .port_clkbad1 ("PORT_UNUSED"),
+        .port_clkloss ("PORT_UNUSED"),
+        .port_clkswitch ("PORT_UNUSED"),
+        .port_configupdate ("PORT_UNUSED"),
+        .port_fbin ("PORT_UNUSED"),
+        .port_inclk0 ("PORT_USED"),
+        .port_inclk1 ("PORT_UNUSED"),
+        .port_locked ("PORT_USED"),
+        .port_pfdena ("PORT_UNUSED"),
+        .port_phasecounterselect ("PORT_UNUSED"),
+        .port_phasedone ("PORT_UNUSED"),
+        .port_phasestep ("PORT_UNUSED"),
+        .port_phaseupdown ("PORT_UNUSED"),
+        .port_pllena ("PORT_UNUSED"),
+        .port_scanaclr ("PORT_UNUSED"),
+        .port_scanclk ("PORT_UNUSED"),
+        .port_scanclkena ("PORT_UNUSED"),
+        .port_scandata ("PORT_UNUSED"),
+        .port_scandataout ("PORT_UNUSED"),
+        .port_scandone ("PORT_UNUSED"),
+        .port_scanread ("PORT_UNUSED"),
+        .port_scanwrite ("PORT_UNUSED"),
+        .port_clk0 ("PORT_USED"),
+        .port_clk1 ("PORT_USED"),
+        .port_clk2 ("PORT_USED"),
+        .port_clk3 ("PORT_USED"),
+        .port_clk4 ("PORT_USED"),
+        .port_clk5 ("PORT_UNUSED"),
+        .port_clkena0 ("PORT_UNUSED"),
+        .port_clkena1 ("PORT_UNUSED"),
+        .port_clkena2 ("PORT_UNUSED"),
+        .port_clkena3 ("PORT_UNUSED"),
+        .port_clkena4 ("PORT_UNUSED"),
+        .port_clkena5 ("PORT_UNUSED"),
+        .port_extclk0 ("PORT_UNUSED"),
+        .port_extclk1 ("PORT_UNUSED"),
+        .port_extclk2 ("PORT_UNUSED"),
+        .port_extclk3 ("PORT_UNUSED"),
+        .self_reset_on_loss_lock ("ON"),
+        .width_clock (5)
+    ) pll (
+        .inclk (ClockIn),
+        .clk (ClockOut),
+        .locked (LOCKED),
+        .activeclock (),
+        .areset (~RESET),
+        .clkbad (),
+        .clkena ({6{1'b1}}),
+        .clkloss (),
+        .clkswitch (1'b0),
+        .configupdate (1'b0),
+        .enable0 (),
+        .enable1 (),
+        .extclk (),
+        .extclkena ({4{1'b1}}),
+        .fbin (1'b1),
+        .fbmimicbidir (),
+        .fbout (),
+        .fref (),
+        .icdrclk (),
+        .pfdena (1'b1),
+        .phasecounterselect ({4{1'b1}}),
+        .phasedone (),
+        .phasestep (1'b1),
+        .phaseupdown (1'b1),
+        .pllena (1'b1),
+        .scanaclr (1'b0),
+        .scanclk (1'b0),
+        .scanclkena (1'b1),
+        .scandata (1'b0),
+        .scandataout (),
+        .scandone (),
+        .scanread (1'b0),
+        .scanwrite (1'b0),
+        .sclkout0 (),
+        .sclkout1 (),
+        .vcooverrange (),
+        .vcounderrange ()
+    );
+end else begin: unimplemented
+    FORCE_ERROR #(.MSG("Unknown PLL implementation")) error_impl ();
+end
+endgenerate
+
+endmodule

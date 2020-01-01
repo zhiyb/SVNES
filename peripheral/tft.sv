@@ -1,105 +1,98 @@
-module tft #(
-	// VT & HT: Sync width, back porch, display, front porch
-	parameter int HN, logic [HN - 1:0] HT[4],
-	int VN, logic [VN - 1:0] VT[4]
+module TFT #(
+    // Horizontal & vertical: Sync width, back porch, display, front porch
+    parameter HSYNC, HBACK, HDISP, HFRONT,
+    parameter VSYNC, VBACK, VDISP, VFRONT,
+    // Pixel width
+    parameter WIDTH = 24,
+
+    // Derived
+    parameter HN = $clog2(HBACK + HDISP + HFRONT),
+    parameter VN = $clog2(VBACK + VDISP + VFRONT)
 ) (
-	input logic clkSYS, clkTFT, n_reset,
+    input wire  CLK,
+    input logic RESET,
+    input logic EN,
 
-	// FIFO interface
-	input logic [15:0] tft_fifo,
-	input logic tft_wrreq,
-	output logic tft_rdreq,
+    // Upstream interface
+    output logic             VBLANK,
+    output logic             HBLANK,
+    input  logic [WIDTH-1:0] COLOUR,
 
-	// TFT signals
-	output logic tft_hblank, tft_vblank,
-
-	// Hardware IO
-	output logic disp, de, dclk, vsync, hsync,
-	output logic [23:0] out,
-
-	// Status
-	output logic [5:0] level,
-	output logic empty, full
+    // Hardware IO
+    output wire              HW_DCLK,
+    output logic             HW_DISP, HW_VSYNC, HW_HSYNC,
+    output logic [WIDTH-1:0] HW_RGB
 );
 
-// FIFO buffer
-logic [15:0] fifo;
-assign out = {fifo[15:11], 3'h0, fifo[10:5], 2'h0, fifo[4:0], 3'h0};
-
-logic aclr, rdreq, wrreq;
-assign wrreq = tft_wrreq;
-assign tft_rdreq = rdreq;
-tft_fifo fifo0 (.aclr(aclr), .data(tft_fifo),
-	.rdclk(clkTFT), .rdreq(rdreq), .q(fifo), .rdempty(empty),
-	.wrclk(clkSYS), .wrreq(wrreq), .wrfull(full), .wrusedw(level));
-
-// Hardware logics
-assign dclk = clkTFT;
-assign disp = n_reset;
-assign de = 1'b0;
-
 // Horizontal control
-logic [HN - 1:0] hcnt;
-logic [1:0] hstate;
-logic _hsync, htick, hblank;
-assign tft_hblank = hblank;
+logic [HN-1:0] HCount;
+logic HSync, HDisp, HEnd;
+logic z1_HBlank, z1_HSync;
 
-always_ff @(posedge clkTFT, negedge n_reset)
-	if (~n_reset) begin
-		hcnt <= {HN{1'b0}};
-		htick <= 1'b0;
-	end else if (hcnt == {HN{1'b0}}) begin
-		hcnt <= HT[hstate];
-		htick <= 1'b1;
-	end else begin
-		hcnt <= hcnt + {HN{1'b1}};
-		htick <= 1'b0;
-	end
+always_ff @(posedge CLK, negedge RESET)
+    if (~RESET) begin
+        HCount    <= 0;
+        z1_HBlank <= 1;
+        z1_HSync  <= 1;
+    end else if (EN) begin
+        if (HEnd)
+            HCount <= 0;
+        else
+            HCount <= HCount + 1;
+        z1_HBlank <= ~HDisp;
+        z1_HSync  <= HSync;
+    end
 
-always_ff @(posedge htick, negedge n_reset)
-	if (~n_reset) begin
-		hstate <= 2'h0;
-		_hsync <= 1'b0;
-		hblank <= 1'b1;
-		rdreq <= 1'b0;
-	end else begin
-		hstate <= hstate + 2'h1;
-		_hsync <= hstate != 2'h0;
-		hblank <= hstate != 2'h2;
-		rdreq <= hstate == 2'h2 && ~aclr && ~empty;
-	end
-
-always_ff @(posedge clkTFT)
-	hsync <= _hsync;
+assign HSync  = HCount < HSYNC;
+assign HDisp  = (HCount >= HBACK) & (HCount < HBACK + HDISP);
+assign HEnd   = HCount == HBACK + HDISP + HFRONT - 1;
+assign HBLANK = z1_HBlank;
 
 // Vertical control
-logic [VN - 1:0] vcnt;
-logic [1:0] vstate;
-logic vtick, vblank;
-assign aclr = vblank;
-assign tft_vblank = vblank;
+logic [VN-1:0] VCount;
+logic VSync, VDisp, VEnd;
+logic z1_VBlank, z1_VSync;
 
-always_ff @(posedge hsync, negedge n_reset)
-	if (~n_reset) begin
-		vcnt <= {VN{1'b0}};
-		vtick <= 1'b0;
-	end else if (vcnt == {VN{1'b0}}) begin
-		vcnt <= VT[vstate];
-		vtick <= 1'b1;
-	end else begin
-		vcnt <= vcnt + {VN{1'b1}};
-		vtick <= 1'b0;
-	end
+always_ff @(posedge CLK, negedge RESET)
+    if (~RESET) begin
+        VCount    <= 0;
+        z1_VBlank <= 1;
+        z1_VSync  <= 1;
+    end else if (EN) begin
+        if (VEnd &  HEnd)
+            VCount <= 0;
+        else if (HEnd)
+            VCount <= VCount + 1;
+        z1_VBlank <= ~VDisp;
+        z1_VSync  <= VSync;
+    end
 
-always_ff @(posedge vtick, negedge n_reset)
-	if (~n_reset) begin
-		vstate <= 2'h0;
-		vsync <= 1'b0;
-		vblank <= 1'b1;
-	end else begin
-		vstate <= vstate + 2'h1;
-		vsync <= vstate != 2'h0;
-		vblank <= vstate != 2'h2;
-	end
+assign VSync  = VCount < VSYNC;
+assign VDisp  = (VCount >= VBACK) & (VCount < VBACK + VDISP);
+assign VEnd   = VCount == VBACK + VDISP + VFRONT - 1;
+assign VBLANK = z1_VBlank;
+
+// Hardware IO
+assign HW_DCLK = CLK;
+
+always_ff @(posedge CLK, negedge RESET)
+    if (~RESET)
+        HW_DISP <= 0;
+    else if (HW_DISP != EN)
+        HW_DISP <= EN;
+
+// Delay HW_HSYNC & HW_VSYNC to match HW_RGB output latency
+always_ff @(posedge CLK, negedge RESET)
+    if (~RESET) begin
+        HW_VSYNC <= 0;
+        HW_HSYNC <= 0;
+    end else if (EN) begin
+        HW_VSYNC <= z1_VSync;
+        HW_HSYNC <= z1_HSync;
+    end
+
+always_ff @(posedge CLK)
+    if (~HBLANK & ~VBLANK)
+        HW_RGB <= COLOUR;
 
 endmodule

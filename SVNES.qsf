@@ -1,234 +1,102 @@
-# -------------------------------------------------------------------------- #
-#
-# Copyright (C) 1991-2016 Altera Corporation. All rights reserved.
-# Your use of Altera Corporation's design tools, logic functions
-# and other software and tools, and its AMPP partner logic
-# functions, and any output files from any of the foregoing
-# (including device programming or simulation files), and any
-# associated documentation or information are expressly subject
-# to the terms and conditions of the Altera Program License
-# Subscription Agreement, the Altera Quartus Prime License Agreement,
-# the Altera MegaCore Function License Agreement, or other
-# applicable license agreement, including, without limitation,
-# that your use is for the sole purpose of programming logic
-# devices manufactured by Altera and sold by Altera or its
-# authorized distributors.  Please refer to the applicable
-# agreement for further details.
-#
-# -------------------------------------------------------------------------- #
-#
-# Quartus Prime
-# Version 16.0.2 Build 222 07/20/2016 SJ Lite Edition
-# Date created = 01:09:40  August 10, 2016
-#
-# -------------------------------------------------------------------------- #
-#
-# Notes:
-#
-# 1) The default values for assignments are stored in the file:
-#		SVCPU_assignment_defaults.qdf
-#    If this file doesn't exist, see file:
-#		assignment_defaults.qdf
-#
-# 2) Altera recommends that you do not modify this file. This
-#    file is updated automatically by the Quartus Prime software
-#    and any changes you make may be lost or overwritten.
-#
-# -------------------------------------------------------------------------- #
+#set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_ntsc.qip
+#set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_pal.qip
+#set_global_assignment -name QIP_FILE apu/rom/apu_rom_length.qip
+#set_global_assignment -name QIP_FILE apu/rom/apu_rom_noise_ntsc.qip
+#set_global_assignment -name QIP_FILE apu/rom/apu_rom_pulse.qip
+#set_global_assignment -name QIP_FILE apu/rom/apu_rom_tnd.qip
+#set_global_assignment -name QIP_FILE cpu/rom_mop_dispatch.qip
+#set_global_assignment -name QIP_FILE cpu/rom_mop.qip
+#set_global_assignment -name QIP_FILE debug/debug_fb_fifo.qip
+#set_global_assignment -name QIP_FILE debug/debug_rom.qip
+#set_global_assignment -name QIP_FILE memory/ram256.qip
+#set_global_assignment -name QIP_FILE memory/ram2k.qip
+#set_global_assignment -name QIP_FILE memory/ram32.qip
+#set_global_assignment -name QIP_FILE memory/ram4k.qip
+#set_global_assignment -name QIP_FILE memory/ram8k.qip
+#set_global_assignment -name QIP_FILE memory/ramdual16x16.qip
+#set_global_assignment -name QIP_FILE memory/ramdual1kx32.qip
+#set_global_assignment -name QIP_FILE memory/ramdual256x32.qip
+#set_global_assignment -name QIP_FILE memory/ramdual256x80.qip
+#set_global_assignment -name QIP_FILE memory/ramdual32.qip
+#set_global_assignment -name QIP_FILE memory/ramdual32x16.qip
+#set_global_assignment -name QIP_FILE memory/ramdual64x16.qip
+#set_global_assignment -name QIP_FILE memory/ramdual8x40.qip
+#set_global_assignment -name QIP_FILE memory/ramdual8x41.qip
+#set_global_assignment -name QIP_FILE memory/rom32k.qip
+#set_global_assignment -name QIP_FILE memory/rom4k.qip
+#set_global_assignment -name QIP_FILE misc/mem_test_fifo.qip
+#set_global_assignment -name QIP_FILE peripheral/sdram_fifo.qip
+#set_global_assignment -name QIP_FILE peripheral/sdram_out_fifo.qip
+#set_global_assignment -name QIP_FILE peripheral/tft_fifo.qip
+#set_global_assignment -name QIP_FILE pll/pll_ntsc.qip
+#set_global_assignment -name QIP_FILE pll/pll_pal.qip
+#set_global_assignment -name QIP_FILE pll/pll.qip
+#set_global_assignment -name QIP_FILE ppu/ppu_fb_fifo.qip
+#set_global_assignment -name QIP_FILE ppu/ppu_rom_palette.qip
 
+set_global_assignment -name SYSTEMVERILOG_FILE platform/platform_de0_nano.sv
+set_global_assignment -name SYSTEMVERILOG_FILE pll/pll_main.sv
+set_global_assignment -name SYSTEMVERILOG_FILE pll/pll.sv
 
-set_global_assignment -name TOP_LEVEL_ENTITY wrapper
-set_global_assignment -name ORIGINAL_QUARTUS_VERSION 16.0.2
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "17:30:21  AUGUST 13, 2016"
-set_global_assignment -name LAST_QUARTUS_VERSION 16.0.2
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
-set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
-set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 6
-set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
-set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
-set_global_assignment -name EDA_SIMULATION_TOOL "<None>"
-set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
-set_global_assignment -name EDA_OUTPUT_DATA_FORMAT NONE -section_id eda_simulation
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-source DE0_Nano.qsf
-set_global_assignment -name FAMILY "Cyclone IV E"
-set_global_assignment -name DEVICE EP4CE22F17C6
-set_global_assignment -name RESERVE_DCLK_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[9]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[10]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_ADDR[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_BA[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_BA[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_CKE
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_CLK
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_CS_N
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[9]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[10]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[13]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[14]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQ[15]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQM[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_DQM[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_CAS_N
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_RAS_N
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to DRAM_WE_N
-set_instance_assignment -name FAST_INPUT_REGISTER ON -to *
-set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to *
-set_instance_assignment -name TSU_REQUIREMENT "10 ns" -from * -to *
-set_instance_assignment -name CURRENT_STRENGTH_NEW "MINIMUM CURRENT" -to *
-set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
-set_global_assignment -name SMART_RECOMPILE ON
-set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
-set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
-set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
-set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
-set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
-set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
-set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
-set_global_assignment -name ENABLE_SIGNALTAP ON
-set_global_assignment -name USE_SIGNALTAP_FILE SVNES.stp
-set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE PERFORMANCE"
-
-set_global_assignment -name CDF_FILE SVNES.cdf
-set_global_assignment -name SIGNALTAP_FILE SVNES.stp
-set_global_assignment -name SYSTEMVERILOG_FILE wrapper.sv
-set_global_assignment -name SYSTEMVERILOG_FILE system.sv
-set_global_assignment -name SOURCE_FILE defines.h
-set_global_assignment -name QIP_FILE pll.qip
-set_global_assignment -name QIP_FILE pll_ntsc.qip
-set_global_assignment -name QIP_FILE pll_pal.qip
-set_global_assignment -name SYSTEMVERILOG_FILE common/typepkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/interfaces.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/counter.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/prescaler.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/pulse.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/demux.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/flag_keeper.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/flag_detector.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/lfsr.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/arbiter.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/fifo_sync.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/cache.sv
-set_global_assignment -name QIP_FILE memory/ram32.qip
-set_global_assignment -name QIP_FILE memory/ram256.qip
-set_global_assignment -name QIP_FILE memory/ram2k.qip
-set_global_assignment -name QIP_FILE memory/ram8k.qip
-set_global_assignment -name QIP_FILE memory/ramdual32.qip
-set_global_assignment -name QIP_FILE memory/ramdual16x16.qip
-set_global_assignment -name QIP_FILE memory/ramdual32x16.qip
-set_global_assignment -name QIP_FILE memory/ramdual256x32.qip
-set_global_assignment -name QIP_FILE memory/ramdual1kx32.qip
-set_global_assignment -name QIP_FILE memory/ramdual8x40.qip
-set_global_assignment -name QIP_FILE memory/ramdual8x41.qip
-set_global_assignment -name QIP_FILE memory/ramdual256x80.qip
-set_global_assignment -name SOURCE_FILE memory/rom/rom.s
-set_global_assignment -name HEX_FILE memory/rom/rom.hex
-set_global_assignment -name QIP_FILE memory/rom32k.qip
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/peripherals.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/gpio.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/spi.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_fetch.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_write.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram.sv
-set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_bank.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/register.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/pc.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/alu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/idec.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/sequencer.sv
-set_global_assignment -name SYSTEMVERILOG_FILE cpu/interrupts.sv
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu.sv
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_mixer.sv
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_pulse.mif
-set_global_assignment -name QIP_FILE apu/rom/apu_rom_pulse.qip
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_tnd.mif
-set_global_assignment -name QIP_FILE apu/rom/apu_rom_tnd.qip
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_pwm.sv
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_registers.sv
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_timer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_dmc.sv
 set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_envelope.sv
 set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_length_counter.sv
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_length.mif
-set_global_assignment -name QIP_FILE apu/rom/apu_rom_length.qip
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_pulse.sv
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_triangle.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_mixer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_noise.sv
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_noise_ntsc.mif
-set_global_assignment -name QIP_FILE apu/rom/apu_rom_noise_ntsc.qip
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_noise_pal.mif
-set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_dmc.sv
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_dmc_ntsc.mif
-set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_ntsc.qip
-set_global_assignment -name MIF_FILE apu/rom/apu_rom_dmc_pal.mif
-set_global_assignment -name QIP_FILE apu/rom/apu_rom_dmc_pal.qip
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_pulse.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_pwm.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_registers.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_timer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE apu/apu_triangle.sv
+set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu_step.sv
+set_global_assignment -name SYSTEMVERILOG_FILE cpu/cpu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE debug/debug_fb.sv
+set_global_assignment -name SYSTEMVERILOG_FILE debug/debug_scan.sv
+set_global_assignment -name SYSTEMVERILOG_FILE debug/debug.sv
+set_global_assignment -name SYSTEMVERILOG_FILE display.sv
+set_global_assignment -name SYSTEMVERILOG_FILE mapper/mapper_boot.sv
+set_global_assignment -name SYSTEMVERILOG_FILE mapper/mapper.sv
+set_global_assignment -name SYSTEMVERILOG_FILE memory/sdram_shared_arbiter.sv
+set_global_assignment -name SYSTEMVERILOG_FILE memory/sdram_shared_buf.sv
+set_global_assignment -name SYSTEMVERILOG_FILE memory/sdram_shared.sv
+set_global_assignment -name SYSTEMVERILOG_FILE misc/lfsr.sv
+set_global_assignment -name SYSTEMVERILOG_FILE misc/mem_test.sv
+set_global_assignment -name SYSTEMVERILOG_FILE misc/rectfill.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_cnt.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_io.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_sys.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/sdram_types.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft_fb.sv
+set_global_assignment -name SYSTEMVERILOG_FILE peripheral/tft.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ppu/ppu_fb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ppu/ppu.sv
-set_global_assignment -name QIP_FILE memory/ramdual64x16.qip
-set_global_assignment -name QIP_FILE memory/ram4k.qip
-set_global_assignment -name QIP_FILE memory/rom4k.qip
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[33]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[32]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[31]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[30]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[29]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[28]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[27]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[26]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[25]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[24]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[23]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[22]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[21]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[20]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[19]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[18]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[17]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[16]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[15]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[14]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[13]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[10]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[9]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to GPIO_0[0]
-set_global_assignment -name MIF_FILE ppu/ppu_rom_palette.mif
-set_global_assignment -name QIP_FILE ppu/ppu_rom_palette.qip
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set_global_assignment -name SLD_FILE db/SVNES_auto_stripped.stp
+set_global_assignment -name SYSTEMVERILOG_FILE structural/arbiter.sv
+set_global_assignment -name SYSTEMVERILOG_FILE structural/demux.sv
+set_global_assignment -name SYSTEMVERILOG_FILE structural/flag_detector.sv
+set_global_assignment -name SYSTEMVERILOG_FILE structural/flag_keeper.sv
+set_global_assignment -name SYSTEMVERILOG_FILE system.sv
+set_global_assignment -name VERILOG_FILE apu/rom/apu_rom_dmc_ntsc.v
+set_global_assignment -name VERILOG_FILE apu/rom/apu_rom_dmc_pal.v
+set_global_assignment -name VERILOG_FILE apu/rom/apu_rom_length.v
+set_global_assignment -name VERILOG_FILE apu/rom/apu_rom_noise_ntsc.v
+set_global_assignment -name VERILOG_FILE apu/rom/apu_rom_pulse.v
+set_global_assignment -name VERILOG_FILE apu/rom/apu_rom_tnd.v
+set_global_assignment -name VERILOG_FILE memory/ram256.v
+set_global_assignment -name VERILOG_FILE memory/ram2k.v
+set_global_assignment -name VERILOG_FILE memory/ram32.v
+set_global_assignment -name VERILOG_FILE memory/ram4k.v
+set_global_assignment -name VERILOG_FILE memory/ram8k.v
+set_global_assignment -name VERILOG_FILE memory/ramdual16x16.v
+set_global_assignment -name VERILOG_FILE memory/ramdual1kx32.v
+set_global_assignment -name VERILOG_FILE memory/ramdual256x32.v
+set_global_assignment -name VERILOG_FILE memory/ramdual256x80.v
+set_global_assignment -name VERILOG_FILE memory/ramdual32.v
+set_global_assignment -name VERILOG_FILE memory/ramdual32x16.v
+set_global_assignment -name VERILOG_FILE memory/ramdual64x16.v
+set_global_assignment -name VERILOG_FILE memory/ramdual8x40.v
+set_global_assignment -name VERILOG_FILE memory/ramdual8x41.v
+set_global_assignment -name VERILOG_FILE memory/rom32k.v
+set_global_assignment -name VERILOG_FILE memory/rom4k.v
+set_global_assignment -name VERILOG_FILE ppu/ppu_rom_palette.v

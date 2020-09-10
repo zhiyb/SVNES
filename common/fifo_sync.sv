@@ -1,5 +1,5 @@
 module FIFO_SYNC #(
-    parameter WIDTH, DEPTH = 4
+    parameter WIDTH = 8, DEPTH = 2
 ) (
     input  wire                 CLK,
     input  logic                RESET,
@@ -20,7 +20,7 @@ ptr_t rptr;
 
 // Write data
 always_ff @(posedge CLK)
-    if (WRITE)
+    if (WRITE & ~FULL)
         data[wptr] <= WDATA;
 
 // Next write pointer
@@ -32,8 +32,10 @@ logic full;
 always_ff @(posedge CLK, posedge RESET)
     if (RESET)
         full <= 0;
-    else
-        full <= WRITE & ~READ & (wptrn == rptr);
+    else if (WRITE & ~READ & (wptrn == rptr))
+        full <= 1;
+    else if (~WRITE & READ & (wptrn == rptr))
+        full <= 0;
 
 assign FULL = full;
 

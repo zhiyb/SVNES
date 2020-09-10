@@ -1,5 +1,5 @@
 module FIFO_ASYNC #(
-    parameter WIDTH, DEPTH = 5      // Depth of 5 allows no stalling
+    parameter WIDTH = 8, DEPTH = 5    // Depth of 5 allows no stalling
 ) (
     input  wire                 WCLK,
     input  logic                WRESET,
@@ -14,49 +14,57 @@ module FIFO_ASYNC #(
     output logic                REMPTY
 );
 
-typedef logic [$clog2(DEPTH)-1:0] ptr_t;
-typedef logic [$clog2(DEPTH):0] cdc_t;
+typedef struct packed {
+    logic Toggle;
+    logic [$clog2(DEPTH)-1:0] Ptr;
+} ctrl_t;
 
 logic [DEPTH-1:0][WIDTH-1:0] data;
-cdc_t wwptr, wwptrn, wrptr, wrptrp;
-cdc_t rrptr, rrptrn, rwptr, rwptrp;
+ctrl_t wwptr, wwptrn, wrptr, wrptrp;
+ctrl_t rrptr, rrptrn, rwptr, rwptrp;
 
 // Write data
 always_ff @(posedge WCLK)
-    if (WRITE)
-        data[ptr_t'(wwptr)] <= WDATA;
+    if (WRITE & ~WFULL)
+        data[wwptr.Ptr] <= WDATA;
 
 // Next wwptr
 always_comb begin
-    wwptrn = wwptr + 1;
-    if (ptr_t'(wwptr) == DEPTH - 1)
-        wwptrn = {~wwptr[$bits(ptr_t)], ptr_t'(0)};
+    wwptrn.Ptr    = wwptr.Ptr + 1;
+    wwptrn.Toggle = wwptr.Toggle;
+    if (wwptr.Ptr == DEPTH - 1) begin
+        wwptrn.Ptr    = 0;
+        wwptrn.Toggle = ~wwptr.Toggle;
+    end
 end
 
-assign WFULL = (wwptr ^ wrptr) == {1'b1, ptr_t'(0)};
+assign WFULL = (wwptr.Ptr == wrptr.Ptr) && (wwptr.Toggle != wrptr.Toggle);
 
 // Write pointer
 always_ff @(posedge WCLK, posedge WRESET)
     if (WRESET)
-        wwptr <= 0;
+        wwptr <= '{default: 0};
     else if (WRITE & ~WFULL)
         wwptr <= wwptrn;
 
 // Read pointer synchronised to write port
 always_ff @(posedge WCLK, posedge WRESET)
     if (WRESET)
-        {wrptr, wrptrp} <= 0;
+        {wrptr, wrptrp} <= '{default: 0};
     else
         {wrptr, wrptrp} <= {wrptrp, rrptr};
 
 // Read data
-assign RDATA  = data[ptr_t'(rrptr)];
+assign RDATA  = data[rrptr.Ptr];
 
 // Next rrptr
 always_comb begin
-    rrptrn = rrptr + 1;
-    if (ptr_t'(rrptr) == DEPTH - 1)
-        rrptrn = {~rrptr[$bits(ptr_t)], ptr_t'(0)};
+    rrptrn.Ptr    = rrptr.Ptr + 1;
+    rrptrn.Toggle = rrptr.Toggle;
+    if (rrptr.Ptr == DEPTH - 1) begin
+        rrptrn.Ptr    = 0;
+        rrptrn.Toggle = ~rrptr.Toggle;
+    end
 end
 
 // Read pointer
@@ -64,14 +72,14 @@ assign REMPTY = rwptr == rrptr;
 
 always_ff @(posedge RCLK, posedge RRESET)
     if (RRESET)
-        rrptr <= 0;
+        rrptr <= '{default: 0};
     else if (READ & ~REMPTY)
         rrptr <= rrptrn;
 
 // Write pointer synchronised to read port
 always_ff @(posedge RCLK, posedge RRESET)
     if (RRESET)
-        {rwptr, rwptrp} <= 0;
+        {rwptr, rwptrp} <= '{default: 0};
     else
         {rwptr, rwptrp} <= {rwptrp, wwptr};
 

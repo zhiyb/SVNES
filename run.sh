@@ -18,15 +18,28 @@ modelsim_dir=modelsim
 
 top=
 
+vlib=vlib
+vmap=vmap
+vlog=vlog
+vsim=vsim
+if ! which $vsim > /dev/null; then
+	# Running on WSL
+	vlib=$vlib.exe
+	vmap=$vmap.exe
+	vlog=$vlog.exe
+	vsim=$vsim.exe
+	prj_dir="$(wslpath -w "$prj_dir")"
+fi
+
 sim_comp()
 {
 	mkdir -p "$modelsim_dir"
 	(
 		cd "$modelsim_dir"
-		vlib msim_lib
-		vmap work "$PWD/msim_lib"
+		$vlib msim_lib
+		$vmap work msim_lib
 		for file in "${pkg_files[@]}" "${rtl_files[@]}" "${sim_files[@]}"; do
-			vlog -sv "$prj_dir/$file"
+			$vlog -sv "$prj_dir/$file"
 		done
 	)
 }
@@ -48,7 +61,7 @@ sim_run()
 
 	(
 		cd "$modelsim_dir"
-		vsim "$gui" \
+		$vsim "$gui" \
 			-do "vsim -wlf \"$sim_top.wlf\" -l altera_mf work.$sim_top" \
 			-do 'add log -r sim:/*' \
 			-do 'run -all'
@@ -66,7 +79,7 @@ wave()
 	sim_top="$1"
 	(
 		cd "$modelsim_dir"
-		vsim -gui "$sim_top.wlf"
+		$vsim -gui "$sim_top.wlf"
 	)
 }
 

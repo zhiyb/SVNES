@@ -41,7 +41,7 @@ always_ff @(posedge CLK, posedge RESET)
 
 always_ff @(posedge CLK)
     if (WDATA == WIDTH'(-1))
-        $stop();
+        $finish(0);
 
 assign READ  = ~EMPTY;
 assign WRITE = ~FULL;

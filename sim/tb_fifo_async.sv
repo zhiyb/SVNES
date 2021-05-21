@@ -56,7 +56,7 @@ always_ff @(posedge WCLK, posedge WReset)
 
 always_ff @(posedge WCLK)
     if (WDATA == WIDTH'(-1))
-        $stop();
+        $finish(0);
 
 assign READ  = ~REMPTY;
 assign WRITE = ~WFULL;

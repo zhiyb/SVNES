@@ -25,3 +25,5 @@ output_files/
 wlft*
 *.qdf
 tests/
+*.vstf
+modelsim/

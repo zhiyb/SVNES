@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 subst='	s/#.*//;
 	s/ALU_ADD/000/; s/ALU_SUB/001/; s/ALU_SL/010/; s/ALU_SR/011/;
 	s/ALU_AND/100/; s/ALU_OR/101/; s/ALU_EOR/110/; s/ALU_REL/111/;

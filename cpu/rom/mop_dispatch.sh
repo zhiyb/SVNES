@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 cat - <<-DOC
 WIDTH=8;
 DEPTH=1024;

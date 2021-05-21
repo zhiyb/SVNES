@@ -10,6 +10,7 @@ module TFT #(
     parameter VN = $clog2(VBACK + VDISP + VFRONT)
 ) (
     input wire  CLK,
+    input wire  CLK_IO,
     input logic RESET,
     input logic EN,
 
@@ -29,8 +30,8 @@ logic [HN-1:0] HCount;
 logic HSync, HDisp, HEnd;
 logic z1_HBlank, z1_HSync;
 
-always_ff @(posedge CLK, negedge RESET)
-    if (~RESET) begin
+always_ff @(posedge CLK, posedge RESET)
+    if (RESET) begin
         HCount    <= 0;
         z1_HBlank <= 1;
         z1_HSync  <= 1;
@@ -53,8 +54,8 @@ logic [VN-1:0] VCount;
 logic VSync, VDisp, VEnd;
 logic z1_VBlank, z1_VSync;
 
-always_ff @(posedge CLK, negedge RESET)
-    if (~RESET) begin
+always_ff @(posedge CLK, posedge RESET)
+    if (RESET) begin
         VCount    <= 0;
         z1_VBlank <= 1;
         z1_VSync  <= 1;
@@ -73,17 +74,17 @@ assign VEnd   = VCount == VBACK + VDISP + VFRONT - 1;
 assign VBLANK = z1_VBlank;
 
 // Hardware IO
-assign HW_DCLK = CLK;
+assign HW_DCLK = CLK_IO;
 
-always_ff @(posedge CLK, negedge RESET)
-    if (~RESET)
+always_ff @(posedge CLK, posedge RESET)
+    if (RESET)
         HW_DISP <= 0;
     else if (HW_DISP != EN)
         HW_DISP <= EN;
 
 // Delay HW_HSYNC & HW_VSYNC to match HW_RGB output latency
-always_ff @(posedge CLK, negedge RESET)
-    if (~RESET) begin
+always_ff @(posedge CLK, posedge RESET)
+    if (RESET) begin
         HW_VSYNC <= 0;
         HW_HSYNC <= 0;
     end else if (EN) begin

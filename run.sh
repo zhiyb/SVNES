@@ -6,15 +6,20 @@ pkg_files=(
 rtl_files=(
 common/fifo_async.sv
 common/fifo_sync.sv
+peripheral/tft.sv
+peripheral/tft_test_pattern.sv
 )
 
 sim_files=(
 sim/tb_fifo_async.sv
 sim/tb_fifo_sync.sv
+sim/tb_tft.sv
 )
 
 prj_dir=$PWD
 modelsim_dir=modelsim
+
+args="+define+SIMULATION"
 
 top=
 
@@ -22,7 +27,7 @@ vlib=vlib
 vmap=vmap
 vlog=vlog
 vsim=vsim
-if ! which $vsim > /dev/null; then
+if which $vsim.exe > /dev/null; then
 	# Running on WSL
 	vlib=$vlib.exe
 	vmap=$vmap.exe
@@ -39,7 +44,7 @@ sim_comp()
 		$vlib msim_lib
 		$vmap work msim_lib
 		for file in "${pkg_files[@]}" "${rtl_files[@]}" "${sim_files[@]}"; do
-			$vlog -sv "$prj_dir/$file"
+			$vlog -sv $args "$prj_dir/$file"
 		done
 	)
 }
@@ -62,7 +67,7 @@ sim_run()
 	(
 		cd "$modelsim_dir"
 		$vsim "$gui" \
-			-do "vsim -wlf \"$sim_top.wlf\" -l altera_mf work.$sim_top" \
+			-do "vsim -wlf \"$sim_top.wlf\" -L altera_mf_ver work.$sim_top" \
 			-do 'add log -r sim:/*' \
 			-do 'run -all'
 	)

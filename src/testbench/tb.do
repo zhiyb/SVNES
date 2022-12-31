@@ -1,2 +1,0 @@
-add wave *
-run -all

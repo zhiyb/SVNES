@@ -1,2 +1,5 @@
-tb.sv
+tb_wrapper.sv
+tb_fifo_sync.sv
+tb_fifo_async.sv
 tb_sdram.sv
+tb_tft.sv

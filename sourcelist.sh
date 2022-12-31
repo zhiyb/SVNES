@@ -2,29 +2,22 @@
 
 readlist()
 {
-	pdir="$1"
+	local pdir="$1"
 	if [ ! -e "$pdir/filelist" ]; then
 		echo "$0: No filelist found in $pdir" >&2
 		return 1
 	fi
 
-	dir=()
-	file=()
-	for e in $(<"$pdir/filelist"); do
-		e="$pdir/$e"
+	for f in $(<"$pdir/filelist"); do
+		local e="$pdir/$f"
 		if [ -d "$e" ]; then
-			dir[${#dir[@]}]="$e"
+			readlist "$e";
 		elif [ -e "$e" ]; then
-			file[${#file[@]}]="$e"
+			echo "$e"
 		else
-			echo "$0: File $pdir/$e not valid" >&2
+			echo "$0: File $e not valid" >&2
 			return 1
 		fi
-	done
-
-	echo ${file[@]}
-	for d in ${dir[@]}; do
-		readlist "$d";
 	done
 }
 

@@ -1,16 +1,16 @@
 module TB_SDRAM;
 
 initial
-    #1ms $finish(0);
+    #2ms $finish(0);
 
-// 143*2 = 286MHz system clock
+// 143MHz memory clock
 logic CLK;
 
 initial
 begin
     CLK = 1;
     forever
-        #(0.5/286 * 1us) CLK = ~CLK;
+        #(0.5/143.0 * 1us) CLK = ~CLK;
 end
 
 logic RESET;
@@ -30,9 +30,7 @@ logic [1:0]  DRAM_BA, DRAM_DQM;
 logic        DRAM_CLK, DRAM_CKE;
 logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N;
 
-SDRAM_IO
-#() io
-(
+SDRAM #() sdram (
     .CLK        (CLK),
     .RESET_IN   (RESET),
 

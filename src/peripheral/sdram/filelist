@@ -1,1 +1,3 @@
+sdram_pkg.sv
 sdram_io.sv
+sdram.sv

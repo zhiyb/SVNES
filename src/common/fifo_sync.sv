@@ -1,24 +1,24 @@
 module FIFO_SYNC #(
-    parameter type DATA_T,
-    parameter int  DEPTH_LOG2
+    parameter int WIDTH,
+    parameter int DEPTH_LOG2
 ) (
     input wire CLK,
     input wire RESET_IN,
 
     // Input interface
-    input  DATA_T IN_DATA,
-    input  logic  IN_REQ,
-    output logic  IN_ACK,
+    input  logic [WIDTH-1:0] IN_DATA,
+    input  logic             IN_REQ,
+    output logic             IN_ACK,
 
     // Output interface
-    output DATA_T OUT_DATA,
-    output logic  OUT_REQ,
-    input  logic  OUT_ACK
+    output logic [WIDTH-1:0] OUT_DATA,
+    output logic             OUT_REQ,
+    input  logic             OUT_ACK
 );
 
 typedef logic [DEPTH_LOG2-1:0] ptr_t;
 
-DATA_T fifo [(2**DEPTH_LOG2)-1:0];
+logic [WIDTH-1:0] fifo [(2**DEPTH_LOG2)-1:0];
 ptr_t wptr, rptr;
 
 assign IN_ACK = ptr_t'(wptr + 1) != rptr;

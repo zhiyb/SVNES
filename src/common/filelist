@@ -1,3 +1,4 @@
 ahb_pkg.sv
 fifo_async.sv
 fifo_sync.sv
+cdc_async.sv

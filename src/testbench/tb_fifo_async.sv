@@ -61,7 +61,7 @@ begin: test_00
     logic  out_req, out_ack;
 
     FIFO_ASYNC #(
-        .DATA_T     (data_t)
+        .WIDTH  ($bits(data_t))
     ) fifo (
         .WRITE_CLK      (clk_1),
         .WRITE_RESET_IN (reset_1),
@@ -118,7 +118,7 @@ begin: test_01
     logic  out_req, out_ack;
 
     FIFO_ASYNC #(
-        .DATA_T     (data_t)
+        .WIDTH  ($bits(data_t))
     ) fifo (
         .WRITE_CLK      (clk_1),
         .WRITE_RESET_IN (reset_1),
@@ -175,7 +175,7 @@ begin: test_10
     logic  out_req, out_ack;
 
     FIFO_ASYNC #(
-        .DATA_T     (data_t)
+        .WIDTH  ($bits(data_t))
     ) fifo (
         .WRITE_CLK      (clk_2),
         .WRITE_RESET_IN (reset_2),
@@ -232,7 +232,7 @@ begin: test_11
     logic  out_req, out_ack;
 
     FIFO_ASYNC #(
-        .DATA_T     (data_t)
+        .WIDTH  ($bits(data_t))
     ) fifo (
         .WRITE_CLK      (clk_2),
         .WRITE_RESET_IN (reset_2),

@@ -60,14 +60,14 @@ logic [23:0] TFT_RGB;
 
 TFT #(
     .BASE_ADDR  (32'h0f000000),
-    .HSYNC      (2),
-    .HBACK      (44),
+    .HSYNC      (1),
+    .HBACK      (45),
     .HDISP      (800),
-    .HFRONT     (16),
-    .VSYNC      (2),
-    .VBACK      (21),
+    .HFRONT     (210),
+    .VSYNC      (1),
+    .VBACK      (23),
     .VDISP      (480),
-    .VFRONT     (7),
+    .VFRONT     (22),
     .TFT_WIDTH  (24)
 ) tft (
     .CLK_TFT    (clk_tft),

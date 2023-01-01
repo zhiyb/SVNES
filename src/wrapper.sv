@@ -30,6 +30,7 @@ module WRAPPER (
 wire clk_sys, reset_sys;
 // 33.3MHz TFT clock
 wire clk_tft, reset_tft;
+logic pll_locked;
 
 CLOCK_GEN clk (
     .CLK_50         (CLOCK_50),
@@ -39,7 +40,9 @@ CLOCK_GEN clk (
     .RESET_ASYNC_IN (~KEY[0]),
     .RESET_50_OUT   (),
     .RESET_SYS_OUT  (reset_sys),
-    .RESET_TFT_OUT  (reset_tft)
+    .RESET_TFT_OUT  (reset_tft),
+
+    .PLL_LOCKED_OUT (pll_locked)
 );
 
 // AHB TFT DMA bus
@@ -52,16 +55,18 @@ logic [31:0]     hrdata;
 logic            hready;
 logic            hresp;
 
+logic tft_underflow;
+
 TFT #(
     .BASE_ADDR  (32'h0f000000),
-    .HSYNC      (2),
-    .HBACK      (44),
+    .HSYNC      (1),
+    .HBACK      (45),
     .HDISP      (800),
-    .HFRONT     (16),
-    .VSYNC      (2),
-    .VBACK      (21),
+    .HFRONT     (210),
+    .VSYNC      (1),
+    .VBACK      (23),
     .VDISP      (480),
-    .VFRONT     (7),
+    .VFRONT     (22),
     .TFT_WIDTH  (24)
 ) tft (
     .CLK_TFT    (clk_tft),
@@ -78,7 +83,7 @@ TFT #(
     .HREADY     (hready),
     .HRESP      (hresp),
 
-    .UNDERFLOW_OUT  (LED[0]),
+    .UNDERFLOW_OUT  (tft_underflow),
 
     .TFT_DCLK   (GPIO_0[29]),
     .TFT_DISP   (GPIO_0[30]),
@@ -105,5 +110,8 @@ TFT_PATTERN_GEN #(
     .HREADY (hready),
     .HRESP  (hresp)
 );
+
+// Debug LEDs
+assign LED = 8'({tft_underflow, ~pll_locked});
 
 endmodule

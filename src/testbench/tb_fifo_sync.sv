@@ -36,7 +36,7 @@ begin: test_0
     logic  out_req, out_ack;
 
     FIFO_SYNC #(
-        .DATA_T     (data_t),
+        .WIDTH      ($bits(data_t)),
         .DEPTH_LOG2 (3)
     ) fifo0 (
         .CLK        (clk),
@@ -93,7 +93,7 @@ begin: test_1
     logic  out_req, out_ack;
 
     FIFO_SYNC #(
-        .DATA_T     (data_t),
+        .WIDTH      ($bits(data_t)),
         .DEPTH_LOG2 (3)
     ) fifo0 (
         .CLK        (clk),

@@ -22,24 +22,30 @@ typedef enum logic [2:0] {
     OP_MRES  = 7
 } op_t;
 
-typedef struct {
+typedef struct packed {
     op_t op;
     logic [1:0]  bank;
-    union {
-        struct {
+    union packed {
+        struct packed {
+            logic [24:0] _resv;
             logic all;
         } pre;
-        struct {
+        struct packed {
+            logic [12:0] _resv;
             logic [12:0] row;
         } act;
-        struct {
+        struct packed {
             logic [15:0] data;
             logic [9:0]  col;
         } write;
-        struct {
+        struct packed {
+            logic [15:0] _resv;
             logic [9:0]  col;
         } read;
-        logic [14:0] mrs;
+        struct packed {
+            logic [10:0] _resv;
+            logic [14:0] val;
+        } mrs;
     } data;
 } cmd_t;
 

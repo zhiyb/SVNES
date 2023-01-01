@@ -1,5 +1,7 @@
 common/
 peripheral/
-wrapper.sv
+pll/
+platform/
 clock_gen.sv
+wrapper.sv
 testbench/

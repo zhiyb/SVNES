@@ -8,12 +8,14 @@ readlist()
 		return 1
 	fi
 
+	echo "$pdir/filelist"
+
 	for f in $(<"$pdir/filelist"); do
 		local e="$pdir/$f"
 		if [ -d "$e" ]; then
-			readlist "$e";
+			readlist "$e"
 		elif [ -e "$e" ]; then
-			echo "$e"
+			:
 		else
 			echo "$0: File $e not valid" >&2
 			return 1

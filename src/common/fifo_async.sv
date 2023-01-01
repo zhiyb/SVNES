@@ -1,19 +1,19 @@
 module FIFO_ASYNC #(
-    parameter type DATA_T
+    parameter int WIDTH
 ) (
     // Input write interface
-    input  wire   WRITE_CLK,
-    input  wire   WRITE_RESET_IN,
-    input  DATA_T WRITE_DATA_IN,
-    input  logic  WRITE_REQ_IN,
-    output logic  WRITE_ACK_OUT,
+    input  wire              WRITE_CLK,
+    input  wire              WRITE_RESET_IN,
+    input  logic [WIDTH-1:0] WRITE_DATA_IN,
+    input  logic             WRITE_REQ_IN,
+    output logic             WRITE_ACK_OUT,
 
     // Output read interface
-    input  wire   READ_CLK,
-    input  wire   READ_RESET_IN,
-    output DATA_T READ_DATA_OUT,
-    output logic  READ_REQ_OUT,
-    input  logic  READ_ACK_IN
+    input  wire              READ_CLK,
+    input  wire              READ_RESET_IN,
+    output logic [WIDTH-1:0] READ_DATA_OUT,
+    output logic             READ_REQ_OUT,
+    input  logic             READ_ACK_IN
 );
 
 // 16-depth gray counter
@@ -27,7 +27,7 @@ localparam cnt_t gray2bin16 [15:0] = '{
      5,  4,  6,  7,  2,  3,  1,  0
 };
 
-DATA_T fifo [15:0];
+logic [WIDTH-1:0] fifo [15:0];
 cnt_t wwcnt, wrcnt;
 cnt_t rwcnt, rrcnt;
 
@@ -40,12 +40,16 @@ assign wrcnt_prev = bin2gray16[4'(gray2bin16[wrcnt] - 1)];
 cnt_t wwcnt_next;
 assign wwcnt_next = bin2gray16[4'(gray2bin16[wwcnt] + 1)];
 
-cnt_t wrrcnt;
-always_ff @(posedge WRITE_CLK, posedge WRITE_RESET_IN)
-    if (WRITE_RESET_IN)
-        {wrcnt, wrrcnt} <= 0;
-    else
-        {wrcnt, wrrcnt} <= {wrrcnt, rrcnt};
+CDC_ASYNC #(
+    .WIDTH  ($bits(cnt_t))
+) cdc_wr (
+    .SRC_CLK        (READ_CLK),
+    .SRC_RESET_IN   (READ_RESET_IN),
+    .SRC_DATA_IN    (rrcnt),
+    .DST_CLK        (WRITE_CLK),
+    .DST_RESET_IN   (WRITE_RESET_IN),
+    .DST_DATA_OUT   (wrcnt)
+);
 
 always_ff @(posedge WRITE_CLK, posedge WRITE_RESET_IN)
     if (WRITE_RESET_IN)
@@ -71,12 +75,16 @@ always_ff @(posedge WRITE_CLK)
 cnt_t rrcnt_next;
 assign rrcnt_next = bin2gray16[4'(gray2bin16[rrcnt] + 1)];
 
-cnt_t rwwcnt;
-always_ff @(posedge READ_CLK, posedge READ_RESET_IN)
-    if (READ_RESET_IN)
-        {rwcnt, rwwcnt} <= 0;
-    else
-        {rwcnt, rwwcnt} <= {rwwcnt, wwcnt};
+CDC_ASYNC #(
+    .WIDTH  ($bits(cnt_t))
+) cdc_rw (
+    .SRC_CLK        (WRITE_CLK),
+    .SRC_RESET_IN   (WRITE_RESET_IN),
+    .SRC_DATA_IN    (wwcnt),
+    .DST_CLK        (READ_CLK),
+    .DST_RESET_IN   (READ_RESET_IN),
+    .DST_DATA_OUT   (rwcnt)
+);
 
 always_ff @(posedge READ_CLK, posedge READ_RESET_IN)
     if (READ_RESET_IN)

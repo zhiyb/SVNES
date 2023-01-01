@@ -38,7 +38,7 @@ assign TFT_DCLK = CLK;
 assign TFT_DISP = enable_tft;
 
 // Horizontal counter
-localparam HINIT = HBACK + HDISP + HFRONT - 1;
+localparam HTOTAL = HBACK + HDISP + HFRONT;
 logic [HN-1:0] hcnt;
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
@@ -46,10 +46,10 @@ always_ff @(posedge CLK, posedge RESET_IN)
     else if (hcnt != 0)
         hcnt <= hcnt - 1;
     else if (enable_tft)
-        hcnt <= HINIT;
+        hcnt <= HTOTAL - 1;
 
 // Vertical counter
-localparam VINIT = VBACK + VDISP + VFRONT - 1;
+localparam VTOTAL = VBACK + VDISP + VFRONT;
 logic [VN-1:0] vcnt;
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN) begin
@@ -58,17 +58,17 @@ always_ff @(posedge CLK, posedge RESET_IN)
         if (vcnt != 0)
             vcnt <= vcnt - 1;
         else if (enable_tft)
-            vcnt <= VINIT;
+            vcnt <= VTOTAL - 1;
     end
 
 logic hsync, vsync;
 
-assign hsync = hcnt > HINIT - HSYNC;
-assign vsync = vcnt > VINIT - VSYNC;
+assign hsync = hcnt >= HTOTAL - HSYNC;
+assign vsync = vcnt >= VTOTAL - VSYNC;
 
 logic disp;
-assign disp = hcnt > HINIT - HBACK - HDISP && hcnt <= HINIT - HBACK &&
-              vcnt > VINIT - VBACK - VDISP && vcnt <= VINIT - VBACK;
+assign disp = hcnt >= HTOTAL - HBACK - HDISP && hcnt < HTOTAL - HBACK &&
+              vcnt >= VTOTAL - VBACK - VDISP && vcnt < VTOTAL - VBACK;
 
 // Flush FIFO data during VSYNC
 assign ACK_OUT = VSYNC_OUT | disp;
@@ -76,17 +76,16 @@ assign ACK_OUT = VSYNC_OUT | disp;
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
         UNDERFLOW_OUT <= 0;
-    else if (VSYNC_OUT)
-        UNDERFLOW_OUT <= 0;
+    //else if (VSYNC_OUT)
+    //    UNDERFLOW_OUT <= 0;
     else if (disp & ~REQ_IN)
         UNDERFLOW_OUT <= 1;
 
 always_ff @(posedge CLK) begin
-    TFT_HSYNC <= hsync;
-    TFT_VSYNC <= vsync;
+    TFT_HSYNC <= ~hsync;
+    TFT_VSYNC <= ~vsync;
+    VSYNC_OUT <= vsync;
     TFT_RGB   <= DATA_IN;
 end
-
-assign VSYNC_OUT = TFT_VSYNC;
 
 endmodule

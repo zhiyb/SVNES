@@ -46,7 +46,7 @@ logic [31:0] dma_data_tft;
 logic dma_req_tft, dma_ack_tft;
 
 FIFO_ASYNC #(
-    .DATA_T (logic [31:0])
+    .WIDTH  (32)
 ) fifo (
     .WRITE_CLK      (HCLK),
     .WRITE_RESET_IN (HRESET),

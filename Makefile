@@ -1,4 +1,5 @@
-SOURCES			:= $(shell ./sourcelist.sh)
+SOURCES			:= $(shell ./scripts/sources.sh)
+FILELISTS		:= $(shell ./scripts/filelists.sh)
 SIM_LIB			:= sim_lib
 DO				?= batch.do
 SIM_SYN_ARGS	?= +define+SIMULATION=1
@@ -29,7 +30,7 @@ include gmsl
 .SECONDARY:
 
 .PHONY: all
-all: test
+all: test filelist.qsf
 
 .PHONY: test
 test: $(WAVE)
@@ -45,8 +46,12 @@ sim: %:
 sim/%.wlf: src/testbench/%.sv $(SIM_LIB)/_lib.qdb | sim
 	$(VSIM) -work $(SIM_LIB) -wlf $@ -logfile sim/$*.log $(call uc,$(notdir $*)) $(SIM_RUN_ARGS)
 
-$(SIM_LIB)/_lib.qdb: $(SOURCES) | modelsim.ini
-	$(VLOG) -work $(SIM_LIB) -sv $(filter %.sv,$(SOURCES)) $(SIM_SYN_ARGS)
+$(SIM_LIB)/_lib.qdb: $(SOURCES) $(FILELISTS) | modelsim.ini
+	$(VLOG) -work $(SIM_LIB) -v $(filter %.v,$(SOURCES)) -sv $(filter %.sv,$(SOURCES)) $(SIM_SYN_ARGS)
+
+CLEAN_FILES	+= filelist.qsf
+filelist.qsf: scripts/qsf_filelist.sh $(FILELISTS)
+	./scripts/qsf_filelist.sh $(SOURCES) > $@
 
 CLEAN_FILES	+= modelsim.ini
 modelsim.ini: $(SIM_LIB)/_info

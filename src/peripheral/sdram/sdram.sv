@@ -27,7 +27,7 @@ SDRAM_PKG::cmd_t cmd_data;
 logic cmd_req, cmd_ack;
 
 FIFO_SYNC #(
-    .DATA_T     (SDRAM_PKG::cmd_t),
+    .WIDTH      ($bits(SDRAM_PKG::cmd_t)),
     .DEPTH_LOG2 (2)
 ) cmd_fifo (
     .CLK        (CLK),

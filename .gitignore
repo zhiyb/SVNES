@@ -7,3 +7,5 @@ modelsim.ini
 *.bak
 wlft*
 transcript
+
+filelist.qsf

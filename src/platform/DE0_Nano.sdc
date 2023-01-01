@@ -42,7 +42,7 @@ derive_clock_uncertainty
 # SDRAM constraints
 #**************************************************************
 
-set clkSDRAM {clk|pll0|altpll_component|auto_generated|pll1|clk[0]}
+set clkSDRAM {clk|pll0|altpll_component|auto_generated|pll1|clk[1]}
 set clkOutSDRAM [get_ports {DRAM_CLK}]
 set portsInSDRAM [get_ports { \
 	DRAM_DQ[0] DRAM_DQ[1] DRAM_DQ[2] DRAM_DQ[3] DRAM_DQ[4] DRAM_DQ[5] DRAM_DQ[6] DRAM_DQ[7] DRAM_DQ[8] \
@@ -63,7 +63,7 @@ set_output_delay -min -clock $clkSDRAM -0.8 -reference_pin $clkOutSDRAM $portsOu
 # TFT constraints
 #**************************************************************
 
-set clkTFT {clk|pll0|altpll_component|auto_generated|pll1|clk[1]}
+set clkTFT {clk|pll0|altpll_component|auto_generated|pll1|clk[2]}
 set clkOutTFT [get_ports {GPIO_0[29]}]
 #create_generated_clock -name {clkTFTIO} -invert -source $clkTFT [get_nets {pll_main|ClkTFTInv}]
 #set clkTFT {clkTFTIO}

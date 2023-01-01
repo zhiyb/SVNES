@@ -39,16 +39,16 @@ begin: test_0
         .WIDTH      ($bits(data_t)),
         .DEPTH_LOG2 (3)
     ) fifo0 (
-        .CLK        (clk),
-        .RESET_IN   (reset),
+        .CLK            (clk),
+        .RESET_IN       (reset),
 
-        .IN_DATA    (in_data),
-        .IN_REQ     (in_req),
-        .IN_ACK     (in_ack),
+        .WRITE_DATA_IN  (in_data),
+        .WRITE_REQ_IN   (in_req),
+        .WRITE_ACK_OUT  (in_ack),
 
-        .OUT_DATA   (out_data),
-        .OUT_REQ    (out_req),
-        .OUT_ACK    (out_ack)
+        .READ_DATA_OUT  (out_data),
+        .READ_REQ_OUT   (out_req),
+        .READ_ACK_IN    (out_ack)
     );
 
     // Input data generator
@@ -96,16 +96,16 @@ begin: test_1
         .WIDTH      ($bits(data_t)),
         .DEPTH_LOG2 (3)
     ) fifo0 (
-        .CLK        (clk),
-        .RESET_IN   (reset),
+        .CLK            (clk),
+        .RESET_IN       (reset),
 
-        .IN_DATA    (in_data),
-        .IN_REQ     (in_req),
-        .IN_ACK     (in_ack),
+        .WRITE_DATA_IN  (in_data),
+        .WRITE_REQ_IN   (in_req),
+        .WRITE_ACK_OUT  (in_ack),
 
-        .OUT_DATA   (out_data),
-        .OUT_REQ    (out_req),
-        .OUT_ACK    (out_ack)
+        .READ_DATA_OUT  (out_data),
+        .READ_REQ_OUT   (out_req),
+        .READ_ACK_IN    (out_ack)
     );
 
     // Input data generator

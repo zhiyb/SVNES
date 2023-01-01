@@ -4,9 +4,10 @@ module WRAPPER (
     input  logic [3:0]  SW,
     output logic [7:0]  LED,
 
+    output wire         DRAM_CLK,
+    output logic        DRAM_CKE,
     output logic [12:0] DRAM_ADDR,
     output logic [1:0]  DRAM_BA, DRAM_DQM,
-    output logic        DRAM_CKE, DRAM_CLK,
     output logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N,
     inout  wire  [15:0] DRAM_DQ,
 
@@ -28,6 +29,8 @@ module WRAPPER (
 
 // 143MHz system clock
 wire clk_sys, reset_sys;
+// Clock for SDRAM CLK pin
+wire clk_mem_io;
 // 33.3MHz TFT clock
 wire clk_tft, reset_tft;
 logic pll_locked;
@@ -35,6 +38,7 @@ logic pll_locked;
 CLOCK_GEN clk (
     .CLK_50         (CLOCK_50),
     .CLK_SYS        (clk_sys),
+    .CLK_MEM_IO     (clk_mem_io),
     .CLK_TFT        (clk_tft),
 
     .RESET_ASYNC_IN (~KEY[0]),
@@ -43,6 +47,40 @@ CLOCK_GEN clk (
     .RESET_TFT_OUT  (reset_tft),
 
     .PLL_LOCKED_OUT (pll_locked)
+);
+
+// SDRAM controller
+logic sdram_init_done;
+SDRAM #(
+    .tRC    (9),
+    .tRAS   (6),
+    .tRP    (3),
+    .tRCD   (3),
+    .tMRD   (2),
+    .tDPL   (2),
+    .tQMD   (2),
+    .tRRD   (2),
+    .tINIT  (14250),
+    .tREF   (1114),
+    .CAS    (SDRAM_PKG::CAS_3),
+    .BURST  (SDRAM_PKG::BURST_8)
+) sdram (
+    .CLK            (clk_sys),
+    .CLK_IO         (clk_mem_io),
+    .RESET_IN       (reset_sys),
+
+    .INIT_DONE_OUT  (sdram_init_done),
+
+    .DRAM_CLK       (DRAM_CLK),
+    .DRAM_CKE       (DRAM_CKE),
+    .DRAM_DQ        (DRAM_DQ),
+    .DRAM_ADDR      (DRAM_ADDR),
+    .DRAM_BA        (DRAM_BA),
+    .DRAM_DQM       (DRAM_DQM),
+    .DRAM_CS_N      (DRAM_CS_N),
+    .DRAM_RAS_N     (DRAM_RAS_N),
+    .DRAM_CAS_N     (DRAM_CAS_N),
+    .DRAM_WE_N      (DRAM_WE_N)
 );
 
 // AHB TFT DMA bus
@@ -112,6 +150,6 @@ TFT_PATTERN_GEN #(
 );
 
 // Debug LEDs
-assign LED = 8'({tft_underflow, ~pll_locked});
+assign LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
 
 endmodule

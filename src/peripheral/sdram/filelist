@@ -1,3 +1,5 @@
 sdram_pkg.sv
+sdram_init.sv
+sdram_arb.sv
 sdram_io.sv
 sdram.sv

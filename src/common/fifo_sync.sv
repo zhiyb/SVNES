@@ -2,45 +2,43 @@ module FIFO_SYNC #(
     parameter int WIDTH,
     parameter int DEPTH_LOG2
 ) (
-    input wire CLK,
-    input wire RESET_IN,
+    input  wire              CLK,
+    input  wire              RESET_IN,
 
-    // Input interface
-    input  logic [WIDTH-1:0] IN_DATA,
-    input  logic             IN_REQ,
-    output logic             IN_ACK,
+    // Input write interface
+    input  logic [WIDTH-1:0] WRITE_DATA_IN,
+    input  logic             WRITE_REQ_IN,
+    output logic             WRITE_ACK_OUT,
 
-    // Output interface
-    output logic [WIDTH-1:0] OUT_DATA,
-    output logic             OUT_REQ,
-    input  logic             OUT_ACK
+    // Output read interface
+    output logic [WIDTH-1:0] READ_DATA_OUT,
+    output logic             READ_REQ_OUT,
+    input  logic             READ_ACK_IN
 );
 
-typedef logic [DEPTH_LOG2-1:0] ptr_t;
-
 logic [WIDTH-1:0] fifo [(2**DEPTH_LOG2)-1:0];
-ptr_t wptr, rptr;
+logic [DEPTH_LOG2:0] wptr, rptr;
 
-assign IN_ACK = ptr_t'(wptr + 1) != rptr;
+assign WRITE_ACK_OUT = (DEPTH_LOG2)'(wptr + 1) != (DEPTH_LOG2)'(rptr);
 
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
         wptr <= 0;
-    else if (IN_REQ & IN_ACK)
+    else if (WRITE_REQ_IN & WRITE_ACK_OUT)
         wptr <= wptr + 1;
 
 always_ff @(posedge CLK)
-    if (IN_REQ & IN_ACK)
-        fifo[wptr] <= IN_DATA;
+    if (WRITE_REQ_IN & WRITE_ACK_OUT)
+        fifo[(DEPTH_LOG2)'(wptr)] <= WRITE_DATA_IN;
 
-assign OUT_REQ = wptr != rptr;
+assign READ_REQ_OUT = wptr != rptr;
 
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
         rptr <= 0;
-    else if (OUT_REQ & OUT_ACK)
+    else if (READ_REQ_OUT & READ_ACK_IN)
         rptr <= rptr + 1;
 
-assign OUT_DATA = fifo[rptr];
+assign READ_DATA_OUT = fifo[(DEPTH_LOG2)'(rptr)];
 
 endmodule

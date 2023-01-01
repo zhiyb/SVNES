@@ -3,6 +3,7 @@ module CLOCK_GEN #(
 ) (
     input  wire  CLK_50,
     output wire  CLK_SYS,
+    output wire  CLK_MEM_IO,
     output wire  CLK_TFT,
     input  wire  RESET_ASYNC_IN,
     output wire  RESET_50_OUT,
@@ -19,7 +20,8 @@ pll_sys pll0 (
     .areset (reset_pll),
     .inclk0 (CLK_50),
     .c0     (CLK_SYS),
-    .c1     (CLK_TFT),
+    .c1     (CLK_MEM_IO),
+    .c2     (CLK_TFT),
     .locked (PLL_LOCKED_OUT)
 );
 
@@ -27,7 +29,8 @@ pll_sys pll0 (
 
 // 143MHz system clock
 logic clk_sys;
-assign CLK_SYS = clk_sys;
+assign CLK_SYS    = clk_sys;
+assign CLK_MEM_IO = clk_sys;
 initial begin
     clk_sys = 0;
     forever

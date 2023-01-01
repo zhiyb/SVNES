@@ -54,7 +54,7 @@ always_ff @(posedge HCLK)
 logic [31:0] c;
 localparam LINE = 2;
 always_comb begin
-    c = {{8{x[0] ^ y[0]}}, y[0 +: 8], x[0 +: 8]};
+    c = {y[0 +: 8], x[0 +: 8], {8{x[0] ^ y[0]}}};
     if (x == 0)
         c = 'hff0000;
     else if (x == WIDTH - 1)

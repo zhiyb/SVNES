@@ -12,3 +12,6 @@ transcript
 
 filelist.qsf
 DE0_Nano_assignment_defaults.qdf
+greybox_tmp/
+*.qws
+*.sh

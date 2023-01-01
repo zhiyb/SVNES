@@ -5,7 +5,7 @@ FILELISTS		:= $(shell ./scripts/filelists.sh)
 SIM_LIB			:= sim_lib
 DO				?= batch.do
 SIM_SYN_ARGS	?= +define+SIMULATION=1
-SIM_RUN_ARGS	?= -batch $(DO:%=-do %)
+SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -batch $(DO:%=-do %)
 
 PRJ		?= SVNES
 REV		?= DE0_Nano
@@ -26,6 +26,7 @@ QMAP	:= $(QUARTUS)/quartus_map$(EXE_SFX)
 QFIT	:= $(QUARTUS)/quartus_fit$(EXE_SFX)
 QASM	:= $(QUARTUS)/quartus_asm$(EXE_SFX)
 QSTA	:= $(QUARTUS)/quartus_sta$(EXE_SFX)
+QPGM	:= $(QUARTUS)/quartus_pgm$(EXE_SFX)
 QNPP	:= $(QUARTUS)/quartus_npp$(EXE_SFX)
 QNUI	:= $(QUARTUS)/qnui$(EXE_SFX)
 
@@ -37,6 +38,8 @@ include gmsl
 
 .DELETE_ON_ERROR:
 .SECONDARY:
+
+# pgm target programs the FPGA
 
 .PHONY: all
 all: test sof sta
@@ -86,6 +89,10 @@ sof: output_files/$(REV).sof
 
 output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt
 	$(QASM) --read_settings_files=off --write_settings_files=off $(PRJ) -c $(REV)
+
+.PHONY: pgm
+pgm: output_files/$(REV).sof
+	$(QPGM) -m jtag -o "p;$<"
 
 .PHONY: sta
 sta: output_files/$(REV).sta.rpt

@@ -21,8 +21,6 @@ module SDRAM
 logic [14:0] mrs;
 assign mrs = {5'b0, 1'b0, 2'b0, CAS[2:0], 1'b0, BURST[2:0]};
 
-assign DRAM_CLK = CLK;
-
 SDRAM_PKG::cmd_t cmd_data;
 logic cmd_req, cmd_ack;
 

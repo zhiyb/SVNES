@@ -97,7 +97,7 @@ always_ff @(posedge CLK_50, posedge reset_50_pll)
     else if (reset_50_pll_cnt != 0)
         reset_50_pll_cnt <= reset_50_pll_cnt - 1;
 
-wire reset_50;
+logic reset_50;
 assign RESET_50_OUT = reset_50;
 always_ff @(posedge CLK_50, posedge reset_50_pll)
     if (reset_50_pll)

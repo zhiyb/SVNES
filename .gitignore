@@ -1,3 +1,5 @@
+Makefile_local
+
 sim_lib/
 sim/
 db/
@@ -9,3 +11,4 @@ wlft*
 transcript
 
 filelist.qsf
+DE0_Nano_assignment_defaults.qdf

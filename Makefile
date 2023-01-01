@@ -1,3 +1,5 @@
+-include Makefile_local
+
 SOURCES			:= $(shell ./scripts/sources.sh)
 FILELISTS		:= $(shell ./scripts/filelists.sh)
 SIM_LIB			:= sim_lib
@@ -10,12 +12,9 @@ REV		?= DE0_Nano
 TEST	?= tb_wrapper tb_sdram tb_fifo_sync tb_fifo_async tb_tft
 WAVE	?= $(TEST:%=sim/%.wlf)
 
-#MSIM		?= /mnt/c/Programs/Quartus/18.1/modelsim_ase/win32aloem
-#EXE_SFX	?= .exe
-
-MSIM		?= /opt/quartus/20.1/modelsim_ase/linuxaloem
-QUARTUS		?= /opt/quartus/20.1/quartus/bin
-EXE_SFX		?=
+MSIM	?= /opt/quartus/20.1/modelsim_ase/linuxaloem
+QUARTUS	?= /opt/quartus/20.1/quartus/bin
+EXE_SFX	?=
 
 VLIB	:= $(MSIM)/vlib$(EXE_SFX)
 VMAP	:= $(MSIM)/vmap$(EXE_SFX)
@@ -27,6 +26,8 @@ QMAP	:= $(QUARTUS)/quartus_map$(EXE_SFX)
 QFIT	:= $(QUARTUS)/quartus_fit$(EXE_SFX)
 QASM	:= $(QUARTUS)/quartus_asm$(EXE_SFX)
 QSTA	:= $(QUARTUS)/quartus_sta$(EXE_SFX)
+QNPP	:= $(QUARTUS)/quartus_npp$(EXE_SFX)
+QNUI	:= $(QUARTUS)/qnui$(EXE_SFX)
 
 ifeq ($(SOURCES),)
 $(error No source files)
@@ -45,8 +46,8 @@ all: test sof sta
 .PHONY: test
 test: $(WAVE)
 
-.PHONY: view
-view: $(WAVE)
+.PHONY: view_sim
+view_sim: $(WAVE)
 	$(VSIM) -work $(SIM_LIB) -gui -logfile sim/view.log -view $^
 
 CLEAN_DIRS	+= sim
@@ -92,6 +93,27 @@ sta: output_files/$(REV).sta.rpt
 
 output_files/$(REV).sta.rpt: output_files/$(REV).fit.rpt
 	$(QSTA) $(PRJ) -c $(REV)
+
+db/$(REV).sgate_sm.nvd: output_files/$(REV).map.rpt
+	$(QNPP) $(PRJ) -c $(REV) --netlist_type=sgate
+
+db/$(REV).atom_map.nvd: output_files/$(REV).map.rpt
+	$(QNPP) $(PRJ) -c $(REV) --netlist_type=atom_map
+
+db/$(REV).atom_fit.nvd: output_files/$(REV).fit.rpt
+	$(QNPP) $(PRJ) -c $(REV) --netlist_type=atom_fit
+
+.PHONY: view_rtl
+view_rtl: db/DE0_Nano.sgate_sm.nvd
+	$(QNUI) $(PRJ) -c $(REV)
+
+.PHONY: view_map
+view_map: db/$(REV).atom_map.nvd
+	echo "How to run the viewer?" && false
+
+.PHONY: view_fit
+view_fit: db/$(REV).atom_fit.nvd
+	echo "How to run the viewer?" && false
 
 .PHONY: clean
 clean:

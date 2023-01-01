@@ -1,0 +1,7 @@
+MSIM	?= /mnt/c/Programs/Quartus/20.1/modelsim_ase/win32aloem
+QUARTUS	?= /mnt/c/Programs/Quartus/21.1/quartus/bin64
+EXE_SFX	?= .exe
+
+MSIM	?= /opt/quartus/20.1/modelsim_ase/linuxaloem
+QUARTUS	?= /opt/quartus/20.1/quartus/bin
+EXE_SFX	?=

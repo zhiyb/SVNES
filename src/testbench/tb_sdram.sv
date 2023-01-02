@@ -48,4 +48,37 @@ SDRAM #() sdram (
     .DRAM_WE_N  (DRAM_WE_N)
 );
 
+// SDRAM fake read data generator
+localparam N_CAS    = 3;
+localparam N_BURSTS = 8;
+
+logic read_cmd;
+assign read_cmd = {DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N} == 3'b101;
+
+logic [3:0] burst_cnt;
+always_ff @(posedge DRAM_CLK, posedge reset_sys)
+    if (reset_sys)
+        burst_cnt <= 0;
+    else if (read_cmd)
+        burst_cnt <= N_BURSTS;
+    else if (burst_cnt != 0)
+        burst_cnt <= burst_cnt - 1;
+
+localparam READ_LATENCY = N_CAS - 1;
+logic [READ_LATENCY-1:0] read_pipe;
+always_ff @(posedge DRAM_CLK)
+    read_pipe <= {read_pipe, burst_cnt != 0};
+
+logic read_valid;
+assign read_valid = read_pipe[READ_LATENCY-1];
+
+logic [15:0] read_data;
+always_ff @(posedge DRAM_CLK, posedge reset_sys)
+    if (reset_sys)
+        read_data <= 0;
+    else if (read_valid)
+        read_data <= read_data + 1;
+
+assign DRAM_DQ = read_valid ? read_data : 'z;
+
 endmodule

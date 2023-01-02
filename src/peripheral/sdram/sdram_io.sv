@@ -57,24 +57,16 @@ assign DRAM_DQ  = dram_dq_out_en ? dram_dq_out : 'z;
 assign DRAM_CLK = CLK_IO;
 
 // Read output pipe
+localparam READ_LATENCY = SDRAM_PKG::N_CAS[CAS] + 2;
 
-localparam tCAS   = SDRAM_PKG::N_CAS[CAS];
-localparam tBURST = SDRAM_PKG::N_BURSTS[BURST];
-localparam READ_LATENCY = tCAS + tBURST + 2;
-
-typedef struct packed {
-    SDRAM_PKG::tag_t  tag;
-    SDRAM_PKG::data_t data;
-} read_data_t;
-
-read_data_t read_pipe_in, read_pipe_out;
-read_data_t [READ_LATENCY-1:0] read_pipe;
+SDRAM_PKG::tag_t                    tag_pipe_in;
+SDRAM_PKG::tag_t [READ_LATENCY-1:0] tag_pipe;
 
 always_ff @(posedge CLK)
-    read_pipe <= {read_pipe[READ_LATENCY-2:0], read_pipe_in};
+    tag_pipe <= {tag_pipe[READ_LATENCY-2:0], tag_pipe_in};
 
-assign READ_TAG_OUT  = read_pipe_out.tag;
-assign READ_DATA_OUT = read_pipe_out.data;
+assign READ_TAG_OUT  = tag_pipe[READ_LATENCY-1];
+assign READ_DATA_OUT = dram_dq_in;
 
 // Pin driver
 
@@ -89,9 +81,7 @@ always_comb begin
     dram_ras_n = 1;
     dram_cas_n = 1;
     dram_we_n  = 1;
-    read_pipe_in = '{default: 0};
-    read_pipe_in.tag  = CMD_DATA_IN.data;
-    read_pipe_in.data = dram_dq_in;
+    tag_pipe_in = 0;
 
     case (CMD_DATA_IN.op)
     SDRAM_PKG::OP_NOP: begin
@@ -126,13 +116,13 @@ always_comb begin
         dram_we_n  = 1;
         dram_addr  = CMD_DATA_IN.addr;
         dram_dq_en = 0;
+        tag_pipe_in = CMD_DATA_IN.data;
     end
     SDRAM_PKG::OP_MRS: begin
         dram_ras_n = 0;
         dram_cas_n = 0;
         dram_we_n  = 0;
         {dram_ba[1:0], dram_addr[12:0]} = CMD_DATA_IN.data;
-        read_pipe_in.tag = 0;
     end
     endcase
 end

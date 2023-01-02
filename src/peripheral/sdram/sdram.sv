@@ -24,6 +24,54 @@ module SDRAM #(
 logic [14:0] mrs;
 assign mrs = {5'b0, 1'b0, 2'b0, CAS[2:0], 1'b0, BURST[2:0]};
 
+
+logic                    [3:0] cache_write;
+SDRAM_PKG::dram_access_t [3:0] cache_acs;
+SDRAM_PKG::data_t        [3:0] cache_read_data;
+logic                    [3:0] cache_req;
+logic                    [3:0] cache_ack;
+
+
+// Memory write test gen
+SDRAM_PKG::row_t row;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        row <= 0;
+    else
+        row <= row + 1;
+
+always_comb begin
+    cache_write = '{default: 0};
+    cache_acs   = '{default: 0};
+    cache_req   = '{default: 0};
+
+    cache_write[0]    = 1;
+    cache_req[0]      = 1;
+    cache_acs[0].row  = row[12:5];
+    cache_acs[0].bank = 0;
+    cache_acs[0].data = 'h5a5a5a5a;
+
+    cache_write[1]    = 0;
+    cache_req[1]      = 1;
+    cache_acs[1].row  = row[12:6];
+    cache_acs[1].bank = 1;
+    cache_acs[1].data = 'h01234567;
+
+    cache_write[2]    = 1;
+    cache_req[2]      = 1;
+    cache_acs[2].row  = row[12:7];
+    cache_acs[2].bank = 2;
+    cache_acs[2].data = 'h34343434;
+
+    cache_write[3]    = 0;
+    cache_req[3]      = 1;
+    cache_acs[3].row  = row[12:8];
+    cache_acs[3].bank = 3;
+    cache_acs[3].data = 'h01234567;
+end
+
+
+
 SDRAM_PKG::cmd_t arb_cmd_data;
 logic arb_cmd_req, arb_cmd_ack;
 SDRAM_PKG::data_t arb_read_data;
@@ -49,11 +97,11 @@ SDRAM_ARB #(
 
     .INIT_DONE_OUT  (INIT_DONE_OUT),
 
-    .SRC_WRITE_IN   (),
-    .SRC_ACS_IN     (),
-    .SRC_DATA_OUT   (),
-    .SRC_REQ_IN     (),
-    .SRC_ACK_OUT    (),
+    .SRC_WRITE_IN   (cache_write),
+    .SRC_ACS_IN     (cache_acs),
+    .SRC_DATA_OUT   (cache_read_data),
+    .SRC_REQ_IN     (cache_req),
+    .SRC_ACK_OUT    (cache_ack),
 
     .CMD_DATA_OUT   (arb_cmd_data),
     .CMD_REQ_OUT    (arb_cmd_req),
@@ -70,7 +118,7 @@ SDRAM_PKG::tag_t  io_read_tag;
 
 FIFO_SYNC #(
     .WIDTH      ($bits(SDRAM_PKG::cmd_t)),
-    .DEPTH_LOG2 (2)
+    .DEPTH_LOG2 (1)
 ) cmd_fifo (
     .CLK        (CLK),
     .RESET_IN   (RESET_IN),
@@ -115,7 +163,7 @@ SDRAM_IO #(
 ) io (
     .CLK        (CLK),
     .CLK_IO     (CLK_IO),
-    .RESET_IN   (RESET),
+    .RESET_IN   (RESET_IN),
 
     .CMD_DATA_IN    (io_cmd_data),
     .CMD_REQ_IN     (io_cmd_req),

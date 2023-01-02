@@ -17,24 +17,26 @@ localparam int N_CAS[4] = '{0, 1, 2, 3};
 typedef enum logic [2:0] {
     OP_NOP   = 3'h0,
     OP_REF   = 3'h1,
-    OP_PRE   = 3'h2,
-    OP_ACT   = 3'h3,
-    OP_WRITE = 3'h4,
-    OP_READ  = 3'h5,
-    OP_MRS   = 3'h7
+    OP_MRS   = 3'h2,
+    OP_PRE   = 3'h4,
+    OP_ACT   = 3'h5,
+    OP_WRITE = 3'h6,
+    OP_READ  = 3'h7
 } op_t;
 
 localparam N_BANKS     = 4;
-localparam N_BAN_BITS  = $clog2(N_BANKS);
+localparam N_BANK_BITS = $clog2(N_BANKS);
 localparam N_ROW_BITS  = 13;
 localparam N_COL_BITS  = 10;
 localparam N_ADDR_BITS = 13;    // Maximum of ROW and COL
 localparam N_DATA_BITS = 16;
 localparam N_TAG_BITS  = 3;     // Concurrent access
 
+localparam MAX_BYTES   = N_BANKS * (2 ** (N_ROW_BITS + N_COL_BITS)) * (N_DATA_BITS / 2);
+
 localparam PALL_BIT    = 10;    // Precharge all banks bit
 
-typedef logic [N_BAN_BITS-1:0]  ba_t;
+typedef logic [N_BANK_BITS-1:0] ba_t;
 typedef logic [N_ROW_BITS-1:0]  row_t;
 typedef logic [N_COL_BITS-1:0]  col_t;
 typedef logic [N_ADDR_BITS-1:0] addr_t;
@@ -56,8 +58,8 @@ typedef struct packed {
     // addr also acts as col number for read/write access
     addr_t addr;
     // data also acts as mode register value
-    // data may be used during precharge/active for on-going write burst
     // data also used to transfer tag value for read burst
+    // data may be used otherwise for on-going write burst
     data_t data;
 } cmd_t;
 

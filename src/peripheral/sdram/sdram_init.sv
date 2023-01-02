@@ -3,8 +3,7 @@ module SDRAM_INIT #(
     parameter int tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
                   tMRD = 2, tDPL = 2, tQMD = 2,
                   tINIT = 14250, tREF = 1114,
-    parameter SDRAM_PKG::cas_t   CAS   = SDRAM_PKG::CAS_3,
-    parameter SDRAM_PKG::burst_t BURST = SDRAM_PKG::BURST_8
+                  CAS = 3, BURST = 8
 ) (
     input wire CLK,
     input wire RESET_IN,
@@ -20,7 +19,9 @@ module SDRAM_INIT #(
 
 // Special init/refresh opertions
 
-localparam logic [14:0] MRS = {5'b0, 1'b0, 2'b0, CAS[2:0], 1'b0, BURST[2:0]};
+localparam logic [2:0] MRS_BURST[0:8] = '{0, 0, 1, 1, 2, 2, 2, 2, 3};
+localparam logic [2:0] MRS_CAS[0:3]   = '{0, 1, 2, 3};
+localparam logic [14:0] MRS = {5'b0, 1'b0, 2'b0, MRS_CAS[CAS], 1'b0, MRS_BURST[BURST]};
 
 localparam tINIT_TOTAL = tINIT + tRP + tRC + tRC + tMRD;
 logic [$clog2(tINIT_TOTAL)-1:0] spc_cnt;

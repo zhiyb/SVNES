@@ -4,8 +4,7 @@ module SDRAM_IO
     parameter int tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
                   tMRD = 2, tDPL = 2, tQMD = 2,
                   tINIT = 14250, tREF = 1114,
-    parameter SDRAM_PKG::cas_t   CAS   = SDRAM_PKG::CAS_3,
-    parameter SDRAM_PKG::burst_t BURST = SDRAM_PKG::BURST_8
+                  CAS = 3, BURST = 8
 ) (
     input wire CLK,
     input wire CLK_IO,
@@ -57,7 +56,7 @@ assign DRAM_DQ  = dram_dq_out_en ? dram_dq_out : 'z;
 assign DRAM_CLK = CLK_IO;
 
 // Read output pipe
-localparam READ_LATENCY = SDRAM_PKG::N_CAS[CAS] + 2;
+localparam READ_LATENCY = CAS + 2;
 
 SDRAM_PKG::tag_t                    tag_pipe_in;
 SDRAM_PKG::tag_t [READ_LATENCY-1:0] tag_pipe;

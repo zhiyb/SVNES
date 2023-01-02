@@ -1,19 +1,5 @@
 package SDRAM_PKG;
 
-typedef enum int {
-    BURST_1 = 0,
-    BURST_2 = 1,
-    BURST_4 = 2,
-    BURST_8 = 3
-} burst_t;
-localparam int N_BURSTS[4] = '{1, 2, 4, 8};
-
-typedef enum int {
-    CAS_2 = 2,
-    CAS_3 = 3
-} cas_t;
-localparam int N_CAS[4] = '{0, 1, 2, 3};
-
 typedef enum logic [5:0] {
     OP_NOP   = 6'h00,
     OP_PRE   = 6'h01,

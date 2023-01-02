@@ -3,8 +3,7 @@ module SDRAM #(
     parameter int tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
                   tMRD = 2, tDPL = 2, tQMD = 2, tRRD = 2,
                   tINIT = 14250, tREF = 1114,
-    parameter SDRAM_PKG::cas_t   CAS   = SDRAM_PKG::CAS_3,
-    parameter SDRAM_PKG::burst_t BURST = SDRAM_PKG::BURST_8
+                  CAS = 3, BURST = 8
 ) (
     input wire CLK,
     input wire CLK_IO,

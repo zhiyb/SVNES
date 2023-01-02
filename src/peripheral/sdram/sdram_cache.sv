@@ -1,7 +1,7 @@
 module SDRAM_CACHE #(
     parameter int N_SRC = 4,
     parameter int N_DST = 4,
-    parameter SDRAM_PKG::burst_t BURST = SDRAM_PKG::BURST_8
+    parameter int BURST = 8
 ) (
     input wire CLK,
     input wire RESET_IN,
@@ -26,7 +26,7 @@ module SDRAM_CACHE #(
     input  logic                    [N_DST-1:0] DST_ACK_IN
 );
 
-localparam LINE_BYTES     = SDRAM_PKG::N_BURSTS[BURST] * $bits(SDRAM_PKG::data_t) / 8;
+localparam LINE_BYTES     = BURST * $bits(SDRAM_PKG::data_t) / 8;
 localparam LINE_ADDR_BITS = $clog2(LINE_BYTES);
 localparam TAG_INDEX_BITS = SDRAM_PKG::N_BANKS + 4;
 localparam TAG_ADDR_BITS  = $clog2(SDRAM_PKG::MAX_BYTES) - LINE_ADDR_BITS - TAG_INDEX_BITS;

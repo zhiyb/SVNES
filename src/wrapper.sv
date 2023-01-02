@@ -62,8 +62,8 @@ SDRAM #(
     .tRRD   (2),
     .tINIT  (14250),
     .tREF   (1114),
-    .CAS    (SDRAM_PKG::CAS_3),
-    .BURST  (SDRAM_PKG::BURST_8)
+    .CAS    (3),
+    .BURST  (8)
 ) sdram (
     .CLK            (clk_sys),
     .CLK_IO         (clk_mem_io),

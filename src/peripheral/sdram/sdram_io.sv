@@ -83,48 +83,44 @@ always_comb begin
     dram_we_n  = 1;
     tag_pipe_in = 0;
 
-    case (CMD_DATA_IN.op)
-    SDRAM_PKG::OP_NOP: begin
-    end
-    SDRAM_PKG::OP_REF: begin
+    if (CMD_DATA_IN.op & SDRAM_PKG::OP_REF) begin
         dram_ras_n = 0;
         dram_cas_n = 0;
-        dram_we_n  = 1;
+        //dram_we_n  = 1;
     end
-    SDRAM_PKG::OP_PRE: begin
+    if (CMD_DATA_IN.op & SDRAM_PKG::OP_PRE) begin
         dram_ras_n = 0;
-        dram_cas_n = 1;
+        //dram_cas_n = 1;
         dram_we_n  = 0;
-        dram_addr[SDRAM_PKG::PALL_BIT] = CMD_DATA_IN.addr[SDRAM_PKG::PALL_BIT];
+        //dram_addr[SDRAM_PKG::PALL_BIT] = CMD_DATA_IN.addr[SDRAM_PKG::PALL_BIT];
     end
-    SDRAM_PKG::OP_ACT: begin
+    if (CMD_DATA_IN.op & SDRAM_PKG::OP_ACT) begin
         dram_ras_n = 0;
-        dram_cas_n = 1;
-        dram_we_n  = 1;
-        dram_addr  = CMD_DATA_IN.addr;
+        //dram_cas_n = 1;
+        //dram_we_n  = 1;
+        //dram_addr  = CMD_DATA_IN.addr;
     end
-    SDRAM_PKG::OP_WRITE: begin
-        dram_ras_n = 1;
+    if (CMD_DATA_IN.op & SDRAM_PKG::OP_WRITE) begin
+        //dram_ras_n = 1;
         dram_cas_n = 0;
         dram_we_n  = 0;
-        dram_addr  = CMD_DATA_IN.addr;
+        //dram_addr  = CMD_DATA_IN.addr;
         dram_dq_en = 1;
     end
-    SDRAM_PKG::OP_READ: begin
-        dram_ras_n = 1;
+    if (CMD_DATA_IN.op & SDRAM_PKG::OP_READ) begin
+        //dram_ras_n = 1;
         dram_cas_n = 0;
-        dram_we_n  = 1;
-        dram_addr  = CMD_DATA_IN.addr;
-        dram_dq_en = 0;
+        //dram_we_n  = 1;
+        //dram_addr  = CMD_DATA_IN.addr;
+        //dram_dq_en = 0;
         tag_pipe_in = CMD_DATA_IN.data;
     end
-    SDRAM_PKG::OP_MRS: begin
+    if (CMD_DATA_IN.op & SDRAM_PKG::OP_MRS) begin
         dram_ras_n = 0;
         dram_cas_n = 0;
         dram_we_n  = 0;
         {dram_ba[1:0], dram_addr[12:0]} = CMD_DATA_IN.data;
     end
-    endcase
 end
 
 assign CMD_ACK_OUT = 1;

@@ -1,5 +1,5 @@
 module SDRAM_ARB #(
-    parameter int NSRC = 4,
+    parameter int N_SRC = 4,
     // Timing parameters
     parameter int tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
                   tMRD = 2, tDPL = 2, tQMD = 2, tRRD = 2,
@@ -13,11 +13,11 @@ module SDRAM_ARB #(
     output logic INIT_DONE_OUT,
 
     // Upstream ports
-    input  logic                    [NSRC-1:0] SRC_WRITE_IN,
-    input  SDRAM_PKG::dram_access_t [NSRC-1:0] SRC_ACS_IN,
-    output SDRAM_PKG::data_t        [NSRC-1:0] SRC_DATA_OUT,
-    input  logic                    [NSRC-1:0] SRC_REQ_IN,
-    output logic                    [NSRC-1:0] SRC_ACK_OUT,
+    input  logic                    [N_SRC-1:0] SRC_WRITE_IN,
+    input  SDRAM_PKG::dram_access_t [N_SRC-1:0] SRC_ACS_IN,
+    output SDRAM_PKG::data_t        [N_SRC-1:0] SRC_DATA_OUT,
+    input  logic                    [N_SRC-1:0] SRC_REQ_IN,
+    output logic                    [N_SRC-1:0] SRC_ACK_OUT,
 
     // Command interface
     output SDRAM_PKG::cmd_t CMD_DATA_OUT,
@@ -36,9 +36,13 @@ localparam tRQL   = tCAS;
 // Bank timers
 typedef struct packed {
     logic [3:0]      t_pre;     // Time to precharge
+    logic            t_pre_block;
     logic [3:0]      t_act;     // Time to row activation
+    logic            t_act_block;
     logic [3:0]      t_read;    // Time to read access
+    logic            t_read_block;
     logic [3:0]      t_write;   // Time to write access
+    logic            t_write_block;
     logic            b_act;     // Bank is active
     SDRAM_PKG::row_t b_row;     // Active row
 } bank_t;
@@ -51,57 +55,82 @@ generate
         always_ff @(posedge CLK) begin
             if (bank[ba].t_pre != 0)
                 bank[ba].t_pre <= bank[ba].t_pre - 1;
+            if (bank[ba].t_pre <= 1)
+                bank[ba].t_pre_block <= 0;
             if (bank[ba].t_act != 0)
                 bank[ba].t_act <= bank[ba].t_act - 1;
+            if (bank[ba].t_act <= 1)
+                bank[ba].t_act_block <= 0;
             if (bank[ba].t_read != 0)
                 bank[ba].t_read <= bank[ba].t_read - 1;
+            if (bank[ba].t_read <= 1)
+                bank[ba].t_read_block <= 0;
             if (bank[ba].t_write != 0)
                 bank[ba].t_write <= bank[ba].t_write - 1;
+            if (bank[ba].t_write <= 1)
+                bank[ba].t_write_block <= 0;
 
             if (CMD_REQ_OUT & CMD_ACK_IN) begin
-                if (CMD_DATA_OUT.op == SDRAM_PKG::OP_REF) begin
+                if (CMD_DATA_OUT.op & SDRAM_PKG::OP_REF) begin
                     // Auto refresh (also used as partial reset)
                     bank[ba].t_act   <= tRC - 1;
+                    bank[ba].t_act_block <= 1;
                     bank[ba].t_read  <= 0;
                     bank[ba].t_write <= 0;
                     //bank[ba].b_act   <= 0;
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_PRE &&
-                             (CMD_DATA_OUT.addr[SDRAM_PKG::PALL_BIT] ||
-                              CMD_DATA_OUT.bank == ba)) begin
+                end
+                if ((CMD_DATA_OUT.op & SDRAM_PKG::OP_PRE) &&
+                    (CMD_DATA_OUT.addr[SDRAM_PKG::PALL_BIT] || CMD_DATA_OUT.bank == ba)) begin
                     // Bank precharge
                     bank[ba].t_act   <= tRP - 1;
+                    bank[ba].t_act_block <= 1;
                     bank[ba].b_act   <= 0;
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_ACT &&
-                             CMD_DATA_OUT.bank == ba) begin
+                end
+                if ((CMD_DATA_OUT.op & SDRAM_PKG::OP_ACT) &&
+                    CMD_DATA_OUT.bank == ba) begin
                     // Same bank active
                     bank[ba].t_pre   <= tRAS - 1;
+                    bank[ba].t_pre_block <= 1;
                     bank[ba].t_read  <= SDRAM_PKG::max(bank[ba].t_read,  tRCD - 1);
+                    bank[ba].t_read_block <= 1;
                     bank[ba].t_write <= SDRAM_PKG::max(bank[ba].t_write, tRCD - 1);
+                    bank[ba].t_write_block <= 1;
                     bank[ba].b_row   <= CMD_DATA_OUT.addr;
                     bank[ba].b_act   <= 1;
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_ACT) begin
+                end else if (CMD_DATA_OUT.op & SDRAM_PKG::OP_ACT) begin
                     // Different bank active
                     bank[ba].t_act   <= SDRAM_PKG::max(bank[ba].t_act,  tRRD - 1);
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_READ &&
-                             CMD_DATA_OUT.bank == ba) begin
+                    bank[ba].t_act_block <= 1;
+                end
+                if ((CMD_DATA_OUT.op & SDRAM_PKG::OP_READ) && CMD_DATA_OUT.bank == ba) begin
                     // Same bank read
                     bank[ba].t_pre   <= tCAS + tBURST - tRQL - 1;
+                    bank[ba].t_pre_block <= 1;
                     bank[ba].t_read  <= tCAS + tBURST - tCAS - 1;
+                    bank[ba].t_read_block <= 1;
                     bank[ba].t_write <= tCAS + tBURST + 1 - 1;
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_READ) begin
+                    bank[ba].t_write_block <= 1;
+                end else if (CMD_DATA_OUT.op & SDRAM_PKG::OP_READ) begin
                     // Different bank read
                     bank[ba].t_read  <= tCAS + tBURST - tCAS - 1;
+                    bank[ba].t_read_block <= 1;
                     bank[ba].t_write <= tCAS + tBURST + 1 - 1;
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_WRITE &&
-                             CMD_DATA_OUT.bank == ba) begin
+                    bank[ba].t_write_block <= 1;
+                end
+                if ((CMD_DATA_OUT.op & SDRAM_PKG::OP_WRITE) && CMD_DATA_OUT.bank == ba) begin
                     // Same bank write
                     bank[ba].t_pre   <= tBURST + tDPL - 1;
+                    bank[ba].t_pre_block <= 1;
                     bank[ba].t_read  <= tBURST - 1;
+                    bank[ba].t_read_block <= 1;
                     bank[ba].t_write <= tBURST - 1;
-                end else if (CMD_DATA_OUT.op == SDRAM_PKG::OP_WRITE) begin
+                    bank[ba].t_write_block <= 1;
+                end else if (CMD_DATA_OUT.op & SDRAM_PKG::OP_WRITE) begin
                     // Different bank write
                     bank[ba].t_read  <= tBURST - 1;
+                    bank[ba].t_read_block <= 1;
                     bank[ba].t_write <= tBURST - 1;
+                    bank[ba].t_write_block <= 1;
                 end
             end
         end
@@ -110,39 +139,37 @@ endgenerate
 
 // Pending burst counter
 logic [$clog2(tBURST)-1:0] burst_cnt;
-SDRAM_PKG::tag_t           burst_tag, burst_tag_sel;
+logic [N_SRC-1:0]          burst_src, cmd_src_sel;
 
 always_ff @(posedge CLK)
     if (burst_cnt != 0)
         burst_cnt <= burst_cnt - 1;
     else if (CMD_REQ_OUT && CMD_ACK_IN &&
-             (CMD_DATA_OUT.op == SDRAM_PKG::OP_WRITE ||
-              CMD_DATA_OUT.op == SDRAM_PKG::OP_READ))
+             (CMD_DATA_OUT.op & (SDRAM_PKG::OP_WRITE | SDRAM_PKG::OP_READ)))
         burst_cnt <= tBURST - 1;
 
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
-        burst_tag <= 0;
+        burst_src <= 0;
     else if (CMD_REQ_OUT && CMD_ACK_IN &&
-             (CMD_DATA_OUT.op == SDRAM_PKG::OP_WRITE ||
-              CMD_DATA_OUT.op == SDRAM_PKG::OP_READ))
-        burst_tag <= burst_tag_sel;
+             (CMD_DATA_OUT.op & (SDRAM_PKG::OP_WRITE | SDRAM_PKG::OP_READ)))
+        burst_src <= cmd_src_sel;
     else if (burst_cnt == 1)
-        burst_tag <= 0;
+        burst_src <= 0;
 
 // Upstream port handler
 SDRAM_PKG::data_t read_data;
 always_ff @(posedge CLK)
     read_data <= READ_DATA_IN;
 
-SDRAM_PKG::cmd_t [NSRC-1:0] src_cmd;
-logic            [NSRC-1:0] src_req;
-logic            [NSRC-1:0] src_ack;
-logic            [NSRC-1:0] src_burst;
+SDRAM_PKG::cmd_t [N_SRC-1:0] src_cmd;
+logic            [N_SRC-1:0] src_req;
+logic            [N_SRC-1:0] src_ack;
+logic            [N_SRC-1:0] src_burst;
 
 generate
     genvar src;
-    for (src = 0; src < NSRC; src++) begin: gen_src
+    for (src = 0; src < N_SRC; src++) begin: gen_src
         always_comb begin
             bank_t ba;
             src_cmd[src] = '{default: 0};
@@ -153,25 +180,32 @@ generate
             src_cmd[src].data = 0;
 
             if (SRC_REQ_IN[src]) begin
-                src_req[src] = 1;
                 if (!bank[ba].b_act) begin
                     // Request bank active
+                    src_req[src]      = ~bank[ba].t_act_block;
                     src_cmd[src].op   = SDRAM_PKG::OP_ACT;
                     src_cmd[src].addr = SRC_ACS_IN[src].row;
                 end else if (bank[ba].b_row != SRC_ACS_IN[src].row) begin
                     // Different row, request bank precharge
+                    src_req[src]      = ~bank[ba].t_pre_block;
                     src_cmd[src].op   = SDRAM_PKG::OP_PRE;
                     src_cmd[src].addr[SDRAM_PKG::PALL_BIT] = 0;
                 end else if (~SRC_WRITE_IN[src]) begin
                     // Read burst request
+                    src_req[src]      = ~bank[ba].t_read_block;
                     src_cmd[src].op   = SDRAM_PKG::OP_READ;
                     src_cmd[src].data = src + 1;
                 end else begin
                     // Write burst request
+                    src_req[src]      = ~bank[ba].t_write_block;
                     src_cmd[src].op   = SDRAM_PKG::OP_WRITE;
                     src_cmd[src].data = SRC_ACS_IN[src].data;
                 end
             end
+
+            // Burst is in progress
+            if (src_burst[src])
+                src_req[src] = 0;
         end
 
         logic [$clog2(tBURST+1)-1:0] read_burst_cnt;
@@ -189,8 +223,8 @@ generate
             SRC_ACK_OUT[src] = 0;
             if (SRC_WRITE_IN[src])
                 SRC_ACK_OUT[src] = CMD_REQ_OUT && CMD_ACK_IN &&
-                                   src_cmd[src].op == SDRAM_PKG::OP_WRITE &&
-                                   (burst_tag_sel == src + 1 || burst_tag == src + 1);
+                                   (src_cmd[src].op & SDRAM_PKG::OP_WRITE) &&
+                                   (cmd_src_sel[src] | burst_src[src]);
             if (read_burst_cnt != 0)
                 SRC_ACK_OUT[src] = 1;
         end
@@ -200,7 +234,7 @@ generate
                 src_burst[src] <= 0;
             else if (burst_cnt <= 1 && SRC_WRITE_IN[src])
                 src_burst[src] <= 0;
-            else if (burst_cnt != 0 && burst_tag == src + 1)
+            else if (burst_cnt != 0 && burst_src[src])
                 src_burst[src] <= 1;
             else if (read_burst_cnt <= 1)
                 src_burst[src] <= 0;
@@ -247,48 +281,43 @@ SDRAM_INIT #(
 always_comb begin
     int ba;
     spc_ack = CMD_ACK_IN;
-    if (spc_cmd.op == SDRAM_PKG::OP_PRE) begin
+    if (spc_cmd.op & SDRAM_PKG::OP_PRE) begin
         for (ba = 0; ba < SDRAM_PKG::N_BANKS; ba++)
-            if (bank[ba].t_pre != 0)
+            if (bank[ba].t_pre_block)
                 spc_ack = 0;
-    end else if (spc_cmd.op == SDRAM_PKG::OP_REF) begin
+    end else if (spc_cmd.op & SDRAM_PKG::OP_REF) begin
         for (ba = 0; ba < SDRAM_PKG::N_BANKS; ba++)
-            if (bank[ba].t_act != 0)
+            if (bank[ba].t_act_block)
                 spc_ack = 0;
     end
 end
 
 // Output command arbiter
-assign CMD_REQ_OUT = 1;
+always_comb begin
+    int i;
+    // Init/refresh has highest priority
+    cmd_src_sel = spc_req ? 0 : src_req;
+    // Upstream port 0 has higher priority
+    for (i = 1; i < N_SRC; i++)
+        cmd_src_sel = cmd_src_sel & ~((N_SRC)'(cmd_src_sel << i));
+end
+
 always_comb begin
     int src;
-    CMD_DATA_OUT = src_cmd[0];
-    CMD_DATA_OUT.op = SDRAM_PKG::OP_NOP;
-    burst_tag_sel = 0;
-    // Upstream port 0 has higher priority
-    for (src = NSRC - 1; src >= 0; src--) begin
-        if (src_req[src]) begin
-            int ba;
-            ba = src_cmd[src].bank;
-            if (~src_burst[src] &&
-                ((src_cmd[src].op == SDRAM_PKG::OP_ACT   && bank[ba].t_act == 0) ||
-                 (src_cmd[src].op == SDRAM_PKG::OP_PRE   && bank[ba].t_pre == 0) ||
-                 (src_cmd[src].op == SDRAM_PKG::OP_READ  && bank[ba].t_read == 0) ||
-                 (src_cmd[src].op == SDRAM_PKG::OP_WRITE && bank[ba].t_write == 0)))
-                burst_tag_sel = src + 1;
-        end
+    CMD_DATA_OUT = '{default: 0};
+    // Command ports
+    for (src = 0; src < N_SRC; src++) begin
+        if (cmd_src_sel[src])
+            CMD_DATA_OUT |= src_cmd[src];
+        // Continue read/write pending burst data
+        if (burst_src[src])
+            CMD_DATA_OUT.data |= src_cmd[src].data;
     end
     // Init/refresh has highest priority
-    if (spc_req) begin
-        burst_tag_sel = 0;
-        if (spc_ack)
-            CMD_DATA_OUT = spc_cmd;
-    end
-    if (burst_tag_sel != 0)
-        CMD_DATA_OUT = src_cmd[burst_tag_sel - 1];
-    // Continue read/write pending burst data
-    if (burst_cnt != 0)
-        CMD_DATA_OUT.data = src_cmd[burst_tag - 1].data;
+    if (spc_ack)
+        CMD_DATA_OUT |= spc_cmd;
 end
+
+assign CMD_REQ_OUT = 1;
 
 endmodule

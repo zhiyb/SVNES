@@ -14,14 +14,14 @@ typedef enum int {
 } cas_t;
 localparam int N_CAS[4] = '{0, 1, 2, 3};
 
-typedef enum logic [2:0] {
-    OP_NOP   = 3'h0,
-    OP_REF   = 3'h1,
-    OP_MRS   = 3'h2,
-    OP_PRE   = 3'h4,
-    OP_ACT   = 3'h5,
-    OP_WRITE = 3'h6,
-    OP_READ  = 3'h7
+typedef enum logic [5:0] {
+    OP_NOP   = 6'h00,
+    OP_PRE   = 6'h01,
+    OP_ACT   = 6'h02,
+    OP_WRITE = 6'h04,
+    OP_READ  = 6'h08,
+    OP_REF   = 6'h10,
+    OP_MRS   = 6'h20
 } op_t;
 
 localparam N_BANKS     = 4;

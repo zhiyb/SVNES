@@ -21,15 +21,13 @@ module SDRAM #(
     output logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N
 );
 
-logic [14:0] mrs;
-assign mrs = {5'b0, 1'b0, 2'b0, CAS[2:0], 1'b0, BURST[2:0]};
+localparam N_CMD_QUEUE  = 4;
 
-
-logic                    [3:0] cache_write;
-SDRAM_PKG::dram_access_t [3:0] cache_acs;
-SDRAM_PKG::data_t        [3:0] cache_read_data;
-logic                    [3:0] cache_req;
-logic                    [3:0] cache_ack;
+logic                    [N_CMD_QUEUE-1:0] cache_write;
+SDRAM_PKG::dram_access_t [N_CMD_QUEUE-1:0] cache_acs;
+SDRAM_PKG::data_t        [N_CMD_QUEUE-1:0] cache_read_data;
+logic                    [N_CMD_QUEUE-1:0] cache_req;
+logic                    [N_CMD_QUEUE-1:0] cache_ack;
 
 
 // Memory write test gen
@@ -71,6 +69,30 @@ always_comb begin
 end
 
 
+logic                    [N_CMD_QUEUE-1:0] fifo_write;
+SDRAM_PKG::dram_access_t [N_CMD_QUEUE-1:0] fifo_acs;
+SDRAM_PKG::data_t        [N_CMD_QUEUE-1:0] fifo_read_data;
+logic                    [N_CMD_QUEUE-1:0] fifo_req;
+logic                    [N_CMD_QUEUE-1:0] fifo_ack;
+
+SDRAM_FIFO #(
+    .N_PORTS    (N_CMD_QUEUE)
+) cmd_arb_fifo (
+    .CLK            (CLK),
+    .RESET_IN       (RESET_IN),
+
+    .SRC_WRITE_IN   (cache_write),
+    .SRC_ACS_IN     (cache_acs),
+    .SRC_DATA_OUT   (cache_read_data),
+    .SRC_REQ_IN     (cache_req),
+    .SRC_ACK_OUT    (cache_ack),
+
+    .DST_WRITE_OUT  (fifo_write),
+    .DST_ACS_OUT    (fifo_acs),
+    .DST_DATA_IN    (fifo_read_data),
+    .DST_REQ_OUT    (fifo_req),
+    .DST_ACK_IN     (fifo_ack)
+);
 
 SDRAM_PKG::cmd_t arb_cmd_data;
 logic arb_cmd_req, arb_cmd_ack;
@@ -78,7 +100,7 @@ SDRAM_PKG::data_t arb_read_data;
 SDRAM_PKG::tag_t  arb_read_tag;
 
 SDRAM_ARB #(
-    .NSRC       (4),
+    .N_SRC      (N_CMD_QUEUE),
     .tRC        (tRC),
     .tRAS       (tRAS),
     .tRP        (tRP),
@@ -91,17 +113,17 @@ SDRAM_ARB #(
     .tREF       (tREF),
     .CAS        (CAS),
     .BURST      (BURST)
-) arb (
+) cmd_arb (
     .CLK            (CLK),
     .RESET_IN       (RESET_IN),
 
     .INIT_DONE_OUT  (INIT_DONE_OUT),
 
-    .SRC_WRITE_IN   (cache_write),
-    .SRC_ACS_IN     (cache_acs),
-    .SRC_DATA_OUT   (cache_read_data),
-    .SRC_REQ_IN     (cache_req),
-    .SRC_ACK_OUT    (cache_ack),
+    .SRC_WRITE_IN   (fifo_write),
+    .SRC_ACS_IN     (fifo_acs),
+    .SRC_DATA_OUT   (fifo_read_data),
+    .SRC_REQ_IN     (fifo_req),
+    .SRC_ACK_OUT    (fifo_ack),
 
     .CMD_DATA_OUT   (arb_cmd_data),
     .CMD_REQ_OUT    (arb_cmd_req),
@@ -136,8 +158,8 @@ FIFO_SYNC #(
     .WIDTH      ($bits(SDRAM_PKG::tag_t) + $bits(SDRAM_PKG::data_t)),
     .DEPTH_LOG2 (2)
 ) read_fifo (
-    .CLK        (CLK),
-    .RESET_IN   (RESET_IN),
+    .CLK            (CLK),
+    .RESET_IN       (RESET_IN),
 
     .WRITE_DATA_IN  ({io_read_tag, io_read_data}),
     .WRITE_REQ_IN   (1'b1),

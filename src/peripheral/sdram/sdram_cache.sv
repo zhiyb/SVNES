@@ -19,11 +19,11 @@ module SDRAM_CACHE #(
     input  logic            HRESP  [N_SRC-1:0],
 
     // Downstream ports
-    input  logic                    [N_DST-1:0] DST_WRITE_IN,
-    input  SDRAM_PKG::dram_access_t [N_DST-1:0] DST_ACS_IN,
-    output SDRAM_PKG::data_t        [N_DST-1:0] DST_DATA_OUT,
-    input  logic                    [N_DST-1:0] DST_REQ_IN,
-    output logic                    [N_DST-1:0] DST_ACK_OUT
+    output logic                    [N_DST-1:0] DST_WRITE_OUT,
+    output SDRAM_PKG::dram_access_t [N_DST-1:0] DST_ACS_OUT,
+    input  SDRAM_PKG::data_t        [N_DST-1:0] DST_DATA_IN,
+    output logic                    [N_DST-1:0] DST_REQ_OUT,
+    input  logic                    [N_DST-1:0] DST_ACK_IN
 );
 
 localparam LINE_BYTES     = SDRAM_PKG::N_BURSTS[BURST] * $bits(SDRAM_PKG::data_t) / 8;

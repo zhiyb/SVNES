@@ -182,11 +182,6 @@ generate
     genvar src;
     for (src = 0; src < N_SRC; src++) begin: gen_src
         logic row_change;
-        always_ff @(posedge CLK, posedge RESET_IN)
-            if (RESET_IN)
-                row_change <= 0;
-            else if (cmd_src_sel[src])
-                row_change <= SRC_RCHG_IN[src];
 
         always_comb begin
             bank_t ba;
@@ -238,6 +233,19 @@ generate
                 read_burst_cnt <= BURST;
             else if (read_burst_cnt != 0)
                 read_burst_cnt <= read_burst_cnt - 1;
+
+        always_ff @(posedge CLK, posedge RESET_IN)
+            if (RESET_IN)
+                row_change <= 0;
+            else if (cmd_src_sel[src])
+                row_change <= SRC_RCHG_IN[src];
+            else if (src_burst[src]) begin
+                // Clear row_change after last beat in burst
+                if (SRC_WRITE_IN[src] && burst_cnt <= 1)
+                    row_change <= 0;
+                else if (~SRC_WRITE_IN[src] && read_burst_cnt <= 1)
+                    row_change <= 0;
+            end
 
         assign SRC_DATA_OUT[src] = read_data;
 

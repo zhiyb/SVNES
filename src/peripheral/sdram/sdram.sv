@@ -30,41 +30,58 @@ logic                    [N_CMD_QUEUE-1:0] cache_ack;
 
 
 // Memory write test gen
-SDRAM_PKG::row_t row;
+SDRAM_PKG::addr_t addr [3:0];
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
-        row <= 0;
-    else
-        row <= row + 1;
+        addr <= '{default: 0};
+    else begin
+        int i;
+        for (i = 0; i < 4; i++)
+            if (cache_req[i] & cache_ack[i])
+                addr[i] <= addr[i] + 1;
+    end
+
+logic [4-1:0][3:0] req_cnt;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        req_cnt <= 0;
+    else begin
+        int i;
+        for (i = 0; i < 4; i++)
+            if (~cache_req[i])
+                req_cnt[i] <= BURST;
+            else if (cache_ack[i])
+                req_cnt[i] <= req_cnt[i] - 1;
+    end
 
 always_comb begin
     cache_write = '{default: 0};
     cache_acs   = '{default: 0};
     cache_req   = '{default: 0};
 
-    cache_write[0]    = 1;
-    cache_req[0]      = 1;
-    cache_acs[0].row  = row[12:5];
-    cache_acs[0].bank = 0;
-    cache_acs[0].data = 'h5a5a5a5a;
+    cache_write[0]    = addr[0][6];
+    cache_req[0]      = req_cnt[0] != 0;
+    cache_acs[0].row  = {3{addr[0][12:3]}};
+    cache_acs[0].bank = addr[0][8:7] + 0;
+    cache_acs[0].data = ~addr[0];
 
-    cache_write[1]    = 0;
-    cache_req[1]      = 1;
-    cache_acs[1].row  = row[12:6];
-    cache_acs[1].bank = 1;
-    cache_acs[1].data = 'h01234567;
+    cache_write[1]    = addr[1][5];
+    cache_req[1]      = req_cnt[1] != 0;
+    cache_acs[1].row  = {3{addr[1][12:4]}};
+    cache_acs[1].bank = addr[1][8:7] + 1;
+    cache_acs[1].data = ~addr[1];
 
-    cache_write[2]    = 1;
-    cache_req[2]      = 1;
-    cache_acs[2].row  = row[12:7];
-    cache_acs[2].bank = 2;
-    cache_acs[2].data = 'h34343434;
+    cache_write[2]    = addr[2][4];
+    cache_req[2]      = req_cnt[2] != 0;
+    cache_acs[2].row  = {3{addr[2][12:5]}};
+    cache_acs[2].bank = addr[2][8:7] + 2;
+    cache_acs[2].data = ~addr[2];
 
-    cache_write[3]    = 0;
-    cache_req[3]      = 1;
-    cache_acs[3].row  = row[12:8];
-    cache_acs[3].bank = 3;
-    cache_acs[3].data = 'h01234567;
+    cache_write[3]    = addr[3][3];
+    cache_req[3]      = req_cnt[3] != 0;
+    cache_acs[3].row  = {3{addr[3][12:6]}};
+    cache_acs[3].bank = addr[3][8:7] + 3;
+    cache_acs[3].data = ~addr[3];
 end
 
 
@@ -124,49 +141,9 @@ SDRAM_ARB #(
     .SRC_REQ_IN     (fifo_req),
     .SRC_ACK_OUT    (fifo_ack),
 
-    .CMD_DATA_OUT   (arb_cmd_data),
-    .CMD_REQ_OUT    (arb_cmd_req),
-    .CMD_ACK_IN     (arb_cmd_ack),
-
+    .CMD_OUT        (arb_cmd_data),
     .READ_DATA_IN   (arb_read_data),
     .READ_TAG_IN    (arb_read_tag)
-);
-
-SDRAM_PKG::cmd_t io_cmd_data;
-logic io_cmd_req, io_cmd_ack;
-SDRAM_PKG::data_t io_read_data;
-SDRAM_PKG::tag_t  io_read_tag;
-
-FIFO_SYNC #(
-    .WIDTH      ($bits(SDRAM_PKG::cmd_t)),
-    .DEPTH_LOG2 (1)
-) cmd_fifo (
-    .CLK        (CLK),
-    .RESET_IN   (RESET_IN),
-
-    .WRITE_DATA_IN  (arb_cmd_data),
-    .WRITE_REQ_IN   (arb_cmd_req),
-    .WRITE_ACK_OUT  (arb_cmd_ack),
-
-    .READ_DATA_OUT  (io_cmd_data),
-    .READ_REQ_OUT   (io_cmd_req),
-    .READ_ACK_IN    (io_cmd_ack)
-);
-
-FIFO_SYNC #(
-    .WIDTH      ($bits(SDRAM_PKG::tag_t) + $bits(SDRAM_PKG::data_t)),
-    .DEPTH_LOG2 (2)
-) read_fifo (
-    .CLK            (CLK),
-    .RESET_IN       (RESET_IN),
-
-    .WRITE_DATA_IN  ({io_read_tag, io_read_data}),
-    .WRITE_REQ_IN   (1'b1),
-    .WRITE_ACK_OUT  (),
-
-    .READ_DATA_OUT  ({arb_read_tag, arb_read_data}),
-    .READ_REQ_OUT   (),
-    .READ_ACK_IN    (1'b1)
 );
 
 SDRAM_IO #(
@@ -186,12 +163,9 @@ SDRAM_IO #(
     .CLK_IO     (CLK_IO),
     .RESET_IN   (RESET_IN),
 
-    .CMD_DATA_IN    (io_cmd_data),
-    .CMD_REQ_IN     (io_cmd_req),
-    .CMD_ACK_OUT    (io_cmd_ack),
-
-    .READ_DATA_OUT  (io_read_data),
-    .READ_TAG_OUT   (io_read_tag),
+    .CMD_IN         (arb_cmd_data),
+    .READ_DATA_OUT  (arb_read_data),
+    .READ_TAG_OUT   (arb_read_tag),
 
     .DRAM_DQ    (DRAM_DQ),
     .DRAM_ADDR  (DRAM_ADDR),

@@ -80,6 +80,18 @@ always_comb begin
     end
 end
 
+/*
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        spc_req <= 0;
+    else if (~spc_init_done)
+        spc_req <= 1;
+    else if (spc_ref_state != REF_NOP)
+        spc_req <= 1;
+    else if (spc_cnt == 0)
+        spc_req <= 0;
+*/
+
 assign CMD_DATA_OUT = spc_cmd;
 assign CMD_REQ_OUT  = spc_req;
 assign spc_ack      = CMD_ACK_IN;

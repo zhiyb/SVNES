@@ -1,5 +1,5 @@
 module SDRAM_ARB #(
-    parameter int N_SRC = 4,
+    parameter int N_SRC = SDRAM_PKG::N_BANKS,
     // Timing parameters
     parameter int tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
                   tMRD = 2, tDPL = 2, tQMD = 2, tRRD = 2,
@@ -14,6 +14,7 @@ module SDRAM_ARB #(
     // Upstream ports
     input  logic                    [N_SRC-1:0] SRC_WRITE_IN,
     input  SDRAM_PKG::dram_access_t [N_SRC-1:0] SRC_ACS_IN,
+    input  logic                    [N_SRC-1:0] SRC_RCHG_IN,
     output SDRAM_PKG::data_t        [N_SRC-1:0] SRC_DATA_OUT,
     input  logic                    [N_SRC-1:0] SRC_REQ_IN,
     output logic                    [N_SRC-1:0] SRC_ACK_OUT,
@@ -24,6 +25,11 @@ module SDRAM_ARB #(
     input  SDRAM_PKG::data_t READ_DATA_IN,
     input  SDRAM_PKG::tag_t  READ_TAG_IN
 );
+
+// Fixed bank per-port, N_SRC should equal to N_BANKS
+localparam FIXED_BANK = 1;
+// Use row-change input instead of tracking active bank row here
+localparam USE_RCHG   = 1;
 
 localparam tRQL = CAS;
 
@@ -186,7 +192,6 @@ always_ff @(posedge CLK, posedge RESET_IN)
 // Upstream port handler
 SDRAM_PKG::cmd_t [N_SRC-1:0] src_cmd;
 logic            [N_SRC-1:0] src_req;
-logic            [N_SRC-1:0] src_ack;
 logic            [N_SRC-1:0] src_burst;
 
 SDRAM_PKG::data_t read_data;
@@ -199,21 +204,30 @@ always_ff @(posedge CLK, posedge RESET_IN)
 generate
     genvar src;
     for (src = 0; src < N_SRC; src++) begin: gen_src
+        logic row_change;
+        always_ff @(posedge CLK, posedge RESET_IN)
+            if (RESET_IN)
+                row_change <= 0;
+            else if (cmd_src_sel[src])
+                row_change <= SRC_RCHG_IN[src];
+
         always_comb begin
             bank_t ba;
             src_req[src] = 0;
             src_cmd[src] = '{default: 0};
-            src_cmd[src].bank = SRC_ACS_IN[src].bank;
+            src_cmd[src].bank = FIXED_BANK ? src : SRC_ACS_IN[src].bank;
             src_cmd[src].addr = SRC_ACS_IN[src].col;
             src_cmd[src].data = 0;
 
-            ba = SRC_ACS_IN[src].bank;
+            ba = FIXED_BANK ? src : SRC_ACS_IN[src].bank;
             if (!bank[ba].b_act) begin
                 // Request bank active
                 src_req[src]      = ~bank[ba].t_act_block;
                 src_cmd[src].op   = SDRAM_PKG::OP_ACT;
                 src_cmd[src].addr = SRC_ACS_IN[src].row;
-            end else if (bank[ba].b_row != SRC_ACS_IN[src].row) begin
+            end else if (FIXED_BANK && USE_RCHG ?
+                         ~row_change && SRC_RCHG_IN[src] :
+                         bank[ba].b_row != SRC_ACS_IN[src].row) begin
                 // Different row, request bank precharge
                 src_req[src]      = ~bank[ba].t_pre_block;
                 src_cmd[src].op   = SDRAM_PKG::OP_PRE;

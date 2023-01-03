@@ -48,9 +48,9 @@ always_ff @(posedge CLK, posedge RESET_IN)
     else begin
         int i;
         for (i = 0; i < 4; i++)
-            if (~cache_req[i])
-                req_cnt[i] <= BURST;
-            else if (cache_ack[i])
+            if (req_cnt[i] == 0)
+                req_cnt[i] <= BURST + 1;
+            else if (cache_ack[i] | ~cache_req[i])
                 req_cnt[i] <= req_cnt[i] - 1;
     end
 
@@ -60,25 +60,25 @@ always_comb begin
     cache_req   = '{default: 0};
 
     cache_write[0]    = addr[0][6];
-    cache_req[0]      = req_cnt[0] != 0;
+    cache_req[0]      = req_cnt[0] > 1;
     cache_acs[0].row  = {3{addr[0][12:3]}};
     cache_acs[0].bank = addr[0][8:7] + 0;
     cache_acs[0].data = ~addr[0];
 
     cache_write[1]    = addr[1][5];
-    cache_req[1]      = req_cnt[1] != 0;
+    cache_req[1]      = req_cnt[1] > 1;
     cache_acs[1].row  = {3{addr[1][12:4]}};
     cache_acs[1].bank = addr[1][8:7] + 1;
     cache_acs[1].data = ~addr[1];
 
     cache_write[2]    = addr[2][4];
-    cache_req[2]      = req_cnt[2] != 0;
+    cache_req[2]      = req_cnt[2] > 1;
     cache_acs[2].row  = {3{addr[2][12:5]}};
     cache_acs[2].bank = addr[2][8:7] + 2;
     cache_acs[2].data = ~addr[2];
 
     cache_write[3]    = addr[3][3];
-    cache_req[3]      = req_cnt[3] != 0;
+    cache_req[3]      = req_cnt[3] > 1;
     cache_acs[3].row  = {3{addr[3][12:6]}};
     cache_acs[3].bank = addr[3][8:7] + 3;
     cache_acs[3].data = ~addr[3];
@@ -87,6 +87,7 @@ end
 
 logic                    [N_CMD_QUEUE-1:0] fifo_write;
 SDRAM_PKG::dram_access_t [N_CMD_QUEUE-1:0] fifo_acs;
+logic                    [N_CMD_QUEUE-1:0] fifo_rchg;
 SDRAM_PKG::data_t        [N_CMD_QUEUE-1:0] fifo_read_data;
 logic                    [N_CMD_QUEUE-1:0] fifo_req;
 logic                    [N_CMD_QUEUE-1:0] fifo_ack;
@@ -105,6 +106,7 @@ SDRAM_FIFO #(
 
     .DST_WRITE_OUT  (fifo_write),
     .DST_ACS_OUT    (fifo_acs),
+    .DST_RCHG_OUT   (fifo_rchg),
     .DST_DATA_IN    (fifo_read_data),
     .DST_REQ_OUT    (fifo_req),
     .DST_ACK_IN     (fifo_ack)
@@ -137,6 +139,7 @@ SDRAM_ARB #(
 
     .SRC_WRITE_IN   (fifo_write),
     .SRC_ACS_IN     (fifo_acs),
+    .SRC_RCHG_IN    (fifo_rchg),
     .SRC_DATA_OUT   (fifo_read_data),
     .SRC_REQ_IN     (fifo_req),
     .SRC_ACK_OUT    (fifo_ack),

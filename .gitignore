@@ -16,3 +16,5 @@ greybox_tmp/
 *.qws
 *.sh
 *.vstf
+
+veri/

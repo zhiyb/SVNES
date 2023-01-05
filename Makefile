@@ -30,6 +30,13 @@ QPGM	:= $(QUARTUS)/quartus_pgm$(EXE_SFX)
 QNPP	:= $(QUARTUS)/quartus_npp$(EXE_SFX)
 QNUI	:= $(QUARTUS)/qnui$(EXE_SFX)
 
+GW			?= gtkwave
+VERI		?= verilator
+VERI_ARGS	?= --x-initial-edge --timing \
+			   --trace-fst --trace-structs \
+			   -Wno-ENUMVALUE -Wno-WIDTH -Wno-TIMESCALEMOD \
+			   +define+SIMULATION=1
+
 ifeq ($(SOURCES),)
 $(error No source files)
 endif
@@ -44,14 +51,23 @@ include gmsl
 .PHONY: all
 all: test sof sta
 
-# ModelSim simulation
+.PHONY: clean
+clean:
+	rm -rf $(CLEAN_DIRS)
+	rm -f $(CLEAN_FILES)
 
 .PHONY: test
-test: $(WAVE)
+#test: wlf
+test: fst
+
+# ModelSim simulation
 
 .PHONY: view_sim
 view_sim: $(WAVE)
 	$(VSIM) -work $(SIM_LIB) -gui -logfile sim/view.log -view $^
+
+.PHONY: wlf
+wlf: $(WAVE)
 
 CLEAN_DIRS	+= sim
 sim: %:
@@ -62,6 +78,40 @@ sim/%.wlf: src/testbench/%.sv $(SIM_LIB)/_lib.qdb | sim
 
 $(SIM_LIB)/_lib.qdb: $(SOURCES) $(FILELISTS) | modelsim.ini
 	$(VLOG) -work $(SIM_LIB) -v $(filter %.v,$(SOURCES)) -sv $(filter %.sv,$(SOURCES)) $(SIM_SYN_ARGS)
+
+# Verilator simulation
+
+# gtkwave viewer
+# Ignore stems, it is broken, see:
+# https://github.com/gtkwave/gtkwave/issues/139
+gw: veri/$(firstword $(TEST)).fst
+	$(GW) $<
+
+.PHONY: fst
+fst: $(TEST:%=veri/%.fst)
+
+CLEAN_DIRS	+= veri
+veri/%.fst: veri/%/sim
+	./$< -o $@
+
+veri/%/sim: $(SOURCES) ./scripts/sim_main.cpp
+	@mkdir -p $(dir $@)
+	+$(VERI) $(VERI_ARGS) --Mdir $(dir $@) --prefix sim \
+	--top-module $(shell echo '$*' | tr '[:lower:]' '[:upper:]') \
+	--cc -O3 --exe --build ../../scripts/sim_main.cpp \
+	$(filter %.sv,$^)
+
+veri/%.stems: veri/%/sim.xml
+	xml2stems -V $< $@
+
+veri/%/sim.xml: $(SOURCES) ./scripts/sim_main.cpp
+	@mkdir -p $(dir $@)
+	+$(VERI) $(VERI_ARGS) --Mdir $(dir $@) --prefix sim \
+	--top-module $(shell echo '$*' | tr '[:lower:]' '[:upper:]') \
+	--xml-only \
+	$(filter %.sv,$^)
+
+# Quartus FPGA build
 
 CLEAN_FILES	+= filelist.qsf
 filelist.qsf: scripts/qsf_filelist.sh $(FILELISTS)
@@ -121,8 +171,3 @@ view_map: db/$(REV).atom_map.nvd
 .PHONY: view_fit
 view_fit: db/$(REV).atom_fit.nvd
 	echo "How to run the viewer?" && false
-
-.PHONY: clean
-clean:
-	rm -rf $(CLEAN_DIRS)
-	rm -f $(CLEAN_FILES)

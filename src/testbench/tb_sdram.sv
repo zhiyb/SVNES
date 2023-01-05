@@ -35,6 +35,8 @@ SDRAM #() sdram (
     .CLK_IO     (clk_sys),
     .RESET_IN   (reset_sys),
 
+    .INIT_DONE_OUT  (),
+
     // Hardware interface
     .DRAM_DQ    (DRAM_DQ),
     .DRAM_ADDR  (DRAM_ADDR),

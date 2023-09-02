@@ -20,8 +20,22 @@ begin
     reset_sys = 0;
     reset_sys = 1;
     @(posedge clk_sys);
+    @(posedge clk_sys);
+    @(posedge clk_sys);
     reset_sys = 0;
 end
+
+localparam AHB_PORTS = 4;
+
+logic [31:0]     HADDR  [AHB_PORTS-1:0];
+AHB_PKG::burst_t HBURST [AHB_PORTS-1:0];
+AHB_PKG::size_t  HSIZE  [AHB_PORTS-1:0];
+AHB_PKG::trans_t HTRANS [AHB_PORTS-1:0];
+logic            HWRITE [AHB_PORTS-1:0];
+logic [31:0]     HWDATA [AHB_PORTS-1:0];
+logic [31:0]     HRDATA [AHB_PORTS-1:0];
+logic            HREADY [AHB_PORTS-1:0];
+AHB_PKG::resp_t  HRESP  [AHB_PORTS-1:0];
 
 wire  [15:0] DRAM_DQ;
 logic [12:0] DRAM_ADDR;
@@ -30,12 +44,25 @@ wire         DRAM_CLK;
 logic        DRAM_CKE;
 logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N;
 
-SDRAM #() sdram (
+SDRAM #(
+    .AHB_PORTS  (AHB_PORTS)
+) sdram (
     .CLK        (clk_sys),
     .CLK_IO     (clk_sys),
     .RESET_IN   (reset_sys),
 
     .INIT_DONE_OUT  (),
+
+    // Upstream AHB ports
+    .HADDR      (HADDR),
+    .HBURST     (HBURST),
+    .HSIZE      (HSIZE),
+    .HTRANS     (HTRANS),
+    .HWRITE     (HWRITE),
+    .HWDATA     (HWDATA),
+    .HRDATA     (HRDATA),
+    .HREADY     (HREADY),
+    .HRESP      (HRESP),
 
     // Hardware interface
     .DRAM_DQ    (DRAM_DQ),
@@ -49,6 +76,52 @@ SDRAM #() sdram (
     .DRAM_CAS_N (DRAM_CAS_N),
     .DRAM_WE_N  (DRAM_WE_N)
 );
+
+int test;
+        initial begin
+            test = 0;
+
+            @(negedge reset_sys);
+            test = 1;
+            @(posedge clk_sys);
+            test = 2;
+
+            forever begin
+                @(posedge clk_sys);
+                test = 3;
+            end
+        end
+
+// AHB test requests genreator
+generate
+    genvar i;
+    for (i = 0; i < AHB_PORTS; i++) begin: gen_ahb
+        // Address phase
+        always_ff @(posedge clk_sys, posedge reset_sys) begin
+            if (reset_sys) begin
+                HADDR[i]  <= 0;
+                HBURST[i] <= AHB_PKG::BURST_SINGLE;
+                HSIZE[i]  <= AHB_PKG::SIZE_4;
+                HTRANS[i] <= AHB_PKG::TRANS_IDLE;
+                HWRITE[i] <= 0;
+            end else if (HREADY[i]) begin
+                // New AHB transfer
+                HADDR[i]  <= $random();
+                HTRANS[i] <= AHB_PKG::TRANS_NONSEQ;
+                HWRITE[i] <= $random() % 2;
+            end
+        end
+
+        // Data phase
+        always_ff @(posedge clk_sys, posedge reset_sys)
+            if (reset_sys)
+                HWDATA[i] <= 0;
+            else if (HTRANS[i] != AHB_PKG::TRANS_IDLE && HREADY[i])
+                HWDATA[i] <= $random();
+            else if (HTRANS[i] == AHB_PKG::TRANS_IDLE && HREADY[i])
+                HWDATA[i] <= 0;
+    end:gen_ahb
+endgenerate
 
 // SDRAM fake read data generator
 localparam N_CAS    = 3;

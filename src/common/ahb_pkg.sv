@@ -20,4 +20,18 @@ typedef enum logic [1:0] {
     TRANS_SEQ    = 2'b11
 } trans_t;
 
+// Transfer size
+typedef enum logic [2:0] {
+    SIZE_1  = 3'b000,
+    SIZE_2  = 3'b001,
+    SIZE_4  = 3'b010,
+    SIZE_8  = 3'b011
+} size_t;
+
+// Response type
+typedef enum logic [0:0] {
+    RESP_OKAY  = 1'b0,
+    RESP_ERROR = 1'b1
+} resp_t;
+
 endpackage

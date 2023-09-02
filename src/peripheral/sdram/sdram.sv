@@ -1,4 +1,6 @@
 module SDRAM #(
+    parameter int AHB_PORTS   = 4,
+    parameter int N_CMD_QUEUE = 4,
     // Timing parameters
     parameter int tRC = 9, tRAS = 6, tRP = 3, tRCD = 3,
                   tMRD = 2, tDPL = 2, tQMD = 2, tRRD = 2,
@@ -11,6 +13,17 @@ module SDRAM #(
 
     output logic INIT_DONE_OUT,
 
+    // Upstream AHB ports
+    input  logic [31:0]     HADDR  [AHB_PORTS-1:0],
+    input  AHB_PKG::burst_t HBURST [AHB_PORTS-1:0],
+    input  AHB_PKG::size_t  HSIZE  [AHB_PORTS-1:0],
+    input  AHB_PKG::trans_t HTRANS [AHB_PORTS-1:0],
+    input  logic            HWRITE [AHB_PORTS-1:0],
+    input  logic [31:0]     HWDATA [AHB_PORTS-1:0],
+    output logic [31:0]     HRDATA [AHB_PORTS-1:0],
+    output logic            HREADY [AHB_PORTS-1:0],
+    output AHB_PKG::resp_t  HRESP  [AHB_PORTS-1:0],
+
     // Hardware interface
     inout  wire  [15:0] DRAM_DQ,
     output logic [12:0] DRAM_ADDR,
@@ -20,15 +33,7 @@ module SDRAM #(
     output logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N
 );
 
-localparam N_CMD_QUEUE  = 4;
-
-logic                    [N_CMD_QUEUE-1:0] cache_write;
-SDRAM_PKG::dram_access_t [N_CMD_QUEUE-1:0] cache_acs;
-SDRAM_PKG::data_t        [N_CMD_QUEUE-1:0] cache_read_data;
-logic                    [N_CMD_QUEUE-1:0] cache_req;
-logic                    [N_CMD_QUEUE-1:0] cache_ack;
-
-
+/*
 // Memory write test gen
 SDRAM_PKG::addr_t addr [3:0];
 always_ff @(posedge CLK, posedge RESET_IN)
@@ -83,7 +88,38 @@ always_comb begin
     cache_acs[3].bank = addr[3][8:7] + 3;
     cache_acs[3].data = ~addr[3];
 end
+*/
 
+logic                    [N_CMD_QUEUE-1:0] cache_write;
+SDRAM_PKG::dram_access_t [N_CMD_QUEUE-1:0] cache_acs;
+SDRAM_PKG::data_t        [N_CMD_QUEUE-1:0] cache_read_data;
+logic                    [N_CMD_QUEUE-1:0] cache_req;
+logic                    [N_CMD_QUEUE-1:0] cache_ack;
+
+SDRAM_CACHE #(
+    .N_SRC  (AHB_PORTS),
+    .N_DST  (N_CMD_QUEUE),
+    .BURST  (BURST)
+) cache (
+    .CLK            (CLK),
+    .RESET_IN       (RESET_IN),
+
+    .HADDR          (HADDR),
+    .HBURST         (HBURST),
+    .HSIZE          (HSIZE),
+    .HTRANS         (HTRANS),
+    .HWRITE         (HWRITE),
+    .HWDATA         (HWDATA),
+    .HRDATA         (HRDATA),
+    .HREADY         (HREADY),
+    .HRESP          (HRESP),
+
+    .DST_WRITE_OUT  (cache_write),
+    .DST_ACS_OUT    (cache_acs),
+    .DST_DATA_IN    (cache_read_data),
+    .DST_REQ_OUT    (cache_req),
+    .DST_ACK_IN     (cache_ack)
+);
 
 logic                    [N_CMD_QUEUE-1:0] fifo_write;
 SDRAM_PKG::dram_access_t [N_CMD_QUEUE-1:0] fifo_acs;

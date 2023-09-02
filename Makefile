@@ -36,6 +36,7 @@ VERI_ARGS	?= --x-initial-edge --timing \
 			   --trace-fst --trace-structs \
 			   -Wno-ENUMVALUE -Wno-WIDTH -Wno-TIMESCALEMOD \
 			   +define+SIMULATION=1
+VERI_RARGS	?= +verilator+seed+123
 
 ifeq ($(SOURCES),)
 $(error No source files)
@@ -92,7 +93,7 @@ fst: $(TEST:%=veri/%.fst)
 
 CLEAN_DIRS	+= veri
 veri/%.fst: veri/%/sim
-	./$< -o $@
+	./$< $(VERI_RARGS) -o $@
 
 veri/%/sim: $(SOURCES) ./scripts/sim_main.cpp
 	@mkdir -p $(dir $@)

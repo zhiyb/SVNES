@@ -71,6 +71,16 @@ SDRAM #(
 
     .INIT_DONE_OUT  (sdram_init_done),
 
+    .HADDR          (),
+    .HBURST         (),
+    .HSIZE          (),
+    .HTRANS         (),
+    .HWRITE         (),
+    .HWDATA         (),
+    .HRDATA         (),
+    .HREADY         (),
+    .HRESP          (),
+
     .DRAM_CLK       (DRAM_CLK),
     .DRAM_CKE       (DRAM_CKE),
     .DRAM_DQ        (DRAM_DQ),

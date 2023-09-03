@@ -1,5 +1,8 @@
 package AHB_PKG;
 
+typedef logic [31:0] addr_t;
+typedef logic [31:0] data_t;
+
 // Burst types
 typedef enum logic [2:0] {
     BURST_SINGLE = 3'b000,

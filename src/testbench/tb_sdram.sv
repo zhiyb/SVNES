@@ -27,15 +27,15 @@ end
 
 localparam AHB_PORTS = 4;
 
-logic [31:0]     HADDR  [AHB_PORTS-1:0];
-AHB_PKG::burst_t HBURST [AHB_PORTS-1:0];
-AHB_PKG::size_t  HSIZE  [AHB_PORTS-1:0];
-AHB_PKG::trans_t HTRANS [AHB_PORTS-1:0];
-logic            HWRITE [AHB_PORTS-1:0];
-logic [31:0]     HWDATA [AHB_PORTS-1:0];
-logic [31:0]     HRDATA [AHB_PORTS-1:0];
-logic            HREADY [AHB_PORTS-1:0];
-AHB_PKG::resp_t  HRESP  [AHB_PORTS-1:0];
+AHB_PKG::addr_t  [AHB_PORTS-1:0] HADDR;
+AHB_PKG::burst_t [AHB_PORTS-1:0] HBURST;
+AHB_PKG::size_t  [AHB_PORTS-1:0] HSIZE;
+AHB_PKG::trans_t [AHB_PORTS-1:0] HTRANS;
+logic            [AHB_PORTS-1:0] HWRITE;
+AHB_PKG::data_t  [AHB_PORTS-1:0] HWDATA;
+AHB_PKG::data_t  [AHB_PORTS-1:0] HRDATA;
+logic            [AHB_PORTS-1:0] HREADY;
+AHB_PKG::resp_t  [AHB_PORTS-1:0] HRESP;
 
 wire  [15:0] DRAM_DQ;
 logic [12:0] DRAM_ADDR;
@@ -93,6 +93,12 @@ int test;
         end
 
 // AHB test requests genreator
+typedef struct packed {
+    logic [20:0] tag;
+    logic [2:0]  index;
+    logic [3:0]  ofs;
+} cache_addr_t;
+
 generate
     genvar i;
     for (i = 0; i < AHB_PORTS; i++) begin: gen_ahb
@@ -106,7 +112,12 @@ generate
                 HWRITE[i] <= 0;
             end else if (HREADY[i]) begin
                 // New AHB transfer
-                HADDR[i]  <= $random();
+                cache_addr_t addr;
+                addr.tag = unsigned'($random()) % 4;
+                addr.index = $random();
+                addr.ofs = $random();
+                addr.ofs[1:0] = 0;
+                HADDR[i]  <= addr;
                 HTRANS[i] <= AHB_PKG::TRANS_NONSEQ;
                 HWRITE[i] <= $random() % 2;
             end

@@ -5,7 +5,7 @@ FILELISTS		:= $(shell ./scripts/filelists.sh)
 SIM_LIB			:= sim_lib
 DO				?= batch.do
 SIM_SYN_ARGS	?= +define+SIMULATION=1
-SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -batch $(DO:%=-do %)
+SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -sv_seed=123 -batch $(DO:%=-do %)
 
 PRJ		?= SVNES
 REV		?= DE0_Nano

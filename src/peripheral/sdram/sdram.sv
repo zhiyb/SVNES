@@ -14,15 +14,15 @@ module SDRAM #(
     output logic INIT_DONE_OUT,
 
     // Upstream AHB ports
-    input  logic [31:0]     HADDR  [AHB_PORTS-1:0],
-    input  AHB_PKG::burst_t HBURST [AHB_PORTS-1:0],
-    input  AHB_PKG::size_t  HSIZE  [AHB_PORTS-1:0],
-    input  AHB_PKG::trans_t HTRANS [AHB_PORTS-1:0],
-    input  logic            HWRITE [AHB_PORTS-1:0],
-    input  logic [31:0]     HWDATA [AHB_PORTS-1:0],
-    output logic [31:0]     HRDATA [AHB_PORTS-1:0],
-    output logic            HREADY [AHB_PORTS-1:0],
-    output AHB_PKG::resp_t  HRESP  [AHB_PORTS-1:0],
+    input  AHB_PKG::addr_t  [AHB_PORTS-1:0] HADDR,
+    input  AHB_PKG::burst_t [AHB_PORTS-1:0] HBURST,
+    input  AHB_PKG::size_t  [AHB_PORTS-1:0] HSIZE,
+    input  AHB_PKG::trans_t [AHB_PORTS-1:0] HTRANS,
+    input  logic            [AHB_PORTS-1:0] HWRITE,
+    input  AHB_PKG::data_t  [AHB_PORTS-1:0] HWDATA,
+    output AHB_PKG::data_t  [AHB_PORTS-1:0] HRDATA,
+    output logic            [AHB_PORTS-1:0] HREADY,
+    output AHB_PKG::resp_t  [AHB_PORTS-1:0] HRESP,
 
     // Hardware interface
     inout  wire  [15:0] DRAM_DQ,

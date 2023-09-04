@@ -49,21 +49,40 @@ CLOCK_GEN clk (
     .PLL_LOCKED_OUT (pll_locked)
 );
 
+// System AHB bus
+localparam SDRAM_PORTS = 4;
+localparam TFT_PORT    = 3;
+
+AHB_PKG::addr_t  [SDRAM_PORTS-1:0] haddr;
+AHB_PKG::burst_t [SDRAM_PORTS-1:0] hburst;
+AHB_PKG::size_t  [SDRAM_PORTS-1:0] hsize;
+AHB_PKG::trans_t [SDRAM_PORTS-1:0] htrans;
+logic            [SDRAM_PORTS-1:0] hwrite;
+AHB_PKG::data_t  [SDRAM_PORTS-1:0] hwdata;
+AHB_PKG::data_t  [SDRAM_PORTS-1:0] hrdata;
+logic            [SDRAM_PORTS-1:0] hready;
+AHB_PKG::resp_t  [SDRAM_PORTS-1:0] hresp;
+
+assign htrans[0] = AHB_PKG::TRANS_IDLE;
+assign htrans[1] = AHB_PKG::TRANS_IDLE;
+assign htrans[2] = AHB_PKG::TRANS_IDLE;
+
 // SDRAM controller
 logic sdram_init_done;
 SDRAM #(
-    .tRC    (9),
-    .tRAS   (6),
-    .tRP    (3),
-    .tRCD   (3),
-    .tMRD   (2),
-    .tDPL   (2),
-    .tQMD   (2),
-    .tRRD   (2),
-    .tINIT  (14250),
-    .tREF   (1114),
-    .CAS    (3),
-    .BURST  (8)
+    .AHB_PORTS  (SDRAM_PORTS),
+    .tRC        (9),
+    .tRAS       (6),
+    .tRP        (3),
+    .tRCD       (3),
+    .tMRD       (2),
+    .tDPL       (2),
+    .tQMD       (2),
+    .tRRD       (2),
+    .tINIT      (14250),
+    .tREF       (1114),
+    .CAS        (3),
+    .BURST      (8)
 ) sdram (
     .CLK            (clk_sys),
     .CLK_IO         (clk_mem_io),
@@ -71,15 +90,15 @@ SDRAM #(
 
     .INIT_DONE_OUT  (sdram_init_done),
 
-    .HADDR          (),
-    .HBURST         (),
-    .HSIZE          (),
-    .HTRANS         (),
-    .HWRITE         (),
-    .HWDATA         (),
-    .HRDATA         (),
-    .HREADY         (),
-    .HRESP          (),
+    .HADDR          (haddr),
+    .HBURST         (hburst),
+    .HSIZE          (hsize),
+    .HTRANS         (htrans),
+    .HWRITE         (hwrite),
+    .HWDATA         (hwdata),
+    .HRDATA         (hrdata),
+    .HREADY         (hready),
+    .HRESP          (hresp),
 
     .DRAM_CLK       (DRAM_CLK),
     .DRAM_CKE       (DRAM_CKE),
@@ -92,16 +111,6 @@ SDRAM #(
     .DRAM_CAS_N     (DRAM_CAS_N),
     .DRAM_WE_N      (DRAM_WE_N)
 );
-
-// AHB TFT DMA bus
-logic [31:0]     haddr;
-AHB_PKG::burst_t hburst;
-AHB_PKG::trans_t htrans;
-logic            hwrite;
-logic [31:0]     hwdata;
-logic [31:0]     hrdata;
-logic            hready;
-logic            hresp;
 
 logic tft_underflow;
 
@@ -122,14 +131,15 @@ TFT #(
 
     .HCLK       (clk_sys),
     .HRESET     (reset_sys),
-    .HADDR      (haddr),
-    .HBURST     (hburst),
-    .HTRANS     (htrans),
-    .HWRITE     (hwrite),
-    .HWDATA     (hwdata),
-    .HRDATA     (hrdata),
-    .HREADY     (hready),
-    .HRESP      (hresp),
+    .HADDR      (haddr[TFT_PORT]),
+    .HBURST     (hburst[TFT_PORT]),
+    .HSIZE      (hsize[TFT_PORT]),
+    .HTRANS     (htrans[TFT_PORT]),
+    .HWRITE     (hwrite[TFT_PORT]),
+    .HWDATA     (hwdata[TFT_PORT]),
+    .HRDATA     (hrdata[TFT_PORT]),
+    .HREADY     (hready[TFT_PORT]),
+    .HRESP      (hresp[TFT_PORT]),
 
     .UNDERFLOW_OUT  (tft_underflow),
 
@@ -138,25 +148,6 @@ TFT #(
     .TFT_VSYNC  (GPIO_0[33]),
     .TFT_HSYNC  (GPIO_0[31]),
     .TFT_RGB    ({GPIO_0[7:0], GPIO_0[18:16], GPIO_0[14:13], GPIO_0[11:10], GPIO_0[8], GPIO_0[28], GPIO_0[26:21], GPIO_0[19]})
-);
-
-// Test pattern generator
-TFT_PATTERN_GEN #(
-    .BASE_ADDR      (32'h0f000000),
-    .WIDTH          (800),
-    .HEIGHT         (480),
-    .PIXEL_WIDTH    (24)
-) ptn (
-    .HCLK   (clk_sys),
-    .HRESET (reset_sys),
-    .HADDR  (haddr),
-    .HBURST (hburst),
-    .HTRANS (htrans),
-    .HWRITE (hwrite),
-    .HWDATA (hwdata),
-    .HRDATA (hrdata),
-    .HREADY (hready),
-    .HRESP  (hresp)
 );
 
 // Debug LEDs

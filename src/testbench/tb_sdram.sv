@@ -25,6 +25,7 @@ begin
     reset_sys = 0;
 end
 
+
 localparam AHB_PORTS = 4;
 
 AHB_PKG::addr_t  [AHB_PORTS-1:0] HADDR;
@@ -77,20 +78,20 @@ SDRAM #(
     .DRAM_WE_N  (DRAM_WE_N)
 );
 
-int test;
-        initial begin
-            test = 0;
+SIM_SDRAM #(
+) sim (
+    .DRAM_DQ    (DRAM_DQ),
+    .DRAM_ADDR  (DRAM_ADDR),
+    .DRAM_BA    (DRAM_BA),
+    .DRAM_DQM   (DRAM_DQM),
+    .DRAM_CLK   (DRAM_CLK),
+    .DRAM_CKE   (DRAM_CKE),
+    .DRAM_CS_N  (DRAM_CS_N),
+    .DRAM_RAS_N (DRAM_RAS_N),
+    .DRAM_CAS_N (DRAM_CAS_N),
+    .DRAM_WE_N  (DRAM_WE_N)
+);
 
-            @(negedge reset_sys);
-            test = 1;
-            @(posedge clk_sys);
-            test = 2;
-
-            forever begin
-                @(posedge clk_sys);
-                test = 3;
-            end
-        end
 
 // AHB test requests genreator
 typedef struct packed {
@@ -134,6 +135,24 @@ generate
                 HWDATA[i] <= 0;
     end:gen_ahb
 endgenerate
+
+
+/*
+int test;
+initial begin
+    test = 0;
+
+    @(negedge reset_sys);
+    test = 1;
+    @(posedge clk_sys);
+    test = 2;
+
+    forever begin
+        @(posedge clk_sys);
+        test = 3;
+    end
+end
+*/
 
 /*
 // Memory write test gen
@@ -191,38 +210,5 @@ always_comb begin
     cache_acs[3].data = ~addr[3];
 end
 */
-
-// SDRAM fake read data generator
-localparam N_CAS    = 3;
-localparam N_BURSTS = 8;
-
-logic read_cmd;
-assign read_cmd = {DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N} == 3'b101;
-
-logic [3:0] burst_cnt;
-always_ff @(posedge DRAM_CLK, posedge reset_sys)
-    if (reset_sys)
-        burst_cnt <= 0;
-    else if (read_cmd)
-        burst_cnt <= N_BURSTS;
-    else if (burst_cnt != 0)
-        burst_cnt <= burst_cnt - 1;
-
-localparam READ_LATENCY = N_CAS - 1;
-logic [READ_LATENCY-1:0] read_pipe;
-always_ff @(posedge DRAM_CLK)
-    read_pipe <= {read_pipe, burst_cnt != 0};
-
-logic read_valid;
-assign read_valid = read_pipe[READ_LATENCY-1];
-
-logic [15:0] read_data;
-always_ff @(posedge DRAM_CLK, posedge reset_sys)
-    if (reset_sys)
-        read_data <= 0;
-    else if (read_valid)
-        read_data <= read_data + 1;
-
-assign DRAM_DQ = read_valid ? read_data : 'z;
 
 endmodule

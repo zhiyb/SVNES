@@ -7,14 +7,15 @@ module TFT_DMA #(
     // AHB memory DMA master
     input  wire             HCLK,
     input  wire             HRESET,
-    output logic [31:0]     HADDR,
+    output AHB_PKG::addr_t  HADDR,
     output AHB_PKG::burst_t HBURST,
+    output AHB_PKG::size_t  HSIZE,
     output AHB_PKG::trans_t HTRANS,
     output logic            HWRITE,
-    output logic [31:0]     HWDATA,
-    input  logic [31:0]     HRDATA,
+    output AHB_PKG::data_t  HWDATA,
+    input  AHB_PKG::data_t  HRDATA,
     input  logic            HREADY,
-    input  logic            HRESP,
+    input  AHB_PKG::resp_t  HRESP,
 
     // Data output
     output logic [31:0]     DATA_OUT,
@@ -74,8 +75,9 @@ always_ff @(posedge HCLK, posedge HRESET)
                                     AHB_PKG::TRANS_SEQ;         // Continue burst
     end
 
-// Only burst 16 transfers
+// Only burst 16 transfers of 32-bit words
 assign HBURST = AHB_PKG::BURST_INCR16;
+assign HSIZE  = AHB_PKG::SIZE_4;
 // Only read transfers
 assign HWRITE = 0;
 

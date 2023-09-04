@@ -63,6 +63,8 @@ test: wlf
 
 # ModelSim simulation
 
+.PRECIOUS: $(WAVE)
+
 .PHONY: view_sim
 view_sim: $(WAVE)
 	$(VSIM) -work $(SIM_LIB) -gui -logfile sim/view.log -view $^

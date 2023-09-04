@@ -66,6 +66,7 @@ logic             [N_LINES-1:0] fetch_req;
 logic             [N_LINES-1:0] fetch_acpt;
 tag_addr_t        [N_LINES-1:0] req_tag;
 line_data_t       [N_LINES-1:0] data_fetched;
+tag_addr_t        [N_LINES-1:0] data_tag;
 logic             [N_LINES-1:0] data_valid;
 logic             [N_LINES-1:0] write_req;
 logic             [N_LINES-1:0] write_acpt;
@@ -94,7 +95,8 @@ generate
 
         assign src_index = src_addr[isrc].index;
         assign src_tag_match = tag[src_index] == src_addr[isrc].tag;
-        assign src_imm_htrans = !(HTRANS[isrc] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY});
+        assign src_imm_htrans = HTRANS[isrc] != AHB_PKG::TRANS_IDLE &&
+                                HTRANS[isrc] != AHB_PKG::TRANS_BUSY;
 
         always_ff @(posedge CLK, posedge RESET_IN) begin
             if (RESET_IN) begin
@@ -135,9 +137,9 @@ generate
 
         always_ff @(posedge CLK, posedge RESET_IN) begin
             if (RESET_IN)
-                HRDATA <= 0;
+                HRDATA[isrc] <= 0;
             else
-                HRDATA <= src_data;
+                HRDATA[isrc] <= src_data;
         end
 
         assign HRESP[isrc]  = AHB_PKG::RESP_OKAY;
@@ -253,7 +255,7 @@ generate
             end else if (!any_write && data_valid[iline]) begin
                 // Received fetched data
                 // Note, pending fetch req gets aborted by write req
-                tag[iline]  <= req_tag[iline];
+                tag[iline]  <= data_tag[iline];
                 data[iline] <= data_fetched[iline];
             end else begin
                 // Check for write requests
@@ -286,11 +288,13 @@ generate
 
         always_comb begin
             int id;
-            data_valid[iline] = 0;
+            data_valid[iline]   = 0;
+            data_tag[iline]     = 0;
             data_fetched[iline] = 0;
             for (id = 0; id < N_DST; id++) begin
                 if (dst_valid[id] && dst_index[id] == iline) begin
-                    data_valid[iline] = 1;
+                    data_valid[iline]   = 1;
+                    data_tag[iline]     = dst_tag[id];
                     data_fetched[iline] = dst_data[id];
                 end
             end
@@ -298,13 +302,31 @@ generate
 
     end: gen_line
 
+    logic [N_DST-1:0] [N_LINES-1:0] line_req;
+
     always_comb begin
-        int il, id;
-        il = 0;
-        id = 0;
-        dst_req = 0;
+        int id;
+        index_addr_t dst_sel;
+        for (id = 0; id < N_DST; id++) begin
+            int i;
+            logic [N_LINES-1:0] req;
+            req = fetch_req | write_req;
+            for (i = 0; i < id; i++)
+                req &= ~line_req[i];
+            for (i = 1; i < N_LINES; i++)
+                req &= {{N_LINES{~req[i-1]}}, {N_LINES{1'b1}}} >> (N_LINES - i);
+            line_req[id] = req;
+        end
+        dst_sel = 0;
+        for (id = 0; id < N_DST; id++) begin
+            dst_req[id] = dst_busy[id] ? line_req[0] : line_req[dst_sel];
+            if (!dst_busy[id])
+                dst_sel++;
+        end
+
+        /* Quartus does not support this code
         for (il = 0; il < N_LINES; il++) begin
-            for (; id < N_DST; id++)
+            for (id = id; id < N_DST; id++)
                 if (!dst_busy[id])
                     break;
             if (id >= N_DST) begin
@@ -313,6 +335,7 @@ generate
                 id++;
             end
         end
+        */
     end
 
     genvar idst;

@@ -8,7 +8,13 @@ typedef enum logic [5:0] {
     OP_READ  = 6'h08,
     OP_REF   = 6'h10,
     OP_MRS   = 6'h20
-} op_t;
+} op_enum_t;
+
+`ifdef SIMULATION
+typedef op_enum_t op_t;
+`else
+typedef logic [5:0] op_t;
+`endif
 
 localparam N_BANKS     = 4;
 localparam N_BANK_BITS = $clog2(N_BANKS);

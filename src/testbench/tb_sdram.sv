@@ -135,6 +135,63 @@ generate
     end:gen_ahb
 endgenerate
 
+/*
+// Memory write test gen
+SDRAM_PKG::addr_t addr [3:0];
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        addr <= '{default: 0};
+    else begin
+        int i;
+        for (i = 0; i < 4; i++)
+            if (cache_req[i] & cache_ack[i])
+                addr[i] <= addr[i] + 1;
+    end
+
+logic [4-1:0][3:0] req_cnt;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        req_cnt <= 0;
+    else begin
+        int i;
+        for (i = 0; i < 4; i++)
+            if (req_cnt[i] == 0)
+                req_cnt[i] <= BURST + 1;
+            else if (cache_ack[i] | ~cache_req[i])
+                req_cnt[i] <= req_cnt[i] - 1;
+    end
+
+always_comb begin
+    cache_write = '{default: 0};
+    cache_acs   = '{default: 0};
+    cache_req   = '{default: 0};
+
+    cache_write[0]    = addr[0][6];
+    cache_req[0]      = req_cnt[0] > 1;
+    cache_acs[0].row  = {3{addr[0][12:3]}};
+    cache_acs[0].bank = addr[0][8:7] + 0;
+    cache_acs[0].data = ~addr[0];
+
+    cache_write[1]    = addr[1][5];
+    cache_req[1]      = req_cnt[1] > 1;
+    cache_acs[1].row  = {3{addr[1][12:4]}};
+    cache_acs[1].bank = addr[1][8:7] + 1;
+    cache_acs[1].data = ~addr[1];
+
+    cache_write[2]    = addr[2][4];
+    cache_req[2]      = req_cnt[2] > 1;
+    cache_acs[2].row  = {3{addr[2][12:5]}};
+    cache_acs[2].bank = addr[2][8:7] + 2;
+    cache_acs[2].data = ~addr[2];
+
+    cache_write[3]    = addr[3][3];
+    cache_req[3]      = req_cnt[3] > 1;
+    cache_acs[3].row  = {3{addr[3][12:6]}};
+    cache_acs[3].bank = addr[3][8:7] + 3;
+    cache_acs[3].data = ~addr[3];
+end
+*/
+
 // SDRAM fake read data generator
 localparam N_CAS    = 3;
 localparam N_BURSTS = 8;

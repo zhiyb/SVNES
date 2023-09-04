@@ -26,18 +26,19 @@ module SDRAM_CACHE #(
     input  logic                    [N_DST-1:0] DST_ACK_IN
 );
 
-localparam AHB_BYTES      = $bits(AHB_PKG::data_t) / 8;
-localparam LINE_FETCHES   = BURST;
-localparam LINE_BYTES     = LINE_FETCHES * $bits(SDRAM_PKG::data_t) / 8;
-localparam LINE_ADDR_BITS = $clog2(LINE_BYTES);
-localparam TAG_INDEX_BITS = $clog2(N_LINES);
-localparam TAG_ADDR_BITS  = $clog2(SDRAM_PKG::MAX_BYTES) - LINE_ADDR_BITS - TAG_INDEX_BITS;
+localparam AHB_BYTES       = $bits(AHB_PKG::data_t) / 8;
+localparam LINE_FETCHES    = BURST;
+localparam LINE_BYTES      = LINE_FETCHES * $bits(SDRAM_PKG::data_t) / 8;
+localparam LINE_ADDR_BITS  = $clog2(LINE_BYTES);
+localparam TAG_INDEX_BITS  = $clog2(N_LINES);
+localparam TAG_ADDR_BITS   = $clog2(SDRAM_PKG::MAX_BYTES) - LINE_ADDR_BITS - TAG_INDEX_BITS;
+localparam FETCH_ADDR_BITS = $clog2(LINE_FETCHES);
 
-typedef logic [TAG_ADDR_BITS-1:0]        tag_addr_t;
-typedef logic [TAG_INDEX_BITS-1:0]       index_addr_t;
-typedef logic [LINE_ADDR_BITS-1:0]       data_addr_t;
-typedef logic [LINE_BYTES*8-1:0]         line_data_t;
-typedef logic [$clog2(LINE_FETCHES)-1:0] fetch_ofs_t;
+typedef logic [TAG_ADDR_BITS-1:0]   tag_addr_t;
+typedef logic [TAG_INDEX_BITS-1:0]  index_addr_t;
+typedef logic [LINE_ADDR_BITS-1:0]  data_addr_t;
+typedef logic [LINE_BYTES*8-1:0]    line_data_t;
+typedef logic [FETCH_ADDR_BITS-1:0] fetch_ofs_t;
 
 typedef struct packed {
     tag_addr_t   tag;
@@ -59,21 +60,26 @@ tag_addr_t        [N_LINES-1:0] tag;
 line_data_t       [N_LINES-1:0] data;
 logic             [N_LINES-1:0] dirty;
 logic             [N_LINES-1:0] pending;
-logic             [N_LINES-1:0] valid;
 
 // From/To DST
 logic             [N_LINES-1:0] fetch_req;
-logic             [N_LINES-1:0] fetch_acpt;     // todo
-tag_addr_t        [N_LINES-1:0] fetch_tag;
-SDRAM_PKG::data_t [N_LINES-1:0] data_fetched;   // todo
-fetch_ofs_t       [N_LINES-1:0] data_ofs;       // todo
-logic             [N_LINES-1:0] data_valid;     // todo
-logic             [N_LINES-1:0] last_data;
+logic             [N_LINES-1:0] fetch_acpt;
+tag_addr_t        [N_LINES-1:0] req_tag;
+line_data_t       [N_LINES-1:0] data_fetched;
+logic             [N_LINES-1:0] data_valid;
 logic             [N_LINES-1:0] write_req;
-logic             [N_LINES-1:0] write_acpt;     // todo
+logic             [N_LINES-1:0] write_acpt;
 
 
 // DST states
+logic             [N_DST-1:0] [N_LINES-1:0] dst_req;
+logic             [N_DST-1:0] [N_LINES-1:0] dst_grant;
+logic             [N_DST-1:0] dst_busy;
+tag_addr_t        [N_DST-1:0] dst_tag;
+index_addr_t      [N_DST-1:0] dst_index;
+fetch_ofs_t       [N_DST-1:0] dst_ofs;
+line_data_t       [N_DST-1:0] dst_data;
+logic             [N_DST-1:0] dst_valid;
 
 
 generate
@@ -87,7 +93,7 @@ generate
         logic src_write;
 
         assign src_index = src_addr[isrc].index;
-        assign src_tag_match = valid[src_index] && tag[src_index] == src_addr[isrc].tag;
+        assign src_tag_match = tag[src_index] == src_addr[isrc].tag;
         assign src_imm_htrans = !(HTRANS[isrc] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY});
 
         always_ff @(posedge CLK, posedge RESET_IN) begin
@@ -197,7 +203,7 @@ generate
                 if (line_src_fetch_grant[is])
                     ftag |= src_addr[is].tag;
             end
-            fetch_tag[iline] = any_fetch ? ftag : tag[iline];
+            req_tag[iline] = any_fetch ? ftag : tag[iline];
         end
 
         // State transitions
@@ -216,7 +222,7 @@ generate
                     dirty[iline] <= !(write_req[iline] && write_acpt[iline]);
                 end else if (pending[iline]) begin
                     // If all data is received from DST, clear pending state
-                    pending[iline] <= !(data_valid[iline] && last_data[iline]);
+                    pending[iline] <= !(data_valid[iline]);
                 end else begin
                     // In idle valid state, and no write req, check for fetch req, then go pending
                     pending[iline] <= fetch_req[iline] && fetch_acpt[iline];
@@ -228,7 +234,7 @@ generate
             fetch_req[iline] = 0;
             write_req[iline] = 0;
             if (any_write) begin
-                // Doing dirty, do not send any DST req
+                // Going dirty, do not send any DST req
             end else if (dirty[iline]) begin
                 // Clean (DST write) if SRC asking for fetch
                 write_req[iline] = any_fetch;
@@ -242,15 +248,13 @@ generate
 
         always_ff @(posedge CLK, posedge RESET_IN) begin
             if (RESET_IN) begin
-                tag[iline]   <= 0;
-                valid[iline] <= 1;
-                data[iline]  <= 0;
+                tag[iline]  <= 0;
+                data[iline] <= 0;
             end else if (!any_write && data_valid[iline]) begin
                 // Received fetched data
                 // Note, pending fetch req gets aborted by write req
-                tag[iline]   <= fetch_tag[iline];
-                valid[iline] <= last_data[iline];
-                data[iline][data_ofs[iline]*$bits(SDRAM_PKG::data_t) +: $bits(SDRAM_PKG::data_t)] <= data_fetched[iline];
+                tag[iline]  <= req_tag[iline];
+                data[iline] <= data_fetched[iline];
             end else begin
                 // Check for write requests
                 int is;
@@ -268,25 +272,157 @@ generate
             end
         end
 
-        assign last_data[iline] = data_ofs[iline] == LINE_FETCHES-1;
+        always_comb begin
+            int id;
+            fetch_acpt[iline] = 0;
+            write_acpt[iline] = 0;
+            for (id = 0; id < N_DST; id++) begin
+                if (dst_grant[id][iline]) begin
+                    fetch_acpt[iline] |= 1;
+                    write_acpt[iline] |= 1;
+                end
+            end
+        end
 
-        // TODO
-        assign fetch_acpt[iline] = 1;
-        assign write_acpt[iline] = 1;
-        assign data_ofs[iline] = LINE_FETCHES-1;
-        assign data_fetched[iline] = 0;
-
-        always_ff @(posedge CLK, posedge RESET_IN) begin
-            if (RESET_IN)
-                data_valid[iline] = 0;
-            else
-                data_valid[iline] = fetch_req[iline];
+        always_comb begin
+            int id;
+            data_valid[iline] = 0;
+            data_fetched[iline] = 0;
+            for (id = 0; id < N_DST; id++) begin
+                if (dst_valid[id] && dst_index[id] == iline) begin
+                    data_valid[iline] = 1;
+                    data_fetched[iline] = dst_data[id];
+                end
+            end
         end
 
     end: gen_line
 
+    always_comb begin
+        int il, id;
+        il = 0;
+        id = 0;
+        dst_req = 0;
+        for (il = 0; il < N_LINES; il++) begin
+            for (; id < N_DST; id++)
+                if (!dst_busy[id])
+                    break;
+            if (id >= N_DST) begin
+            end else if (fetch_req[il] || write_req[il]) begin
+                dst_req[id][il] = 1;
+                id++;
+            end
+        end
+    end
+
     genvar idst;
     for (idst = 0; idst < N_DST; idst++) begin: gen_dst
+
+        logic dst_fetch_req;
+        logic dst_write_req;
+        tag_addr_t dst_req_tag;
+        index_addr_t dst_req_index;
+        fetch_ofs_t dst_ofs_out;
+        line_data_t dst_write_data;
+        SDRAM_PKG::dram_access_t dst_acs;
+
+        logic [31:0] dst_base_addr;
+        logic [31:0] dst_base_addr_out;
+
+        line_data_t dst_data_out;
+
+        always_comb begin
+            int il;
+            dst_fetch_req = 0;
+            dst_write_req = 0;
+            dst_grant[idst] = 0;
+            dst_req_tag = 0;
+            dst_req_index = 0;
+            dst_write_data = 0;
+            for (il = 0; il < N_LINES; il++) begin
+                if (dst_req[idst][il]) begin
+                    dst_fetch_req |= fetch_req[il];
+                    dst_write_req |= write_req[il];
+                    dst_grant[idst][il] = !DST_REQ_OUT[idst];
+                    dst_req_tag |= req_tag[il];
+                    dst_req_index |= il;
+                    dst_write_data |= data[il];
+                end
+            end
+        end
+
+        always_comb begin
+            logic [31:0] dst_base_addr_out_tmp;
+            data_addr_t dst_data_addr_out_tmp;
+            // Address mapping for write address
+            dst_base_addr = {dst_req_tag, dst_req_index, data_addr_t'(0)};
+            dst_base_addr >>= $clog2($bits(SDRAM_PKG::data_t)/8);
+            // Reverted address mapping for read address
+            dst_base_addr_out_tmp = dst_base_addr_out;
+            dst_base_addr_out_tmp <<= $clog2($bits(SDRAM_PKG::data_t)/8);
+            {dst_tag[idst], dst_index[idst], dst_data_addr_out_tmp} = dst_base_addr_out_tmp;
+        end
+
+        always_ff @(posedge CLK, posedge RESET_IN) begin
+            if (RESET_IN) begin
+                dst_base_addr_out <= 0;
+            end else if (dst_grant[idst]) begin
+                dst_base_addr_out <= dst_base_addr;
+            end
+        end
+
+        always_ff @(posedge CLK, posedge RESET_IN) begin
+            if (RESET_IN) begin
+                dst_data[idst] <= 0;
+            end else if (dst_grant[idst] && dst_write_req) begin
+                dst_data[idst] <= dst_write_data;
+            end else if (!DST_WRITE_OUT[idst] && DST_ACK_IN[idst]) begin
+                dst_data[idst][dst_ofs[idst]*$bits(SDRAM_PKG::data_t) +: $bits(SDRAM_PKG::data_t)] <= DST_DATA_IN[idst];
+            end
+        end
+
+        always_ff @(posedge CLK, posedge RESET_IN) begin
+            if (RESET_IN)
+                dst_valid[idst] <= 0;
+            else
+                dst_valid[idst] <= !DST_WRITE_OUT[idst] && DST_ACK_IN[idst] && dst_ofs[idst] == LINE_FETCHES-1;
+        end
+
+        assign dst_busy[idst] = DST_REQ_OUT[idst];
+
+        // dst_data and dst_ofs used for both read & write data latch
+        assign dst_data_out = dst_data[idst];
+        assign dst_ofs[idst] = dst_ofs_out;
+
+        always_comb begin
+            DST_ACS_OUT[idst] = 0;
+            {DST_ACS_OUT[idst].bank, DST_ACS_OUT[idst].row, DST_ACS_OUT[idst].col} = dst_base_addr_out;
+            DST_ACS_OUT[idst].col[$bits(fetch_ofs_t)-1:0] = dst_ofs_out;
+            DST_ACS_OUT[idst].data = dst_data_out[dst_ofs_out*$bits(SDRAM_PKG::data_t) +: $bits(SDRAM_PKG::data_t)];
+        end
+
+        always_ff @(posedge CLK, posedge RESET_IN) begin
+            if (RESET_IN) begin
+                dst_ofs_out <= 0;
+                DST_WRITE_OUT[idst] <= 0;
+                DST_REQ_OUT[idst] <= 0;
+            end else if (!DST_REQ_OUT[idst]) begin
+                // Start a new request
+                dst_ofs_out <= 0;
+                if (dst_fetch_req) begin
+                    DST_WRITE_OUT[idst] <= 0;
+                    DST_REQ_OUT[idst] <= 1;
+                end else if (dst_write_req) begin
+                    DST_WRITE_OUT[idst] <= 1;
+                    DST_REQ_OUT[idst] <= 1;
+                end
+            end else if (DST_ACK_IN[idst]) begin
+                // Continue current request
+                dst_ofs_out <= dst_ofs_out + 1;
+                DST_REQ_OUT[idst] <= dst_ofs_out != LINE_FETCHES-1;
+            end
+        end
+
     end: gen_dst
 endgenerate
 

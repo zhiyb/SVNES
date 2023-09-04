@@ -113,7 +113,8 @@ generate
             end else if (HREADY[i]) begin
                 // New AHB transfer
                 cache_addr_t addr;
-                addr.tag = unsigned'($random()) % 4;
+                //addr.tag = unsigned'($random()) % 4;
+                addr.tag = $random();
                 addr.index = $random();
                 addr.ofs = $random();
                 addr.ofs[1:0] = 0;

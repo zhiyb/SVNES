@@ -5,7 +5,7 @@ FILELISTS		:= $(shell ./scripts/filelists.sh)
 SIM_LIB			:= sim_lib
 DO				?= batch.do
 SIM_SYN_ARGS	?= +define+SIMULATION=1
-SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -sv_seed=123 -batch $(DO:%=-do %)
+SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -sv_seed 123 -batch $(DO:%=-do %)
 
 PRJ		?= SVNES
 REV		?= DE0_Nano
@@ -58,8 +58,8 @@ clean:
 	rm -f $(CLEAN_FILES)
 
 .PHONY: test
-#test: wlf
-test: fst
+test: wlf
+#test: fst
 
 # ModelSim simulation
 
@@ -81,6 +81,7 @@ $(SIM_LIB)/_lib.qdb: $(SOURCES) $(FILELISTS) | modelsim.ini
 	$(VLOG) -work $(SIM_LIB) -v $(filter %.v,$(SOURCES)) -sv $(filter %.sv,$(SOURCES)) $(SIM_SYN_ARGS)
 
 # Verilator simulation
+# Note, it is quite buggy! Better not use it!
 
 # gtkwave viewer
 # Ignore stems, it is broken, see:

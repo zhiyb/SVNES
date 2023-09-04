@@ -62,7 +62,20 @@ always_ff @(posedge CLK)
     tag_pipe <= {tag_pipe[READ_LATENCY-2:0], tag_pipe_in};
 
 assign READ_TAG_OUT  = tag_pipe[READ_LATENCY-1];
+`ifndef SIMULATION
 assign READ_DATA_OUT = dram_dq_in;
+`else
+logic [$clog2(BURST)-1:0] r_cnt;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        r_cnt <= 0;
+    else if (READ_TAG_OUT != 0)
+        r_cnt <= BURST - 1;
+    else if (r_cnt != 0)
+        r_cnt <= r_cnt - 1;
+
+assign READ_DATA_OUT = READ_TAG_OUT != 0 || r_cnt != 0 ? dram_dq_in : 'x;
+`endif
 
 // Write burst counter
 logic [$clog2(BURST)-1:0] w_cnt;

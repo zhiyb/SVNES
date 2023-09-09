@@ -1,8 +1,7 @@
 module TFT_DMA #(
     // DMA base address
     parameter logic [31:0] BASE_ADDR = 0,
-    // DMA buffer length
-    parameter logic [31:0] LENGTH = 0
+    parameter int AHB_BURSTS = 4
 ) (
     // AHB memory DMA master
     input  wire             HCLK,
@@ -66,7 +65,7 @@ always_ff @(posedge HCLK, posedge HRESET)
         // It is allowed to terminate a BUSY transfer before READY
         HTRANS <= fifo_stall ? AHB_PKG::TRANS_BUSY : AHB_PKG::TRANS_SEQ;
     end else if (HREADY) begin
-        if (HTRANS == AHB_PKG::TRANS_IDLE || &HADDR[2 +: 4])    // Idle or last beat in burst
+        if (HTRANS == AHB_PKG::TRANS_IDLE || &HADDR[2 +: $clog2(AHB_BURSTS)])   // Idle or last beat in burst
             HTRANS <= ~dma_enable ? AHB_PKG::TRANS_IDLE :       // Wait for enable
                       fifo_stall  ? AHB_PKG::TRANS_IDLE :       // Wait for downstream
                                     AHB_PKG::TRANS_NONSEQ;      // Start new transfer
@@ -75,8 +74,8 @@ always_ff @(posedge HCLK, posedge HRESET)
                                     AHB_PKG::TRANS_SEQ;         // Continue burst
     end
 
-// Only burst 16 transfers of 32-bit words
-assign HBURST = AHB_PKG::BURST_INCR16;
+assign HBURST = AHB_BURSTS == 4 ? AHB_PKG::BURST_INCR4 :
+                                  AHB_PKG::BURST_SINGLE;
 assign HSIZE  = AHB_PKG::SIZE_4;
 // Only read transfers
 assign HWRITE = 0;

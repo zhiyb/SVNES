@@ -70,19 +70,22 @@ assign htrans[2] = AHB_PKG::TRANS_IDLE;
 // SDRAM controller
 logic sdram_init_done;
 SDRAM #(
-    .AHB_PORTS  (SDRAM_PORTS),
-    .tRC        (9),
-    .tRAS       (6),
-    .tRP        (3),
-    .tRCD       (3),
-    .tMRD       (2),
-    .tDPL       (2),
-    .tQMD       (2),
-    .tRRD       (2),
-    .tINIT      (14250),
-    .tREF       (1114),
-    .CAS        (3),
-    .BURST      (8)
+    .AHB_PORTS     (SDRAM_PORTS),
+    .N_CMD_QUEUES  (4),
+    .N_CACHE_LINES (8),
+    // Timing parameters
+    .tRC   (9),
+    .tRAS  (6),
+    .tRP   (3),
+    .tRCD  (3),
+    .tMRD  (2),
+    .tDPL  (2),
+    .tQMD  (2),
+    .tRRD  (2),
+    .tINIT (14250),
+    .tREF  (1114),
+    .CAS   (3),
+    .BURST (8)
 ) sdram (
     .CLK            (clk_sys),
     .CLK_IO         (clk_mem_io),

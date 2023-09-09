@@ -37,6 +37,9 @@ logic        dram_cs_n, dram_ras_n, dram_cas_n, dram_we_n;
 
 always_ff @(posedge CLK) begin
     dram_dq_in     <= DRAM_DQ;
+end
+
+always_ff @(posedge CLK) begin
     dram_dq_out    <= dram_dq;
     dram_dq_out_en <= dram_dq_en;
     DRAM_ADDR      <= dram_addr;

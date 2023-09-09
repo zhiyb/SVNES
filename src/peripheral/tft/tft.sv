@@ -72,8 +72,7 @@ assign dma_ack_tft = ack_tft;
 
 // AHB DMA master
 TFT_DMA #(
-    .BASE_ADDR  (BASE_ADDR),
-    .LENGTH     (HDISP * VDISP * TFT_WIDTH / 32)
+    .BASE_ADDR  (BASE_ADDR)
 ) dma (
     .HCLK       (HCLK),
     .HRESET     (HRESET),

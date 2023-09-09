@@ -46,7 +46,9 @@ logic        DRAM_CKE;
 logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N;
 
 SDRAM #(
-    .AHB_PORTS  (AHB_PORTS)
+    .AHB_PORTS     (AHB_PORTS),
+    .N_CMD_QUEUES  (4),
+    .N_CACHE_LINES (8)
 ) sdram (
     .CLK        (clk_sys),
     .CLK_IO     (clk_sys),
@@ -100,115 +102,94 @@ typedef struct packed {
     logic [3:0]  ofs;
 } cache_addr_t;
 
+localparam USE_CACHE = 0;
+
 generate
     genvar i;
     for (i = 0; i < AHB_PORTS; i++) begin: gen_ahb
-        // Address phase
-        always_ff @(posedge clk_sys, posedge reset_sys) begin
-            if (reset_sys) begin
-                HADDR[i]  <= 0;
-                HBURST[i] <= AHB_PKG::BURST_SINGLE;
-                HSIZE[i]  <= AHB_PKG::SIZE_4;
-                HTRANS[i] <= AHB_PKG::TRANS_IDLE;
-                HWRITE[i] <= 0;
-            end else if (HREADY[i]) begin
-                // New AHB transfer
-                cache_addr_t addr;
-                //addr.tag = unsigned'($random()) % 4;
-                addr.tag = $random();
-                addr.index = $random();
-                addr.ofs = $random();
-                addr.ofs[1:0] = 0;
-                HADDR[i]  <= addr;
-                HTRANS[i] <= AHB_PKG::TRANS_NONSEQ;
-                HWRITE[i] <= $random() % 2;
-            end
-        end
+        if (USE_CACHE) begin: gen_cache
 
-        // Data phase
-        always_ff @(posedge clk_sys, posedge reset_sys)
-            if (reset_sys)
-                HWDATA[i] <= 0;
-            else if (HTRANS[i] != AHB_PKG::TRANS_IDLE && HREADY[i])
-                HWDATA[i] <= $random();
-            else if (HTRANS[i] == AHB_PKG::TRANS_IDLE && HREADY[i])
-                HWDATA[i] <= 0;
+            // Address phase
+            always_ff @(posedge clk_sys, posedge reset_sys) begin
+                if (reset_sys) begin
+                    HADDR[i]  <= 0;
+                    HBURST[i] <= AHB_PKG::BURST_SINGLE;
+                    HSIZE[i]  <= AHB_PKG::SIZE_4;
+                    HTRANS[i] <= AHB_PKG::TRANS_IDLE;
+                    HWRITE[i] <= 0;
+                end else if (HREADY[i]) begin
+                    // New AHB transfer
+                    cache_addr_t addr;
+                    //addr.tag = unsigned'($random()) % 4;
+                    addr.tag = $random();
+                    addr.index = $random();
+                    addr.ofs = $random();
+                    addr.ofs[1:0] = 0;
+                    HADDR[i]  <= addr;
+                    HTRANS[i] <= AHB_PKG::TRANS_NONSEQ;
+                    HWRITE[i] <= $random() % 2;
+                end
+            end
+
+            // Data phase
+            always_ff @(posedge clk_sys, posedge reset_sys)
+                if (reset_sys)
+                    HWDATA[i] <= 0;
+                else if (HTRANS[i] != AHB_PKG::TRANS_IDLE && HREADY[i])
+                    HWDATA[i] <= $random();
+                else if (HTRANS[i] == AHB_PKG::TRANS_IDLE && HREADY[i])
+                    HWDATA[i] <= 0;
+
+        end: gen_cache else begin: gen_stream
+
+            localparam N_AHB_BURSTS = 4;
+
+            // Address phase
+            always_ff @(posedge clk_sys, posedge reset_sys) begin
+                if (reset_sys) begin
+                    HADDR[i]  <= 0;
+                    HBURST[i] <= AHB_PKG::BURST_INCR4;
+                    HSIZE[i]  <= AHB_PKG::SIZE_4;
+                    HTRANS[i] <= AHB_PKG::TRANS_IDLE;
+                    HWRITE[i] <= 0;
+                end else if (HREADY[i]) begin
+                    if (HTRANS[i] == AHB_PKG::TRANS_IDLE) begin
+                        // New AHB transfer
+                        cache_addr_t addr;
+                        //addr.tag = unsigned'($random()) % 4;
+                        addr.tag = $random();
+                        addr.index = $random();
+                        addr.ofs = $random();
+                        addr.ofs[1:0] = 0;
+                        addr.ofs[2 +: $clog2(N_AHB_BURSTS)] = 0;
+                        HADDR[i]  <= addr;
+                        HWRITE[i] <= $random() % 2;
+                        HTRANS[i] <= AHB_PKG::TRANS_NONSEQ;
+                    end else if (HTRANS[i] inside {AHB_PKG::TRANS_NONSEQ, AHB_PKG::TRANS_SEQ}) begin
+                        if (&HADDR[i][2 +: $clog2(N_AHB_BURSTS)]) begin
+                            // The last burst beat
+                            HADDR[i] <= 'x;
+                            HWRITE[i] <= 'x;
+                            HTRANS[i] <= AHB_PKG::TRANS_IDLE;
+                        end else begin
+                            HADDR[i] <= HADDR[i] + 4;
+                            HTRANS[i] <= AHB_PKG::TRANS_SEQ;
+                        end
+                    end
+                end
+            end
+
+            // Data phase
+            always_ff @(posedge clk_sys, posedge reset_sys)
+                if (reset_sys)
+                    HWDATA[i] <= 'x;
+                else if (HTRANS[i] != AHB_PKG::TRANS_IDLE && HREADY[i])
+                    HWDATA[i] <= $random();
+                else if (HTRANS[i] == AHB_PKG::TRANS_IDLE && HREADY[i])
+                    HWDATA[i] <= 'x;
+
+        end: gen_stream
     end:gen_ahb
 endgenerate
-
-
-/*
-int test;
-initial begin
-    test = 0;
-
-    @(negedge reset_sys);
-    test = 1;
-    @(posedge clk_sys);
-    test = 2;
-
-    forever begin
-        @(posedge clk_sys);
-        test = 3;
-    end
-end
-*/
-
-/*
-// Memory write test gen
-SDRAM_PKG::addr_t addr [3:0];
-always_ff @(posedge CLK, posedge RESET_IN)
-    if (RESET_IN)
-        addr <= '{default: 0};
-    else begin
-        int i;
-        for (i = 0; i < 4; i++)
-            if (cache_req[i] & cache_ack[i])
-                addr[i] <= addr[i] + 1;
-    end
-
-logic [4-1:0][3:0] req_cnt;
-always_ff @(posedge CLK, posedge RESET_IN)
-    if (RESET_IN)
-        req_cnt <= 0;
-    else begin
-        int i;
-        for (i = 0; i < 4; i++)
-            if (req_cnt[i] == 0)
-                req_cnt[i] <= BURST + 1;
-            else if (cache_ack[i] | ~cache_req[i])
-                req_cnt[i] <= req_cnt[i] - 1;
-    end
-
-always_comb begin
-    cache_write = '{default: 0};
-    cache_acs   = '{default: 0};
-    cache_req   = '{default: 0};
-
-    cache_write[0]    = addr[0][6];
-    cache_req[0]      = req_cnt[0] > 1;
-    cache_acs[0].row  = {3{addr[0][12:3]}};
-    cache_acs[0].bank = addr[0][8:7] + 0;
-    cache_acs[0].data = ~addr[0];
-
-    cache_write[1]    = addr[1][5];
-    cache_req[1]      = req_cnt[1] > 1;
-    cache_acs[1].row  = {3{addr[1][12:4]}};
-    cache_acs[1].bank = addr[1][8:7] + 1;
-    cache_acs[1].data = ~addr[1];
-
-    cache_write[2]    = addr[2][4];
-    cache_req[2]      = req_cnt[2] > 1;
-    cache_acs[2].row  = {3{addr[2][12:5]}};
-    cache_acs[2].bank = addr[2][8:7] + 2;
-    cache_acs[2].data = ~addr[2];
-
-    cache_write[3]    = addr[3][3];
-    cache_req[3]      = req_cnt[3] > 1;
-    cache_acs[3].row  = {3{addr[3][12:6]}};
-    cache_acs[3].bank = addr[3][8:7] + 3;
-    cache_acs[3].data = ~addr[3];
-end
-*/
 
 endmodule

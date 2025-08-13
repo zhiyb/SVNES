@@ -42,13 +42,16 @@ derive_clock_uncertainty
 # SDRAM constraints
 #**************************************************************
 
-set clkSDRAM {clk|pll0|altpll_component|auto_generated|pll1|clk[1]}
+set clkSDRAM {clk|pll0|altpll_component|auto_generated|pll1|clk[0]}
 set clkOutSDRAM [get_ports {DRAM_CLK}]
 set portsInSDRAM [get_ports { \
 	DRAM_DQ[0] DRAM_DQ[1] DRAM_DQ[2] DRAM_DQ[3] DRAM_DQ[4] DRAM_DQ[5] DRAM_DQ[6] DRAM_DQ[7] DRAM_DQ[8] \
 	DRAM_DQ[9] DRAM_DQ[10] DRAM_DQ[11] DRAM_DQ[12] DRAM_DQ[13] DRAM_DQ[14] DRAM_DQ[15]}]
-set_input_delay -max -clock $clkSDRAM 5.400 -reference_pin $clkOutSDRAM $portsInSDRAM
-set_input_delay -min -clock $clkSDRAM 2.700 -reference_pin $clkOutSDRAM $portsInSDRAM
+set_input_delay -max -clock $clkSDRAM 5.4 -reference_pin $clkOutSDRAM $portsInSDRAM
+set_input_delay -min -clock $clkSDRAM 2.7 -reference_pin $clkOutSDRAM $portsInSDRAM
+# Use the previous cycle for SDC
+#set_input_delay -max -clock $clkSDRAM -4.6 -reference_pin $clkOutSDRAM $portsInSDRAM
+#set_input_delay -min -clock $clkSDRAM 7.3 -reference_pin $clkOutSDRAM $portsInSDRAM
 set portsOutSDRAM [get_ports { \
 	DRAM_ADDR[0] DRAM_ADDR[1] DRAM_ADDR[2] DRAM_ADDR[3] DRAM_ADDR[4] DRAM_ADDR[5] DRAM_ADDR[6] DRAM_ADDR[7] \
 	DRAM_ADDR[8] DRAM_ADDR[9] DRAM_ADDR[10] DRAM_ADDR[11] DRAM_ADDR[12] DRAM_BA[0] DRAM_BA[1] \
@@ -64,14 +67,14 @@ set_output_delay -min -clock $clkSDRAM -0.8 -reference_pin $clkOutSDRAM $portsOu
 #**************************************************************
 
 set clkTFT {clk|pll0|altpll_component|auto_generated|pll1|clk[2]}
-set clkOutTFT [get_ports {GPIO_0[29]}]
+set clkOutTFT [get_ports {GPIO_1[27]}]
 #create_generated_clock -name {clkTFTIO} -invert -source $clkTFT [get_nets {pll_main|ClkTFTInv}]
 #set clkTFT {clkTFTIO}
 set portsTFT [get_ports { \
-	GPIO_0[0] GPIO_0[1] GPIO_0[2] GPIO_0[3] GPIO_0[4] GPIO_0[5] GPIO_0[6] GPIO_0[7] GPIO_0[8] \
-	GPIO_0[10] GPIO_0[11] GPIO_0[13] GPIO_0[14] GPIO_0[16] GPIO_0[17] GPIO_0[18] GPIO_0[19] \
-	GPIO_0[21] GPIO_0[22] GPIO_0[23] GPIO_0[24] GPIO_0[25] GPIO_0[26] GPIO_0[28] \
-	GPIO_0[30] GPIO_0[31] GPIO_0[33]}]
+	GPIO_1[0] GPIO_1[1] GPIO_1[2] GPIO_1[3] GPIO_1[4] GPIO_1[6] GPIO_1[7] GPIO_1[8] \
+	GPIO_1[9] GPIO_1[10] GPIO_1[11] GPIO_1[13] GPIO_1[14] GPIO_1[15] GPIO_1[16] GPIO_1[17] \
+	GPIO_1[18] GPIO_1[19] GPIO_1[20] GPIO_1[21] GPIO_1[22] GPIO_1[23] GPIO_1[24] GPIO_1[25] \
+	GPIO_1[28] GPIO_1[29] GPIO_1[31] GPIO_1[33]}]
 set_output_delay -max -clock $clkTFT -clock_fall -reference_pin $clkOutTFT 8.000 $portsTFT
 set_output_delay -min -clock $clkTFT -clock_fall -reference_pin $clkOutTFT -8.000 $portsTFT
 

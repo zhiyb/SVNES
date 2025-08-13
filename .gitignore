@@ -7,6 +7,7 @@ incremental_db/
 output_files/
 modelsim.ini
 *.bak
+*.rpt
 wlft*
 transcript
 

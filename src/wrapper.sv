@@ -27,6 +27,59 @@ module WRAPPER (
     input  logic [2:0]  GPIO_2_IN
 );
 
+// IO connections
+
+wire lcd_clk;
+logic lcd_pwm, lcd_disp, lcd_hsync, lcd_vsync, lcd_de;
+logic [7:0] lcd_red, lcd_green, lcd_blue;
+
+assign GPIO_1[27] = lcd_clk;
+assign GPIO_1[28] = lcd_disp;
+assign GPIO_1[29] = lcd_hsync;
+assign GPIO_1[31] = lcd_vsync;
+assign GPIO_1[33] = lcd_de;
+assign GPIO_1[26] = lcd_pwm;
+
+assign {GPIO_1[8:6], GPIO_1[4:0]} = lcd_red;
+assign {GPIO_1[17:13], GPIO_1[11:9]} = lcd_green;
+assign {GPIO_1[25:18]} = lcd_blue;
+
+logic [1:0] btn_disp;
+assign btn_disp = {GPIO_1_IN[1], GPIO_1_IN[0]};
+
+logic [1:0] led_disp;
+assign {GPIO_1[12], GPIO_1[5]} = led_disp;
+
+// Broken GPIOs:
+// GPIO 1.5 stuck at 0v
+// GPIO 1.12 stuck at 3v3
+assign led_disp = 2'b10;
+// assign led_disp = btn_disp;
+
+logic hp_left, hp_right;
+assign GPIO_1[30] = hp_left;
+assign GPIO_1[32] = hp_right;
+
+logic [7:0] btn_io;
+assign btn_io = ~{GPIO_0[20], GPIO_0[21], GPIO_0[22], GPIO_0[23],
+    GPIO_0[31], GPIO_0[32], GPIO_0[33], GPIO_0[30]};
+
+typedef logic [2:0] rgb_led_t;
+rgb_led_t [4:0] rgb_led;
+assign {GPIO_0[7], GPIO_0[6], GPIO_0[5]} = rgb_led[0];
+assign {GPIO_0[10], GPIO_0[9], GPIO_0[8]} = rgb_led[1];
+assign {GPIO_0[13], GPIO_0[12], GPIO_0[11]} = rgb_led[2];
+assign {GPIO_0[16], GPIO_0[15], GPIO_0[14]} = rgb_led[3];
+assign {GPIO_0[19], GPIO_0[18], GPIO_0[17]} = rgb_led[4];
+
+wire flash_clk;
+logic flash_cs;
+logic [3:0] flash_io;
+assign GPIO_0[29] = flash_clk;
+assign GPIO_0[27] = flash_cs;
+assign {GPIO_0[26:24], GPIO_0[28]} = flash_io;
+
+
 // 143MHz system clock
 wire clk_sys, reset_sys;
 // Clock for SDRAM CLK pin
@@ -48,6 +101,7 @@ CLOCK_GEN clk (
 
     .PLL_LOCKED_OUT (pll_locked)
 );
+
 
 // System AHB bus
 localparam SDRAM_PORTS = 4;
@@ -146,14 +200,28 @@ TFT #(
 
     .UNDERFLOW_OUT  (tft_underflow),
 
-    .TFT_DCLK   (GPIO_0[29]),
-    .TFT_DISP   (GPIO_0[30]),
-    .TFT_VSYNC  (GPIO_0[33]),
-    .TFT_HSYNC  (GPIO_0[31]),
-    .TFT_RGB    ({GPIO_0[7:0], GPIO_0[18:16], GPIO_0[14:13], GPIO_0[11:10], GPIO_0[8], GPIO_0[28], GPIO_0[26:21], GPIO_0[19]})
+    .TFT_DCLK   (lcd_clk),
+    .TFT_DISP   (lcd_disp),
+    .TFT_VSYNC  (lcd_vsync),
+    .TFT_HSYNC  (lcd_hsync),
+    .TFT_RGB    ({lcd_red, lcd_green, lcd_blue})
 );
+
+assign lcd_de = 0;
+assign lcd_pwm = 1;
 
 // Debug LEDs
 assign LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
+
+logic [7:0] rgb_led_cnt;
+logic rgb_led_pwm;
+
+always_ff @(posedge CLOCK_50)
+begin
+    rgb_led_cnt <= rgb_led_cnt + 1;
+    rgb_led_pwm <= rgb_led_cnt < 10;
+end
+
+assign rgb_led = (3*5)'({2{^btn_disp, btn_io}}) & {15{rgb_led_pwm}};
 
 endmodule

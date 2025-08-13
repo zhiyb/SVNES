@@ -46,30 +46,6 @@ logic dma_req_ahb, dma_ack_ahb;
 logic [31:0] dma_data_tft;
 logic dma_req_tft, dma_ack_tft;
 
-FIFO_ASYNC #(
-    .WIDTH  (32)
-) fifo (
-    .WRITE_CLK      (HCLK),
-    .WRITE_RESET_IN (HRESET),
-    .WRITE_DATA_IN  (dma_data_ahb),
-    .WRITE_REQ_IN   (dma_req_ahb),
-    .WRITE_ACK_OUT  (dma_ack_ahb),
-
-    .READ_CLK       (CLK_TFT),
-    .READ_RESET_IN  (RESET_TFT),
-    .READ_DATA_OUT  (dma_data_tft),
-    .READ_REQ_OUT   (dma_req_tft),
-    .READ_ACK_IN    (dma_ack_tft)
-);
-
-// Data width conversion
-logic [TFT_WIDTH-1:0] data_tft;
-logic req_tft, ack_tft;
-
-assign data_tft    = dma_data_tft[TFT_WIDTH-1:0];
-assign req_tft     = dma_req_tft;
-assign dma_ack_tft = ack_tft;
-
 // AHB DMA master
 TFT_DMA #(
     .BASE_ADDR  (BASE_ADDR)
@@ -92,6 +68,50 @@ TFT_DMA #(
 
     .VSYNC_IN   (vsync_ahb)
 );
+
+FIFO_ASYNC #(
+    .WIDTH  (32)
+) fifo (
+    .WRITE_CLK      (HCLK),
+    .WRITE_RESET_IN (HRESET),
+    .WRITE_DATA_IN  (dma_data_ahb),
+    .WRITE_REQ_IN   (dma_req_ahb),
+    .WRITE_ACK_OUT  (dma_ack_ahb),
+
+    .READ_CLK       (CLK_TFT),
+    .READ_RESET_IN  (RESET_TFT),
+    .READ_DATA_OUT  (dma_data_tft),
+    .READ_REQ_OUT   (dma_req_tft),
+    .READ_ACK_IN    (dma_ack_tft)
+);
+
+// Data width conversion, RGB mapping
+logic [TFT_WIDTH-1:0] data_tft;
+logic req_tft, ack_tft;
+
+`define USE_RGB565 // SDRAM too slow for RGB888
+`ifdef USE_RGB565
+TFT_MAPPING #(
+    .TFT_WIDTH  (TFT_WIDTH)
+) map (
+    .CLK        (CLK_TFT),
+    .RESET_IN   (RESET_TFT),
+
+    .DATA_IN    (dma_data_tft),
+    .REQ_IN     (dma_req_tft),
+    .ACK_OUT    (dma_ack_tft),
+
+    .DATA_OUT   (data_tft),
+    .REQ_OUT    (req_tft),
+    .ACK_IN     (ack_tft),
+
+    .VSYNC_IN   (vsync_tft)
+);
+`else
+assign data_tft = dma_data_tft;
+assign req_tft = dma_req_tft;
+assign dma_ack_tft = ack_tft;
+`endif
 
 // TFT interface
 TFT_IO #(

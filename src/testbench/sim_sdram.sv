@@ -107,13 +107,24 @@ always_ff @(posedge DRAM_CLK) begin
     end
 end
 
+
 logic read_valid;
 assign read_valid = read_pipe != 0;
 
-assign DRAM_DQ = read_valid ? mem[read_row][read_col] : 'z;
+logic read_out_clk;
+always @(DRAM_CLK)
+    #2.7ns read_out_clk = DRAM_CLK;
+
+logic [15:0] read_tm;
+always @(posedge read_out_clk) begin
+    read_tm = 'x;
+    #2.7ns read_tm = mem[read_row][read_col];
+end
+
+assign DRAM_DQ = read_valid ? read_tm : 'z;
 
 
-always_ff @(DRAM_CLK) begin
+always_ff @(posedge DRAM_CLK) begin
     assert (assert_disable || read_pipe == 0 || !$isunknown(DRAM_DQ)) else $error("Read data X");
     assert (assert_disable || write_pipe == 0 || !$isunknown(write_data)) else $error("Write data X");
 end

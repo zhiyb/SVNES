@@ -121,6 +121,7 @@ assign htrans[0] = AHB_PKG::TRANS_IDLE;
 assign htrans[1] = AHB_PKG::TRANS_IDLE;
 assign htrans[2] = AHB_PKG::TRANS_IDLE;
 
+
 // SDRAM controller
 logic sdram_init_done;
 SDRAM #(
@@ -169,6 +170,8 @@ SDRAM #(
     .DRAM_WE_N      (DRAM_WE_N)
 );
 
+
+// TFT LCD
 logic tft_underflow;
 
 TFT #(
@@ -209,6 +212,7 @@ TFT #(
 
 assign lcd_de = 0;
 assign lcd_pwm = 1;
+
 
 // Debug LEDs
 assign LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});

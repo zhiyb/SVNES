@@ -35,25 +35,40 @@ logic [1:0]  dram_ba, dram_dqm;
 logic        dram_cke;
 logic        dram_cs_n, dram_ras_n, dram_cas_n, dram_we_n;
 
-always_ff @(posedge CLK) begin
-    dram_dq_in     <= DRAM_DQ;
-end
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        dram_dq_in     <= 0;
+    else
+        dram_dq_in     <= DRAM_DQ;
 
-always_ff @(posedge CLK) begin
-    dram_dq_out    <= dram_dq;
-    dram_dq_out_en <= dram_dq_en;
-    DRAM_ADDR      <= dram_addr;
-    DRAM_BA        <= dram_ba;
-    DRAM_DQM       <= dram_dqm;
-    DRAM_CKE       <= dram_cke;
-    DRAM_CS_N      <= dram_cs_n;
-    DRAM_RAS_N     <= dram_ras_n;
-    DRAM_CAS_N     <= dram_cas_n;
-    DRAM_WE_N      <= dram_we_n;
+always_ff @(negedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
+        dram_dq_out    <= 0;
+        dram_dq_out_en <= 0;
+        DRAM_ADDR      <= 0;
+        DRAM_BA        <= 0;
+        DRAM_DQM       <= 0;
+        DRAM_CKE       <= 0;
+        DRAM_CS_N      <= 0;
+        DRAM_RAS_N     <= 0;
+        DRAM_CAS_N     <= 0;
+        DRAM_WE_N      <= 0;
+    end else begin
+        dram_dq_out    <= dram_dq;
+        dram_dq_out_en <= dram_dq_en;
+        DRAM_ADDR      <= dram_addr;
+        DRAM_BA        <= dram_ba;
+        DRAM_DQM       <= dram_dqm;
+        DRAM_CKE       <= dram_cke;
+        DRAM_CS_N      <= dram_cs_n;
+        DRAM_RAS_N     <= dram_ras_n;
+        DRAM_CAS_N     <= dram_cas_n;
+        DRAM_WE_N      <= dram_we_n;
+    end
 end
 
 assign DRAM_DQ  = dram_dq_out_en ? dram_dq_out : 'z;
-assign DRAM_CLK = CLK_IO;
+assign DRAM_CLK = CLK;
 
 // Read output CASE delay pipe
 localparam READ_LATENCY = CAS + 2;
@@ -61,8 +76,11 @@ localparam READ_LATENCY = CAS + 2;
 SDRAM_PKG::tag_t                    tag_pipe_in;
 SDRAM_PKG::tag_t [READ_LATENCY-1:0] tag_pipe;
 
-always_ff @(posedge CLK)
-    tag_pipe <= {tag_pipe[READ_LATENCY-2:0], tag_pipe_in};
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        tag_pipe <= 0;
+    else
+        tag_pipe <= {tag_pipe[READ_LATENCY-2:0], tag_pipe_in};
 
 assign READ_TAG_OUT  = tag_pipe[READ_LATENCY-1];
 `ifndef SIMULATION

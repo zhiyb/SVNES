@@ -68,8 +68,6 @@ set_output_delay -min -clock $clkSDRAM -0.8 -reference_pin $clkOutSDRAM $portsOu
 
 set clkTFT {clk|pll0|altpll_component|auto_generated|pll1|clk[2]}
 set clkOutTFT [get_ports {GPIO_1[27]}]
-#create_generated_clock -name {clkTFTIO} -invert -source $clkTFT [get_nets {pll_main|ClkTFTInv}]
-#set clkTFT {clkTFTIO}
 set portsTFT [get_ports { \
 	GPIO_1[0] GPIO_1[1] GPIO_1[2] GPIO_1[3] GPIO_1[4] GPIO_1[6] GPIO_1[7] GPIO_1[8] \
 	GPIO_1[9] GPIO_1[10] GPIO_1[11] GPIO_1[13] GPIO_1[14] GPIO_1[15] GPIO_1[16] GPIO_1[17] \
@@ -83,6 +81,7 @@ set_output_delay -min -clock $clkTFT -clock_fall -reference_pin $clkOutTFT -8.00
 # Set Clock Groups
 #**************************************************************
 
+set_clock_groups -asynchronous -group $clkTFT -group $clkSDRAM -group {CLOCK_50}
 
 
 #**************************************************************
@@ -90,9 +89,10 @@ set_output_delay -min -clock $clkTFT -clock_fall -reference_pin $clkOutTFT -8.00
 #**************************************************************
 
 set_false_path -to [get_ports {LED*}]
-set_false_path -to [get_ports {GPIO_1*}]
 set_false_path -from [get_ports {KEY*}]
 set_false_path -from [get_ports {SW*}]
+set_false_path -from [get_ports {GPIO_0*}]
+set_false_path -to [get_ports {GPIO_0*}]
 
 set_false_path -to [get_cells -compatibility_mode *\|cdc_synchron\[*\]\[*\]]
 

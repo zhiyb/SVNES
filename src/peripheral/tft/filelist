@@ -2,3 +2,4 @@ tft_dma.sv
 tft_io.sv
 tft.sv
 tft_pattern_gen.sv
+tft_mapping.sv

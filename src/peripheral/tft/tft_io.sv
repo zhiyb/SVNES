@@ -76,16 +76,23 @@ assign ACK_OUT = VSYNC_OUT | disp;
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
         UNDERFLOW_OUT <= 0;
-    //else if (VSYNC_OUT)
-    //    UNDERFLOW_OUT <= 0;
+    // else if (VSYNC_OUT)
+    //     UNDERFLOW_OUT <= 0;
     else if (disp & ~REQ_IN)
         UNDERFLOW_OUT <= 1;
 
-always_ff @(posedge CLK) begin
-    TFT_HSYNC <= ~hsync;
-    TFT_VSYNC <= ~vsync;
-    VSYNC_OUT <= vsync;
-    TFT_RGB   <= DATA_IN;
+always_ff @(posedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
+        TFT_HSYNC <= 0;
+        TFT_VSYNC <= 0;
+        VSYNC_OUT <= 0;
+        TFT_RGB   <= 0;
+    end else begin
+        TFT_HSYNC <= ~hsync;
+        TFT_VSYNC <= ~vsync;
+        VSYNC_OUT <= vsync;
+        TFT_RGB   <= DATA_IN;
+    end
 end
 
 endmodule

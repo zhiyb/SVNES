@@ -3,9 +3,7 @@ module TFT_PATTERN_GEN #(
     parameter logic [31:0] BASE_ADDR = 0,
     // Display area size
     parameter int WIDTH,
-    parameter int HEIGHT,
-    // Pixel bitwidth
-    parameter int PIXEL_WIDTH
+    parameter int HEIGHT
 ) (
     // AHB (fake) memory slave
     input  wire             HCLK,

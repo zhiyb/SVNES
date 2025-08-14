@@ -174,6 +174,14 @@ SDRAM #(
 
 
 // LCD test pattern generator
+logic tp_start;
+CDC_ASYNC tp_cdc (
+    .CLK        (clk_sys),
+    .RESET_IN   (reset_sys),
+    .DATA_IN    (btn_io[0]),
+    .DATA_OUT   (tp_start)
+);
+
 TEST_PATTERN_GEN #(
     .BASE_ADDR (32'h0f000000)
 ) tp (
@@ -189,7 +197,7 @@ TEST_PATTERN_GEN #(
     .HREADY     (hready[3]),
     .HRESP      (hresp[3]),
 
-    .START_IN   (btn_io[0])
+    .START_IN   (tp_start)
 );
 
 

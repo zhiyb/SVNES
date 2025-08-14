@@ -58,12 +58,10 @@ wire reset_50_cnt;
 CDC_ASYNC #(
     .WIDTH  (1)
 ) cdc_50_cnt (
-    .SRC_CLK        (1'b0),
-    .SRC_RESET_IN   (1'b0),
-    .SRC_DATA_IN    (RESET_ASYNC_IN),
-    .DST_CLK        (CLK_50),
-    .DST_RESET_IN   (1'b0),
-    .DST_DATA_OUT   (reset_50_cnt)
+    .CLK        (CLK_50),
+    .RESET_IN   (1'b0),
+    .DATA_IN    (RESET_ASYNC_IN),
+    .DATA_OUT   (reset_50_cnt)
 );
 
 logic [$clog2(RESET_50_CYCLES)-1:0] reset_cnt;
@@ -87,12 +85,10 @@ wire locked_50;
 CDC_ASYNC #(
     .WIDTH  (1)
 ) cdc_50_locked (
-    .SRC_CLK        (1'b0),
-    .SRC_RESET_IN   (1'b0),
-    .SRC_DATA_IN    (PLL_LOCKED_OUT),
-    .DST_CLK        (CLK_50),
-    .DST_RESET_IN   (1'b0),
-    .DST_DATA_OUT   (locked_50)
+    .CLK        (CLK_50),
+    .RESET_IN   (1'b0),
+    .DATA_IN    (PLL_LOCKED_OUT),
+    .DATA_OUT   (locked_50)
 );
 
 logic [$clog2(RESET_50_CYCLES)-1:0] reset_50_pll_cnt;
@@ -119,12 +115,10 @@ assign RESET_SYS_OUT = reset_sys;
 CDC_ASYNC #(
     .WIDTH  (1)
 ) cdc_sys (
-    .SRC_CLK        (CLK_50),
-    .SRC_RESET_IN   (1'b0),
-    .SRC_DATA_IN    (RESET_50_OUT),
-    .DST_CLK        (CLK_SYS),
-    .DST_RESET_IN   (1'b0),
-    .DST_DATA_OUT   (reset_sys)
+    .CLK        (CLK_SYS),
+    .RESET_IN   (1'b0),
+    .DATA_IN    (RESET_50_OUT),
+    .DATA_OUT   (reset_sys)
 );
 
 // RESET_50_OUT -> RESET_TFT_OUT
@@ -134,12 +128,10 @@ assign RESET_TFT_OUT = reset_tft;
 CDC_ASYNC #(
     .WIDTH  (1)
 ) cdc_tft (
-    .SRC_CLK        (CLK_50),
-    .SRC_RESET_IN   (1'b0),
-    .SRC_DATA_IN    (RESET_50_OUT),
-    .DST_CLK        (CLK_TFT),
-    .DST_RESET_IN   (1'b0),
-    .DST_DATA_OUT   (reset_tft)
+    .CLK        (CLK_TFT),
+    .RESET_IN   (1'b0),
+    .DATA_IN    (RESET_50_OUT),
+    .DATA_OUT   (reset_tft)
 );
 
 endmodule

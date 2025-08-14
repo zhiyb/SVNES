@@ -43,12 +43,10 @@ assign wwcnt_next = bin2gray16[4'(gray2bin16[wwcnt] + 1)];
 CDC_ASYNC #(
     .WIDTH  ($bits(cnt_t))
 ) cdc_wr (
-    .SRC_CLK        (READ_CLK),
-    .SRC_RESET_IN   (READ_RESET_IN),
-    .SRC_DATA_IN    (rrcnt),
-    .DST_CLK        (WRITE_CLK),
-    .DST_RESET_IN   (WRITE_RESET_IN),
-    .DST_DATA_OUT   (wrcnt)
+    .CLK        (WRITE_CLK),
+    .RESET_IN   (WRITE_RESET_IN),
+    .DATA_IN    (rrcnt),
+    .DATA_OUT   (wrcnt)
 );
 
 always_ff @(posedge WRITE_CLK, posedge WRITE_RESET_IN)
@@ -78,12 +76,10 @@ assign rrcnt_next = bin2gray16[4'(gray2bin16[rrcnt] + 1)];
 CDC_ASYNC #(
     .WIDTH  ($bits(cnt_t))
 ) cdc_rw (
-    .SRC_CLK        (WRITE_CLK),
-    .SRC_RESET_IN   (WRITE_RESET_IN),
-    .SRC_DATA_IN    (wwcnt),
-    .DST_CLK        (READ_CLK),
-    .DST_RESET_IN   (READ_RESET_IN),
-    .DST_DATA_OUT   (rwcnt)
+    .CLK        (READ_CLK),
+    .RESET_IN   (READ_RESET_IN),
+    .DATA_IN    (wwcnt),
+    .DATA_OUT   (rwcnt)
 );
 
 always_ff @(posedge READ_CLK, posedge READ_RESET_IN)

@@ -1,7 +1,7 @@
 module TB_WRAPPER;
 
 initial
-    #20ms $finish(0);
+    #1ms $finish(0);
 
 logic clk_50;
 initial begin
@@ -16,6 +16,19 @@ initial begin
     @(posedge clk_50);
     reset_50 = 0;
 end
+
+logic [33:0] gpio_0;
+initial begin
+    gpio_0[30] = 1;
+    #200us;
+    @(posedge clk_50);
+    gpio_0[30] = 0;     // TEST_PATTERN_GEN.START_IN
+    @(posedge clk_50);
+    gpio_0[30] = 1;
+end
+
+wire [33:0] GPIO_0;
+assign GPIO_0 = gpio_0;
 
 wire  [15:0] DRAM_DQ;
 logic [12:0] DRAM_ADDR;
@@ -52,7 +65,7 @@ WRAPPER w0 (
     .ADC_SCLK       (),
     .ADC_SDAT       (),
 
-    .GPIO_0         (),
+    .GPIO_0         (GPIO_0),
     .GPIO_0_IN      (),
     .GPIO_1         (),
     .GPIO_1_IN      (),

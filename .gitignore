@@ -5,10 +5,12 @@ sim/
 db/
 incremental_db/
 output_files/
+veri/
 modelsim.ini
 *.bak
 *.rpt
 wlft*
+wave.do
 transcript
 
 filelist.qsf
@@ -17,7 +19,5 @@ greybox_tmp/
 *.qws
 *.sh
 *.vstf
-
-veri/
 
 .vscode/

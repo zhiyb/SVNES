@@ -105,7 +105,7 @@ CLOCK_GEN clk (
 
 // System AHB bus
 localparam SDRAM_PORTS = 4;
-localparam TFT_PORT    = 3;
+localparam TFT_PORT    = 0;
 
 AHB_PKG::addr_t  [SDRAM_PORTS-1:0] haddr;
 AHB_PKG::burst_t [SDRAM_PORTS-1:0] hburst;
@@ -117,13 +117,13 @@ AHB_PKG::data_t  [SDRAM_PORTS-1:0] hrdata;
 logic            [SDRAM_PORTS-1:0] hready;
 AHB_PKG::resp_t  [SDRAM_PORTS-1:0] hresp;
 
-assign htrans[0] = AHB_PKG::TRANS_IDLE;
 assign htrans[1] = AHB_PKG::TRANS_IDLE;
 assign htrans[2] = AHB_PKG::TRANS_IDLE;
 
 
 // SDRAM controller
-localparam CLK_SDRAM_FREQ_MHZ = 143;
+// localparam CLK_SDRAM_FREQ_MHZ = 143;
+localparam CLK_SDRAM_FREQ_MHZ = 100;
 
 logic sdram_init_done;
 SDRAM #(
@@ -170,6 +170,26 @@ SDRAM #(
     .DRAM_RAS_N     (DRAM_RAS_N),
     .DRAM_CAS_N     (DRAM_CAS_N),
     .DRAM_WE_N      (DRAM_WE_N)
+);
+
+
+// LCD test pattern generator
+TEST_PATTERN_GEN #(
+    .BASE_ADDR (32'h0f000000)
+) tp (
+    .HCLK       (clk_sys),
+    .HRESET     (reset_sys),
+    .HADDR      (haddr[3]),
+    .HBURST     (hburst[3]),
+    .HSIZE      (hsize[3]),
+    .HTRANS     (htrans[3]),
+    .HWRITE     (hwrite[3]),
+    .HWDATA     (hwdata[3]),
+    .HRDATA     (hrdata[3]),
+    .HREADY     (hready[3]),
+    .HRESP      (hresp[3]),
+
+    .START_IN   (btn_io[0])
 );
 
 

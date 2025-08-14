@@ -74,7 +74,7 @@ generate
         for (p = 0; p < AHB_PORTS; p++) begin: gen_port
             SDRAM_STREAM #(
                 .BURST   (BURST)
-            ) cache (
+            ) stream (
                 .CLK            (CLK),
                 .RESET_IN       (RESET_IN),
 

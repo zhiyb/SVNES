@@ -2,6 +2,9 @@ common/
 peripheral/
 pll/
 platform/
+test/
+
 clock_gen.sv
 wrapper.sv
+
 testbench/

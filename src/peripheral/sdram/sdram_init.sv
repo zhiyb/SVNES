@@ -55,7 +55,7 @@ always_ff @(posedge CLK, posedge RESET_IN)
         spc_ref_state <= spc_ref_state == REF_PRE ? REF_REF : REF_NOP;
 
 always_comb begin
-    spc_cmd = '{default: 0};
+    spc_cmd = SDRAM_PKG::cmd_t'(0);
     spc_req = ~spc_init_done;
     if (~spc_init_done) begin
         if (spc_cnt == tMRD - 1) begin

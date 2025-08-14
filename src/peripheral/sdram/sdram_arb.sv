@@ -27,7 +27,7 @@ module SDRAM_ARB #(
 );
 
 // Fixed bank per-port, N_SRC should equal to N_BANKS
-localparam FIXED_BANK = 1;
+localparam FIXED_BANK = 0;
 // Use row-change input instead of tracking active bank row here
 localparam USE_RCHG   = 1;
 
@@ -186,7 +186,7 @@ generate
         always_comb begin
             bank_t ba;
             src_req[src] = 0;
-            src_cmd[src] = '{default: 0};
+            src_cmd[src] = SDRAM_PKG::cmd_t'(0);
             src_cmd[src].bank = FIXED_BANK ? src : SRC_ACS_IN[src].bank;
             src_cmd[src].addr = SRC_ACS_IN[src].col;
             src_cmd[src].data = 0;
@@ -338,7 +338,7 @@ end
 
 always_comb begin
     int src;
-    src_cmd_arb = '{default: 0};
+    src_cmd_arb = SDRAM_PKG::cmd_t'(0);
     // Command ports
     for (src = 0; src < N_SRC; src++) begin
         if (cmd_src_sel[src])
@@ -358,7 +358,7 @@ end
 
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
-        CMD_OUT <= '{default: 0};
+        CMD_OUT <= SDRAM_PKG::cmd_t'(0);
     else
         CMD_OUT <= arb_cmd;
 

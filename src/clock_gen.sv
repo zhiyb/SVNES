@@ -20,10 +20,12 @@ pll_sys pll0 (
     .areset (reset_pll),
     .inclk0 (CLK_50),
     .c0     (CLK_SYS),
-    .c1     (CLK_MEM_IO),
+    // .c1     (CLK_MEM_IO),
     .c2     (CLK_TFT),
     .locked (PLL_LOCKED_OUT)
 );
+
+assign CLK_MEM_IO = 0;
 
 `else   // SIMULATION
 

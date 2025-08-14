@@ -47,11 +47,11 @@ set clkOutSDRAM [get_ports {DRAM_CLK}]
 set portsInSDRAM [get_ports { \
 	DRAM_DQ[0] DRAM_DQ[1] DRAM_DQ[2] DRAM_DQ[3] DRAM_DQ[4] DRAM_DQ[5] DRAM_DQ[6] DRAM_DQ[7] DRAM_DQ[8] \
 	DRAM_DQ[9] DRAM_DQ[10] DRAM_DQ[11] DRAM_DQ[12] DRAM_DQ[13] DRAM_DQ[14] DRAM_DQ[15]}]
-set_input_delay -max -clock $clkSDRAM 5.4 -reference_pin $clkOutSDRAM $portsInSDRAM
-set_input_delay -min -clock $clkSDRAM 2.7 -reference_pin $clkOutSDRAM $portsInSDRAM
 # Use the previous cycle for SDC
-#set_input_delay -max -clock $clkSDRAM -4.6 -reference_pin $clkOutSDRAM $portsInSDRAM
-#set_input_delay -min -clock $clkSDRAM 7.3 -reference_pin $clkOutSDRAM $portsInSDRAM
+set_input_delay -min -clock $clkSDRAM -4.3 -reference_pin $clkOutSDRAM $portsInSDRAM
+set_input_delay -max -clock $clkSDRAM -1.6 -reference_pin $clkOutSDRAM $portsInSDRAM
+# set_input_delay -min -clock $clkSDRAM 2.7 -reference_pin $clkOutSDRAM $portsInSDRAM
+# set_input_delay -max -clock $clkSDRAM 5.4 -reference_pin $clkOutSDRAM $portsInSDRAM
 set portsOutSDRAM [get_ports { \
 	DRAM_ADDR[0] DRAM_ADDR[1] DRAM_ADDR[2] DRAM_ADDR[3] DRAM_ADDR[4] DRAM_ADDR[5] DRAM_ADDR[6] DRAM_ADDR[7] \
 	DRAM_ADDR[8] DRAM_ADDR[9] DRAM_ADDR[10] DRAM_ADDR[11] DRAM_ADDR[12] DRAM_BA[0] DRAM_BA[1] \

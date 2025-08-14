@@ -26,20 +26,20 @@ module SDRAM_IO
 );
 
 // Pin input/output registers
-
 logic [15:0] dram_dq_in;
+
+always_ff @(negedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        dram_dq_in <= 0;
+    else
+        dram_dq_in <= DRAM_DQ;
+
 logic [15:0] dram_dq,    dram_dq_out;
 logic        dram_dq_en, dram_dq_out_en;
 logic [12:0] dram_addr;
 logic [1:0]  dram_ba, dram_dqm;
 logic        dram_cke;
 logic        dram_cs_n, dram_ras_n, dram_cas_n, dram_we_n;
-
-always_ff @(posedge CLK, posedge RESET_IN)
-    if (RESET_IN)
-        dram_dq_in     <= 0;
-    else
-        dram_dq_in     <= DRAM_DQ;
 
 always_ff @(negedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
@@ -71,7 +71,7 @@ assign DRAM_DQ  = dram_dq_out_en ? dram_dq_out : 'z;
 assign DRAM_CLK = CLK;
 
 // Read output CASE delay pipe
-localparam READ_LATENCY = CAS + 2;
+localparam READ_LATENCY = CAS + 1;
 
 SDRAM_PKG::tag_t                    tag_pipe_in;
 SDRAM_PKG::tag_t [READ_LATENCY-1:0] tag_pipe;
@@ -83,6 +83,7 @@ always_ff @(posedge CLK, posedge RESET_IN)
         tag_pipe <= {tag_pipe[READ_LATENCY-2:0], tag_pipe_in};
 
 assign READ_TAG_OUT  = tag_pipe[READ_LATENCY-1];
+
 `ifndef SIMULATION
 assign READ_DATA_OUT = dram_dq_in;
 `else
@@ -127,33 +128,33 @@ always_comb begin
     if (CMD_IN.op & SDRAM_PKG::OP_REF) begin
         dram_ras_n = 0;
         dram_cas_n = 0;
-        //dram_we_n  = 1;
+        dram_we_n  = 1;
     end
     if (CMD_IN.op & SDRAM_PKG::OP_PRE) begin
         dram_ras_n = 0;
-        //dram_cas_n = 1;
+        dram_cas_n = 1;
         dram_we_n  = 0;
-        //dram_addr[SDRAM_PKG::PALL_BIT] = CMD_IN.addr[SDRAM_PKG::PALL_BIT];
+        dram_addr[SDRAM_PKG::PALL_BIT] = CMD_IN.addr[SDRAM_PKG::PALL_BIT];
     end
     if (CMD_IN.op & SDRAM_PKG::OP_ACT) begin
         dram_ras_n = 0;
-        //dram_cas_n = 1;
-        //dram_we_n  = 1;
-        //dram_addr  = CMD_IN.addr;
+        dram_cas_n = 1;
+        dram_we_n  = 1;
+        dram_addr  = CMD_IN.addr;
     end
     if (CMD_IN.op & SDRAM_PKG::OP_WRITE) begin
-        //dram_ras_n = 1;
+        dram_ras_n = 1;
         dram_cas_n = 0;
         dram_we_n  = 0;
-        //dram_addr  = CMD_IN.addr;
+        dram_addr  = CMD_IN.addr;
         dram_dq_en = 1;
     end
     if (CMD_IN.op & SDRAM_PKG::OP_READ) begin
-        //dram_ras_n = 1;
+        dram_ras_n = 1;
         dram_cas_n = 0;
-        //dram_we_n  = 1;
-        //dram_addr  = CMD_IN.addr;
-        //dram_dq_en = 0;
+        dram_we_n  = 1;
+        dram_addr  = CMD_IN.addr;
+        dram_dq_en = 0;
         tag_pipe_in = CMD_IN.data;
     end
     if (CMD_IN.op & SDRAM_PKG::OP_MRS) begin

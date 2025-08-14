@@ -86,7 +86,7 @@ AHB_PKG::trans_t z1_trans;
 always_ff @(posedge HCLK, posedge HRESET)
     if (HRESET)
         z1_trans <= AHB_PKG::TRANS_IDLE;
-    else
+    else if (HREADY)
         z1_trans <= HTRANS;
 
 logic data_valid;

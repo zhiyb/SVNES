@@ -70,16 +70,18 @@ logic disp;
 assign disp = hcnt >= HTOTAL - HBACK - HDISP && hcnt < HTOTAL - HBACK &&
               vcnt >= VTOTAL - VBACK - VDISP && vcnt < VTOTAL - VBACK;
 
-// Flush FIFO data during VSYNC
-assign ACK_OUT = VSYNC_OUT | disp;
+// Accept data in display area
+assign ACK_OUT = disp;
 
+`ifndef SIMULATION
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
         UNDERFLOW_OUT <= 0;
-    // else if (VSYNC_OUT)
-    //     UNDERFLOW_OUT <= 0;
     else if (disp & ~REQ_IN)
         UNDERFLOW_OUT <= 1;
+`else
+assign UNDERFLOW_OUT = disp & ~REQ_IN;
+`endif
 
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin

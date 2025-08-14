@@ -13,10 +13,7 @@ module TFT_MAPPING #(
     // TFT data output
     output logic [TFT_WIDTH-1:0] DATA_OUT,
     output logic                 REQ_OUT,
-    input  logic                 ACK_IN,
-
-    // DMA restarts after VSYNC
-    input  logic                 VSYNC_IN
+    input  logic                 ACK_IN
 );
 
 localparam MAPPING_BYTES = 2;
@@ -26,9 +23,6 @@ logic [$clog2(8)-1:0] ofs, ofs_new;
 
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
-        data <= 0;
-        ofs <= 0;
-    end else if (VSYNC_IN) begin
         data <= 0;
         ofs <= 0;
     end else begin

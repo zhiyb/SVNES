@@ -16,7 +16,7 @@ module FIFO_SYNC #(
     input  logic             READ_ACK_IN
 );
 
-logic [WIDTH-1:0] fifo [(2**DEPTH_LOG2)-1:0];
+(* ramstyle = "no_rw_check" *) logic [WIDTH-1:0] fifo [(2**DEPTH_LOG2)-1:0];
 logic [DEPTH_LOG2:0] wptr, rptr;
 
 assign WRITE_ACK_OUT = wptr != (rptr ^ {1'b1, {DEPTH_LOG2{1'b0}}});
@@ -40,5 +40,10 @@ always_ff @(posedge CLK, posedge RESET_IN)
         rptr <= rptr + 1;
 
 assign READ_DATA_OUT = fifo[(DEPTH_LOG2)'(rptr)];
+
+`ifdef SIMULATION
+logic [DEPTH_LOG2:0] fifo_level;
+assign fifo_level = wptr - rptr;
+`endif
 
 endmodule

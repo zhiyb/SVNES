@@ -27,7 +27,7 @@ localparam cnt_t gray2bin16 [15:0] = '{
      5,  4,  6,  7,  2,  3,  1,  0
 };
 
-logic [WIDTH-1:0] fifo [15:0];
+(* ramstyle = "no_rw_check" *) logic [WIDTH-1:0] fifo [15:0];
 cnt_t wwcnt, wrcnt;
 cnt_t rwcnt, rrcnt;
 
@@ -97,5 +97,10 @@ always_comb begin
 end
 
 assign READ_DATA_OUT = fifo[rrcnt];
+
+`ifdef SIMULATION
+logic [3:0] fifo_level;
+assign fifo_level = gray2bin16[wwcnt] - gray2bin16[rrcnt];
+`endif
 
 endmodule

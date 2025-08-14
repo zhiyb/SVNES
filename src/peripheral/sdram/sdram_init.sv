@@ -24,7 +24,8 @@ localparam logic [2:0] MRS_CAS[0:3]   = '{0, 1, 2, 3};
 localparam logic [14:0] MRS = {5'b0, 1'b0, 2'b0, MRS_CAS[CAS], 1'b0, MRS_BURST[BURST]};
 
 localparam tINIT_TOTAL = tINIT + tRP + tRC + tRC + tMRD;
-logic [$clog2(tINIT_TOTAL)-1:0] spc_cnt;
+localparam COUNT = tREF >= tINIT_TOTAL ? tREF : tINIT_TOTAL;
+logic [$clog2(COUNT)-1:0] spc_cnt;
 always_ff @(posedge CLK, posedge RESET_IN)
     if (RESET_IN)
         spc_cnt <= tINIT_TOTAL - 1;

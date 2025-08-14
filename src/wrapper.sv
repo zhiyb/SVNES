@@ -82,8 +82,6 @@ assign {GPIO_0[26:24], GPIO_0[28]} = flash_io;
 
 // 143MHz system clock
 wire clk_sys, reset_sys;
-// Clock for SDRAM CLK pin
-wire clk_mem_io;
 // 33.3MHz TFT clock
 wire clk_tft, reset_tft;
 logic pll_locked;
@@ -91,7 +89,6 @@ logic pll_locked;
 CLOCK_GEN clk (
     .CLK_50         (CLOCK_50),
     .CLK_SYS        (clk_sys),
-    .CLK_MEM_IO     (clk_mem_io),
     .CLK_TFT        (clk_tft),
 
     .RESET_ASYNC_IN (~KEY[0]),
@@ -139,13 +136,17 @@ SDRAM #(
     .tDPL  (2),
     .tQMD  (2),
     .tRRD  (2),
+`ifndef SIMULATION
     .tINIT (CLK_SDRAM_FREQ_MHZ * 100),
     .tREF  (CLK_SDRAM_FREQ_MHZ * 64000 / 8192),
+`else
+    .tINIT (CLK_SDRAM_FREQ_MHZ * 1),
+    .tREF  (CLK_SDRAM_FREQ_MHZ * 64000 / 8192),
+`endif
     .CAS   (3),
     .BURST (8)
 ) sdram (
     .CLK            (clk_sys),
-    .CLK_IO         (clk_mem_io),
     .RESET_IN       (reset_sys),
 
     .INIT_DONE_OUT  (sdram_init_done),
@@ -206,6 +207,7 @@ logic tft_underflow;
 
 TFT #(
     .BASE_ADDR  (32'h0f000000),
+`ifndef SIMULATION
     .HSYNC      (1),
     .HBACK      (45),
     .HDISP      (800),
@@ -214,6 +216,16 @@ TFT #(
     .VBACK      (23),
     .VDISP      (480),
     .VFRONT     (22),
+`else
+    .HSYNC      (1),
+    .HBACK      (45),
+    .HDISP      (200),
+    .HFRONT     (21),
+    .VSYNC      (1),
+    .VBACK      (2),
+    .VDISP      (48),
+    .VFRONT     (2),
+`endif
     .TFT_WIDTH  (24)
 ) tft (
     .CLK_TFT    (clk_tft),

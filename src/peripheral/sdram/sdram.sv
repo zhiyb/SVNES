@@ -9,7 +9,6 @@ module SDRAM #(
                   CAS = 3, BURST = 8
 ) (
     input wire CLK,
-    input wire CLK_IO,
     input wire RESET_IN,
 
     output logic INIT_DONE_OUT,
@@ -176,7 +175,6 @@ SDRAM_IO #(
     .BURST      (BURST)
 ) io (
     .CLK        (CLK),
-    .CLK_IO     (CLK_IO),
     .RESET_IN   (RESET_IN),
 
     .CMD_IN         (arb_cmd_data),

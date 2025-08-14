@@ -32,22 +32,29 @@ module TFT #(
     output logic [TFT_WIDTH-1:0] TFT_RGB
 );
 
+`define USE_RGB565 // SDRAM too slow for RGB888
+
 // AHB CDC
-logic vsync_ahb, vsync_sync, vsync_tft;
-always_ff @(posedge HCLK, posedge HRESET)
-    if (HRESET)
-        {vsync_ahb, vsync_sync} <= 0;
-    else
-        {vsync_ahb, vsync_sync} <= {vsync_sync, vsync_tft};
-
-logic [31:0] dma_data_ahb;
-logic dma_req_ahb, dma_ack_ahb;
-
-logic [31:0] dma_data_tft;
-logic dma_req_tft, dma_ack_tft;
+logic vsync_ahb, vsync_tft;
+CDC_ASYNC tp_cdc (
+    .CLK        (HCLK),
+    .RESET_IN   (HRESET),
+    .DATA_IN    (vsync_tft),
+    .DATA_OUT   (vsync_ahb)
+);
 
 // AHB DMA master
+logic [31:0] dma_data;
+logic dma_req, dma_ack;
+
 TFT_DMA #(
+    .WIDTH      (HDISP),
+    .HEIGHT     (VDISP),
+`ifdef USE_RGB565
+    .BPP        (16),
+`else
+    .BPP        (32),
+`endif
     .BASE_ADDR  (BASE_ADDR)
 ) dma (
     .HCLK       (HCLK),
@@ -62,34 +69,36 @@ TFT_DMA #(
     .HREADY     (HREADY),
     .HRESP      (HRESP),
 
-    .DATA_OUT   (dma_data_ahb),
-    .REQ_OUT    (dma_req_ahb),
-    .ACK_IN     (dma_ack_ahb),
+    .DATA_OUT   (dma_data),
+    .REQ_OUT    (dma_req),
+    .ACK_IN     (dma_ack),
 
     .VSYNC_IN   (vsync_ahb)
 );
+
+logic [31:0] fifo_data;
+logic fifo_req, fifo_ack;
 
 FIFO_ASYNC #(
     .WIDTH  (32)
 ) fifo (
     .WRITE_CLK      (HCLK),
     .WRITE_RESET_IN (HRESET),
-    .WRITE_DATA_IN  (dma_data_ahb),
-    .WRITE_REQ_IN   (dma_req_ahb),
-    .WRITE_ACK_OUT  (dma_ack_ahb),
+    .WRITE_DATA_IN  (dma_data),
+    .WRITE_REQ_IN   (dma_req),
+    .WRITE_ACK_OUT  (dma_ack),
 
     .READ_CLK       (CLK_TFT),
     .READ_RESET_IN  (RESET_TFT),
-    .READ_DATA_OUT  (dma_data_tft),
-    .READ_REQ_OUT   (dma_req_tft),
-    .READ_ACK_IN    (dma_ack_tft)
+    .READ_DATA_OUT  (fifo_data),
+    .READ_REQ_OUT   (fifo_req),
+    .READ_ACK_IN    (fifo_ack)
 );
 
 // Data width conversion, RGB mapping
 logic [TFT_WIDTH-1:0] data_tft;
 logic req_tft, ack_tft;
 
-`define USE_RGB565 // SDRAM too slow for RGB888
 `ifdef USE_RGB565
 TFT_MAPPING #(
     .TFT_WIDTH  (TFT_WIDTH)
@@ -97,20 +106,18 @@ TFT_MAPPING #(
     .CLK        (CLK_TFT),
     .RESET_IN   (RESET_TFT),
 
-    .DATA_IN    (dma_data_tft),
-    .REQ_IN     (dma_req_tft),
-    .ACK_OUT    (dma_ack_tft),
+    .DATA_IN    (fifo_data),
+    .REQ_IN     (fifo_req),
+    .ACK_OUT    (fifo_ack),
 
     .DATA_OUT   (data_tft),
     .REQ_OUT    (req_tft),
-    .ACK_IN     (ack_tft),
-
-    .VSYNC_IN   (vsync_tft)
+    .ACK_IN     (ack_tft)
 );
 `else
-assign data_tft = dma_data_tft;
-assign req_tft = dma_req_tft;
-assign dma_ack_tft = ack_tft;
+assign data_tft = fifo_data;
+assign req_tft = fifo_req;
+assign dma_ack_tft = fifo_ack;
 `endif
 
 // TFT interface

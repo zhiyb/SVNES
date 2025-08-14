@@ -94,7 +94,7 @@ set_false_path -from [get_ports {SW*}]
 set_false_path -from [get_ports {GPIO_0*}]
 set_false_path -to [get_ports {GPIO_0*}]
 
-set_false_path -to [get_cells -compatibility_mode *\|cdc_synchron\[*\]\[*\]]
+# set_false_path -to [get_cells -compatibility_mode *\|cdc_synchron\[*\]\[*\]]
 
 
 #**************************************************************

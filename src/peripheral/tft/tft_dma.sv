@@ -1,4 +1,7 @@
 module TFT_DMA #(
+    parameter int WIDTH,
+    parameter int HEIGHT,
+    parameter int BPP,
     // DMA base address
     parameter logic [31:0] BASE_ADDR = 0,
     parameter int AHB_BURSTS = 4
@@ -25,53 +28,49 @@ module TFT_DMA #(
     input  logic            VSYNC_IN
 );
 
-// DMA restart after VSYNC falling edge
+// DMA start at first VSYNC
 logic z1_vsync;
 always_ff @(posedge HCLK, posedge HRESET)
     if (HRESET)
         z1_vsync <= 0;
-    else
-        z1_vsync <= VSYNC_IN;
-
-logic dma_enable;
-always_ff @(posedge HCLK, posedge HRESET)
-    if (HRESET)
-        dma_enable <= 0;
     else if (VSYNC_IN)
+        z1_vsync <= 1;
+
+logic dma_enable, dma_start;
+always_ff @(posedge HCLK, posedge HRESET)
+    if (HRESET) begin
+        dma_start <= 0;
         dma_enable <= 0;
-    else if (z1_vsync)
-        dma_enable <= 1;
+    end else begin
+        dma_start <= VSYNC_IN && ~z1_vsync;
+        if (dma_start)
+            dma_enable <= 1;
+    end
 
 // Address phase
 
-logic fifo_stall;
+localparam DATA_BYTES = HEIGHT * WIDTH * BPP / 8;
 
 always_ff @(posedge HCLK, posedge HRESET)
     if (HRESET) begin
+        HADDR <= 0;
+    end else if (dma_start) begin
         HADDR <= BASE_ADDR;
-    end else if (HTRANS == AHB_PKG::TRANS_BUSY) begin
-        // Address should not change during BUSY
-    end else if (HREADY) begin
-        if (~dma_enable && HTRANS == AHB_PKG::TRANS_IDLE)
-            HADDR <= BASE_ADDR;     // Transfer terminated, restart
-        else if (HTRANS != AHB_PKG::TRANS_IDLE)
-            HADDR <= HADDR + 4;     // Continue burst
+    end else if (HREADY && HTRANS != AHB_PKG::TRANS_IDLE && HTRANS != AHB_PKG::TRANS_BUSY) begin
+        HADDR <= HADDR == BASE_ADDR + DATA_BYTES - 4 ? BASE_ADDR : HADDR + 4;
     end
 
+logic fifo_stall;
 always_ff @(posedge HCLK, posedge HRESET)
     if (HRESET) begin
         HTRANS <= AHB_PKG::TRANS_IDLE;
-    end else if (HTRANS == AHB_PKG::TRANS_BUSY) begin
-        // It is allowed to terminate a BUSY transfer before READY
-        HTRANS <= fifo_stall ? AHB_PKG::TRANS_BUSY : AHB_PKG::TRANS_SEQ;
-    end else if (HREADY) begin
+    end else if (HREADY && dma_enable) begin
         if (HTRANS == AHB_PKG::TRANS_IDLE || &HADDR[2 +: $clog2(AHB_BURSTS)])   // Idle or last beat in burst
-            HTRANS <= ~dma_enable ? AHB_PKG::TRANS_IDLE :       // Wait for enable
-                      fifo_stall  ? AHB_PKG::TRANS_IDLE :       // Wait for downstream
-                                    AHB_PKG::TRANS_NONSEQ;      // Start new transfer
-        else if (HTRANS != AHB_PKG::TRANS_IDLE)                 // Burst in progress
-            HTRANS <= fifo_stall  ? AHB_PKG::TRANS_BUSY :       // Wait for downstream
-                                    AHB_PKG::TRANS_SEQ;         // Continue burst
+            HTRANS <= fifo_stall ? AHB_PKG::TRANS_IDLE :    // Wait for downstream
+                                   AHB_PKG::TRANS_NONSEQ;   // Start new transfer
+        else if (HTRANS != AHB_PKG::TRANS_IDLE)             // Burst in progress
+            HTRANS <= fifo_stall ? AHB_PKG::TRANS_BUSY :    // Wait for downstream
+                                   AHB_PKG::TRANS_SEQ;      // Continue burst
     end
 
 assign HBURST = AHB_BURSTS == 4 ? AHB_PKG::BURST_INCR4 :
@@ -93,7 +92,7 @@ logic data_valid;
 assign data_valid = HREADY && z1_trans != AHB_PKG::TRANS_IDLE && z1_trans != AHB_PKG::TRANS_BUSY;
 
 // FIFO needed to handle the slack
-logic [31:0] fifo [4];
+(* ramstyle = "no_rw_check" *) logic [31:0] fifo [4];
 logic [2:0] wcnt, rcnt;
 
 always_ff @(posedge HCLK)

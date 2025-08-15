@@ -32,8 +32,8 @@ assign CLK_SYS    = clk_sys;
 initial begin
     clk_sys = 0;
     forever begin
-        // #(0.5/142.8 * 1us) clk_sys = ~clk_sys;
-        #(0.5/100.0 * 1us) clk_sys = ~clk_sys;
+        #(0.5/142.8 * 1us) clk_sys = ~clk_sys;
+        // #(0.5/100.0 * 1us) clk_sys = ~clk_sys;
     end
 end
 

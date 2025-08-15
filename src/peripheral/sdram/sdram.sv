@@ -129,8 +129,39 @@ logic arb_cmd_req, arb_cmd_ack;
 SDRAM_PKG::data_t arb_read_data;
 SDRAM_PKG::tag_t  arb_read_tag;
 
-SDRAM_ARB #(
-    .N_SRC      (N_CMD_QUEUES),
+// SDRAM_ARB #(
+//     .N_SRC      (N_CMD_QUEUES),
+//     .tRC        (tRC),
+//     .tRAS       (tRAS),
+//     .tRP        (tRP),
+//     .tRCD       (tRCD),
+//     .tMRD       (tMRD),
+//     .tDPL       (tDPL),
+//     .tQMD       (tQMD),
+//     .tRRD       (tRRD),
+//     .tINIT      (tINIT),
+//     .tREF       (tREF),
+//     .CAS        (CAS),
+//     .BURST      (BURST)
+// ) cmd_arb (
+//     .CLK            (CLK),
+//     .RESET_IN       (RESET_IN),
+
+//     .INIT_DONE_OUT  (INIT_DONE_OUT),
+
+//     .SRC_WRITE_IN   (fifo_write),
+//     .SRC_ACS_IN     (fifo_acs),
+//     .SRC_RCHG_IN    (fifo_rchg),
+//     .SRC_DATA_OUT   (fifo_read_data),
+//     .SRC_REQ_IN     (fifo_req),
+//     .SRC_ACK_OUT    (fifo_ack),
+
+//     .CMD_OUT        (arb_cmd_data),
+//     .READ_DATA_IN   (arb_read_data),
+//     .READ_TAG_IN    (arb_read_tag)
+// );
+
+SDRAM_BANK_ARB #(
     .tRC        (tRC),
     .tRAS       (tRAS),
     .tRP        (tRP),
@@ -143,18 +174,20 @@ SDRAM_ARB #(
     .tREF       (tREF),
     .CAS        (CAS),
     .BURST      (BURST)
-) cmd_arb (
+) bank_arb (
     .CLK            (CLK),
     .RESET_IN       (RESET_IN),
 
     .INIT_DONE_OUT  (INIT_DONE_OUT),
 
-    .SRC_WRITE_IN   (fifo_write),
-    .SRC_ACS_IN     (fifo_acs),
-    .SRC_RCHG_IN    (fifo_rchg),
-    .SRC_DATA_OUT   (fifo_read_data),
-    .SRC_REQ_IN     (fifo_req),
-    .SRC_ACK_OUT    (fifo_ack),
+    .BANK_WRITE_IN  (fifo_write),
+    .BANK_ACS_IN    (fifo_acs),
+    .BANK_RCHG_IN   (0),
+    .BANK_REQ_IN    (fifo_req),
+    .BANK_ACK_OUT   (fifo_ack),
+    .BANK_DATA_IN   ('hfedcba9876543210),
+    .BANK_DATA_OUT  (fifo_read_data),
+    .BANK_VALID_OUT (),
 
     .CMD_OUT        (arb_cmd_data),
     .READ_DATA_IN   (arb_read_data),

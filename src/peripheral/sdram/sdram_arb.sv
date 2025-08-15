@@ -321,19 +321,24 @@ always_comb begin
 end
 
 // Output command arbiter
-always_comb begin
-    int i;
-    cmd_src_sel = 0;
-    // Upstream port 0 has higher priority
-    for (i = 0; i < N_SRC; i++) begin
-        if (src_req[i]) begin
-            cmd_src_sel[i] = 1;
-            break;
+always_ff @(posedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
+        cmd_src_sel <= 0;
+    end else begin
+        int i;
+        cmd_src_sel <= 0;
+        // Upstream port 0 has higher priority
+        for (i = 0; i < N_SRC; i++) begin
+            // All requests have wait states, so ignore consective requests
+            if (src_req[i] & ~cmd_src_sel[i]) begin
+                cmd_src_sel[i] <= 1;
+                break;
+            end
         end
+        // Init/refresh has highest priority
+        if (spc_req)
+            cmd_src_sel <= 0;
     end
-    // Init/refresh has highest priority
-    if (spc_req)
-        cmd_src_sel = 0;
 end
 
 always_comb begin
@@ -341,7 +346,7 @@ always_comb begin
     src_cmd_arb = SDRAM_PKG::cmd_t'(0);
     // Command ports
     for (src = 0; src < N_SRC; src++) begin
-        if (cmd_src_sel[src])
+        if (cmd_src_sel[src] & src_req[src])
             src_cmd_arb |= src_cmd[src];
         // Continue read/write pending burst data
         if (burst_src[src])

@@ -46,12 +46,13 @@ logic        DRAM_CKE;
 logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N;
 
 SDRAM #(
+    .tINIT         (1000),
+    .tREF          (1000),
     .AHB_PORTS     (AHB_PORTS),
     .N_CMD_QUEUES  (4),
     .N_CACHE_LINES (8)
 ) sdram (
     .CLK        (clk_sys),
-    .CLK_IO     (clk_sys),
     .RESET_IN   (reset_sys),
 
     .INIT_DONE_OUT  (),
@@ -164,7 +165,7 @@ generate
                         addr.ofs[2 +: $clog2(N_AHB_BURSTS)] = 0;
                         HADDR[i]  <= addr;
                         HWRITE[i] <= $random() % 2;
-                        HTRANS[i] <= AHB_PKG::TRANS_NONSEQ;
+                        HTRANS[i] <= $random() % 10 ? AHB_PKG::TRANS_IDLE : AHB_PKG::TRANS_NONSEQ;
                     end else if (HTRANS[i] inside {AHB_PKG::TRANS_NONSEQ, AHB_PKG::TRANS_SEQ}) begin
                         if (&HADDR[i][2 +: $clog2(N_AHB_BURSTS)]) begin
                             // The last burst beat

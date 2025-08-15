@@ -3,9 +3,11 @@
 SOURCES			:= $(shell ./scripts/sources.sh)
 FILELISTS		:= $(shell ./scripts/filelists.sh)
 SIM_LIB			:= sim_lib
-DO				?= batch.do
+DO				?=
+VIEW_DO			?=
 SIM_SYN_ARGS	?= +define+SIMULATION=1
-SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -sv_seed 123 -batch $(DO:%=-do %) -suppress 7061
+SIM_RUN_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -sv_seed 123 -batch -do batch.do $(DO:%=-do %) -suppress 7061
+SIM_GUI_ARGS	?= +define+SIMULATION=1 -voptargs=+acc -sv_seed 123 -gui -do gui.do $(DO:%=-do %) -suppress 7061
 
 PRJ		?= SVNES
 REV		?= DE0_Nano
@@ -67,7 +69,11 @@ test: wlf
 
 .PHONY: view_sim
 view_sim: $(WAVE)
-	$(VSIM) -work $(SIM_LIB) -gui -logfile sim/view.log -view $^
+	$(VSIM) -work $(SIM_LIB) -gui -logfile sim/view.log -view $^ $(VIEW_DO:%=-do %)
+
+.PHONY: gui_sim
+gui_sim: src/testbench/$(TEST).sv $(SIM_LIB)/_lib.qdb | sim
+	$(VSIM) -work $(SIM_LIB) -wlf sim/$(TEST).wlf -logfile sim/gui.log $(call uc,$(notdir $(TEST))) $(SIM_GUI_ARGS)
 
 .PHONY: wlf
 wlf: $(WAVE)

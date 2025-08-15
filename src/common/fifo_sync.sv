@@ -31,15 +31,20 @@ always_ff @(posedge CLK)
     if (WRITE_REQ_IN & WRITE_ACK_OUT)
         fifo[(DEPTH_LOG2)'(wptr)] <= WRITE_DATA_IN;
 
-assign READ_REQ_OUT = wptr != rptr;
-
-always_ff @(posedge CLK, posedge RESET_IN)
-    if (RESET_IN)
+always_ff @(posedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
         rptr <= 0;
-    else if (READ_REQ_OUT & READ_ACK_IN)
+        READ_REQ_OUT <= 0;
+        READ_DATA_OUT <= 0;
+    end else if (wptr != rptr && (!READ_REQ_OUT || READ_ACK_IN)) begin
+        // New data available and ready to read
         rptr <= rptr + 1;
-
-assign READ_DATA_OUT = fifo[(DEPTH_LOG2)'(rptr)];
+        READ_REQ_OUT <= 1;
+        READ_DATA_OUT <= fifo[(DEPTH_LOG2)'(rptr)];
+    end else if (READ_ACK_IN) begin
+        READ_REQ_OUT <= 0;
+    end
+end
 
 `ifdef SIMULATION
 logic [DEPTH_LOG2:0] fifo_level;

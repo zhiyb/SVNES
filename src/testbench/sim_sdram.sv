@@ -116,10 +116,11 @@ always @(DRAM_CLK)
     #2.7ns read_out_clk = DRAM_CLK;
 
 logic [15:0] read_tm;
-always @(posedge read_out_clk) begin
-    read_tm = 'x;
-    #2.7ns read_tm = mem[read_row][read_col];
-end
+assign read_tm = mem[read_row][read_col];
+// always @(posedge read_out_clk) begin
+//     read_tm = 'x;
+//     #2.7ns read_tm = mem[read_row][read_col];
+// end
 
 assign DRAM_DQ = read_valid ? read_tm : 'z;
 

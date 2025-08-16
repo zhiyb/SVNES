@@ -61,17 +61,21 @@ always_ff @(posedge HCLK, posedge HRESET)
     end
 
 logic fifo_stall;
-always_ff @(posedge HCLK, posedge HRESET)
+always_ff @(posedge HCLK, posedge HRESET) begin
     if (HRESET) begin
         HTRANS <= AHB_PKG::TRANS_IDLE;
     end else if (HREADY && dma_enable) begin
-        if (HTRANS == AHB_PKG::TRANS_IDLE || &HADDR[2 +: $clog2(AHB_BURSTS)])   // Idle or last beat in burst
+        if (HTRANS == AHB_PKG::TRANS_BUSY)                  // Burst in progress
+            HTRANS <= fifo_stall ? AHB_PKG::TRANS_BUSY :    // Wait for downstream
+                                   AHB_PKG::TRANS_SEQ;      // Continue burst
+        else if (HTRANS == AHB_PKG::TRANS_IDLE || &HADDR[2 +: $clog2(AHB_BURSTS)])   // Idle or last beat in burst
             HTRANS <= fifo_stall ? AHB_PKG::TRANS_IDLE :    // Wait for downstream
                                    AHB_PKG::TRANS_NONSEQ;   // Start new transfer
         else if (HTRANS != AHB_PKG::TRANS_IDLE)             // Burst in progress
             HTRANS <= fifo_stall ? AHB_PKG::TRANS_BUSY :    // Wait for downstream
                                    AHB_PKG::TRANS_SEQ;      // Continue burst
     end
+end
 
 assign HBURST = AHB_BURSTS == 4 ? AHB_PKG::BURST_INCR4 :
                                   AHB_PKG::BURST_SINGLE;

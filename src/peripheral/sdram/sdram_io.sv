@@ -26,13 +26,19 @@ module SDRAM_IO
 );
 
 // Pin input/output registers
-logic [15:0] dram_dq_in;
+logic [15:0] dram_dq_in, dram_dq_in_reg;
 
 always_ff @(negedge CLK, posedge RESET_IN)
     if (RESET_IN)
         dram_dq_in <= 0;
     else
         dram_dq_in <= DRAM_DQ;
+
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        dram_dq_in_reg <= 0;
+    else
+        dram_dq_in_reg <= dram_dq_in;
 
 logic [15:0] dram_dq_reg, dram_dq_out;
 logic        dram_dq_en_reg, dram_dq_out_en;
@@ -104,7 +110,7 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
 end
 
 // Read output CASE delay pipe
-localparam READ_LATENCY = CAS + 2;
+localparam READ_LATENCY = CAS + 3;
 
 SDRAM_PKG::tag_t                    tag_pipe_in;
 SDRAM_PKG::tag_t [READ_LATENCY-1:0] tag_pipe;
@@ -118,7 +124,7 @@ always_ff @(posedge CLK, posedge RESET_IN)
 assign READ_TAG_OUT  = tag_pipe[READ_LATENCY-1];
 
 `ifndef SIMULATION
-assign READ_DATA_OUT = dram_dq_in;
+assign READ_DATA_OUT = dram_dq_in_reg;
 `else
 logic [$clog2(BURST)-1:0] r_cnt;
 always_ff @(posedge CLK, posedge RESET_IN)
@@ -129,7 +135,7 @@ always_ff @(posedge CLK, posedge RESET_IN)
     else if (r_cnt != 0)
         r_cnt <= r_cnt - 1;
 
-assign READ_DATA_OUT = READ_TAG_OUT != 0 || r_cnt != 0 ? dram_dq_in : 'x;
+assign READ_DATA_OUT = READ_TAG_OUT != 0 || r_cnt != 0 ? dram_dq_in_reg : 'x;
 `endif
 
 // Write burst counter
@@ -189,7 +195,7 @@ always_comb begin
         dram_we_n  = 1;
         dram_addr  = CMD_IN.addr;
         dram_dq_en = 0;
-        tag_pipe_in = CMD_IN.data;
+        tag_pipe_in = CMD_IN.bank + 1;
     end
     if (CMD_IN.op & SDRAM_PKG::OP_MRS) begin
         dram_ras_n = 0;

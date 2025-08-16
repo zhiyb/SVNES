@@ -1,6 +1,8 @@
 module FIFO_SYNC #(
-    parameter int WIDTH,
-    parameter int DEPTH_LOG2
+    parameter WIDTH           = 1,
+    parameter DEPTH           = 0,
+    parameter READ_THRESHOLD  = 1,              // At least this number of data available
+    parameter WRITE_THRESHOLD = 1               // At least this number of free spaces
 ) (
     input  wire              CLK,
     input  wire              RESET_IN,
@@ -9,12 +11,16 @@ module FIFO_SYNC #(
     input  logic [WIDTH-1:0] WRITE_DATA_IN,
     input  logic             WRITE_REQ_IN,
     output logic             WRITE_ACK_OUT,
+    output logic             WRITE_THRES_OUT,
 
     // Output read interface
     output logic [WIDTH-1:0] READ_DATA_OUT,
     output logic             READ_REQ_OUT,
-    input  logic             READ_ACK_IN
+    input  logic             READ_ACK_IN,
+    output logic             READ_THRES_OUT
 );
+
+localparam DEPTH_LOG2 = $clog2(DEPTH);
 
 (* ramstyle = "no_rw_check" *) logic [WIDTH-1:0] fifo [(2**DEPTH_LOG2)-1:0];
 logic [DEPTH_LOG2:0] wptr, rptr;
@@ -46,9 +52,15 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
     end
 end
 
-`ifdef SIMULATION
 logic [DEPTH_LOG2:0] fifo_level;
 assign fifo_level = wptr - rptr;
-`endif
+
+assign WRITE_THRES_OUT = fifo_level <= DEPTH - WRITE_THRESHOLD;
+
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        READ_THRES_OUT <= 0;
+    else
+        READ_THRES_OUT <= fifo_level >= READ_THRESHOLD - 1;     // READ_DATA_OUT stores one entry too
 
 endmodule

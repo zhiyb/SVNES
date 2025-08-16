@@ -1,7 +1,8 @@
 module TB_SDRAM;
 
 initial
-    #2ms $finish(0);
+    // #2ms $finish(0);
+    #100us $finish(0);
 
 // 143MHz memory clock
 logic clk_sys;
@@ -136,9 +137,9 @@ generate
             always_ff @(posedge clk_sys, posedge reset_sys)
                 if (reset_sys)
                     HWDATA[i] <= 0;
-                else if (HTRANS[i] != AHB_PKG::TRANS_IDLE && HREADY[i])
+                else if (!(HTRANS[i] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY}) && HREADY[i])
                     HWDATA[i] <= $random();
-                else if (HTRANS[i] == AHB_PKG::TRANS_IDLE && HREADY[i])
+                else if (HTRANS[i] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY} && HREADY[i])
                     HWDATA[i] <= 0;
 
         end: gen_cache else begin: gen_stream
@@ -153,7 +154,7 @@ generate
                     HSIZE[i]  <= AHB_PKG::SIZE_4;
                     HTRANS[i] <= AHB_PKG::TRANS_IDLE;
                     HWRITE[i] <= 0;
-                end else if (HREADY[i]) begin
+                end else if (HREADY[i] || HTRANS[i] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY}) begin
                     if (HTRANS[i] == AHB_PKG::TRANS_IDLE) begin
                         // New AHB transfer
                         cache_addr_t addr;
@@ -166,15 +167,17 @@ generate
                         HADDR[i]  <= addr;
                         HWRITE[i] <= $random() % 2;
                         HTRANS[i] <= $random() % 10 ? AHB_PKG::TRANS_IDLE : AHB_PKG::TRANS_NONSEQ;
-                    end else if (HTRANS[i] inside {AHB_PKG::TRANS_NONSEQ, AHB_PKG::TRANS_SEQ}) begin
+                    end else if (HTRANS[i] inside {AHB_PKG::TRANS_NONSEQ, AHB_PKG::TRANS_SEQ, AHB_PKG::TRANS_BUSY}) begin
                         if (&HADDR[i][2 +: $clog2(N_AHB_BURSTS)]) begin
                             // The last burst beat
                             HADDR[i] <= 'x;
                             HWRITE[i] <= 'x;
                             HTRANS[i] <= AHB_PKG::TRANS_IDLE;
-                        end else begin
+                        end else if ($random() % 10) begin
                             HADDR[i] <= HADDR[i] + 4;
                             HTRANS[i] <= AHB_PKG::TRANS_SEQ;
+                        end else begin
+                            HTRANS[i] <= AHB_PKG::TRANS_BUSY;
                         end
                     end
                 end
@@ -184,9 +187,9 @@ generate
             always_ff @(posedge clk_sys, posedge reset_sys)
                 if (reset_sys)
                     HWDATA[i] <= 'x;
-                else if (HTRANS[i] != AHB_PKG::TRANS_IDLE && HREADY[i])
+                else if (!(HTRANS[i] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY}) && HREADY[i])
                     HWDATA[i] <= $random();
-                else if (HTRANS[i] == AHB_PKG::TRANS_IDLE && HREADY[i])
+                else if (HTRANS[i] inside {AHB_PKG::TRANS_IDLE, AHB_PKG::TRANS_BUSY} && HREADY[i])
                     HWDATA[i] <= 'x;
 
         end: gen_stream

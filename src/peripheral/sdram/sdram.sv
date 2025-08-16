@@ -33,197 +33,132 @@ module SDRAM #(
     output logic        DRAM_CS_N, DRAM_RAS_N, DRAM_CAS_N, DRAM_WE_N
 );
 
-logic                    [N_CMD_QUEUES-1:0] ahb_write;
-SDRAM_PKG::dram_access_t [N_CMD_QUEUES-1:0] ahb_acs;
-SDRAM_PKG::data_t        [N_CMD_QUEUES-1:0] ahb_data;
-logic                    [N_CMD_QUEUES-1:0] ahb_req;
-logic                    [N_CMD_QUEUES-1:0] ahb_ack;
-
-localparam USE_CACHE = 0;
+// AHB access -> SDRAM bursts
+logic                    [AHB_PORTS-1:0] burst_write;
+SDRAM_PKG::dram_access_t [AHB_PORTS-1:0] burst_acs;
+logic                    [AHB_PORTS-1:0] burst_req;
+logic                    [AHB_PORTS-1:0] burst_ack;
+SDRAM_PKG::data_t        [AHB_PORTS-1:0] burst_write_data;
+logic                    [AHB_PORTS-1:0] burst_valid;
+SDRAM_PKG::data_t        [AHB_PORTS-1:0] burst_read_data;
 
 generate
-    if (USE_CACHE) begin: gen_cache
-        SDRAM_CACHE #(
-            .N_SRC   (AHB_PORTS),
-            .N_DST   (N_CMD_QUEUES),
-            .N_LINES (N_CACHE_LINES),
-            .BURST   (BURST)
-        ) cache (
-            .CLK            (CLK),
-            .RESET_IN       (RESET_IN),
+    genvar p;
+    for (p = 0; p < AHB_PORTS; p++) begin: gen_port
+        SDRAM_AHB #(
+            .BURST (BURST)
+        ) ahb (
+            .CLK        (CLK),
+            .RESET_IN   (RESET_IN),
 
-            .HADDR          (HADDR),
-            .HBURST         (HBURST),
-            .HSIZE          (HSIZE),
-            .HTRANS         (HTRANS),
-            .HWRITE         (HWRITE),
-            .HWDATA         (HWDATA),
-            .HRDATA         (HRDATA),
-            .HREADY         (HREADY),
-            .HRESP          (HRESP),
+            .HADDR          (HADDR[p]),
+            .HBURST         (HBURST[p]),
+            .HSIZE          (HSIZE[p]),
+            .HTRANS         (HTRANS[p]),
+            .HWRITE         (HWRITE[p]),
+            .HWDATA         (HWDATA[p]),
+            .HRDATA         (HRDATA[p]),
+            .HREADY         (HREADY[p]),
+            .HRESP          (HRESP[p]),
 
-            .DST_WRITE_OUT  (ahb_write),
-            .DST_ACS_OUT    (ahb_acs),
-            .DST_DATA_IN    (ahb_data),
-            .DST_REQ_OUT    (ahb_req),
-            .DST_ACK_IN     (ahb_ack)
+            // Downstream ports
+            .WRITE_OUT      (burst_write[p]),
+            .ACS_OUT        (burst_acs[p]),
+            .REQ_OUT        (burst_req[p]),
+            .ACK_IN         (burst_ack[p]),
+            .WRITE_DATA_OUT (burst_write_data[p]),
+            .VALID_IN       (burst_valid[p]),
+            .READ_DATA_IN   (burst_read_data[p])
         );
-    end: gen_cache else begin: gen_stream
-        genvar p;
-        for (p = 0; p < AHB_PORTS; p++) begin: gen_port
-            SDRAM_STREAM #(
-                .BURST   (BURST)
-            ) stream (
-                .CLK            (CLK),
-                .RESET_IN       (RESET_IN),
-
-                .HADDR          (HADDR[p]),
-                .HBURST         (HBURST[p]),
-                .HSIZE          (HSIZE[p]),
-                .HTRANS         (HTRANS[p]),
-                .HWRITE         (HWRITE[p]),
-                .HWDATA         (HWDATA[p]),
-                .HRDATA         (HRDATA[p]),
-                .HREADY         (HREADY[p]),
-                .HRESP          (HRESP[p]),
-
-                .DST_WRITE_OUT  (ahb_write[p]),
-                .DST_ACS_OUT    (ahb_acs[p]),
-                .DST_DATA_IN    (ahb_data[p]),
-                .DST_REQ_OUT    (ahb_req[p]),
-                .DST_ACK_IN     (ahb_ack[p])
-            );
-        end: gen_port
-    end: gen_stream
+    end: gen_port
 endgenerate
 
-logic                    [N_CMD_QUEUES-1:0] fifo_write;
-SDRAM_PKG::dram_access_t [N_CMD_QUEUES-1:0] fifo_acs;
-logic                    [N_CMD_QUEUES-1:0] fifo_rchg;
-SDRAM_PKG::data_t        [N_CMD_QUEUES-1:0] fifo_read_data;
-logic                    [N_CMD_QUEUES-1:0] fifo_req;
-logic                    [N_CMD_QUEUES-1:0] fifo_ack;
+// SDRAM bursts -> per-bank access
+localparam N_BANKS = SDRAM_PKG::N_BANKS;
+logic                    [N_BANKS-1:0] bank_write;
+SDRAM_PKG::dram_access_t [N_BANKS-1:0] bank_acs;
+logic                    [N_BANKS-1:0] bank_req;
+logic                    [N_BANKS-1:0] bank_ack;
+SDRAM_PKG::data_t        [N_BANKS-1:0] bank_write_data;
+logic                    [N_BANKS-1:0] bank_valid;
+SDRAM_PKG::data_t        [N_BANKS-1:0] bank_read_data;
 
-SDRAM_FIFO #(
-    .N_PORTS    (N_CMD_QUEUES)
-) cmd_arb_fifo (
-    .CLK            (CLK),
-    .RESET_IN       (RESET_IN),
+// TODO
+assign bank_write      = burst_write;
+assign bank_acs        = burst_acs;
+assign bank_req        = burst_req;
+assign burst_ack       = bank_ack;
+assign bank_write_data = burst_write_data;
+assign burst_valid     = bank_valid;
+assign burst_read_data = bank_read_data;
 
-    .SRC_WRITE_IN   (ahb_write),
-    .SRC_ACS_IN     (ahb_acs),
-    .SRC_DATA_OUT   (ahb_data),
-    .SRC_REQ_IN     (ahb_req),
-    .SRC_ACK_OUT    (ahb_ack),
-
-    .DST_WRITE_OUT  (fifo_write),
-    .DST_ACS_OUT    (fifo_acs),
-    .DST_RCHG_OUT   (fifo_rchg),
-    .DST_DATA_IN    (fifo_read_data),
-    .DST_REQ_OUT    (fifo_req),
-    .DST_ACK_IN     (fifo_ack)
-);
-
+// Per-bank access -> commands
 SDRAM_PKG::cmd_t arb_cmd_data;
-logic arb_cmd_req, arb_cmd_ack;
 SDRAM_PKG::data_t arb_read_data;
 SDRAM_PKG::tag_t  arb_read_tag;
 
-// SDRAM_ARB #(
-//     .N_SRC      (N_CMD_QUEUES),
-//     .tRC        (tRC),
-//     .tRAS       (tRAS),
-//     .tRP        (tRP),
-//     .tRCD       (tRCD),
-//     .tMRD       (tMRD),
-//     .tDPL       (tDPL),
-//     .tQMD       (tQMD),
-//     .tRRD       (tRRD),
-//     .tINIT      (tINIT),
-//     .tREF       (tREF),
-//     .CAS        (CAS),
-//     .BURST      (BURST)
-// ) cmd_arb (
-//     .CLK            (CLK),
-//     .RESET_IN       (RESET_IN),
-
-//     .INIT_DONE_OUT  (INIT_DONE_OUT),
-
-//     .SRC_WRITE_IN   (fifo_write),
-//     .SRC_ACS_IN     (fifo_acs),
-//     .SRC_RCHG_IN    (fifo_rchg),
-//     .SRC_DATA_OUT   (fifo_read_data),
-//     .SRC_REQ_IN     (fifo_req),
-//     .SRC_ACK_OUT    (fifo_ack),
-
-//     .CMD_OUT        (arb_cmd_data),
-//     .READ_DATA_IN   (arb_read_data),
-//     .READ_TAG_IN    (arb_read_tag)
-// );
-
 SDRAM_BANK_ARB #(
-    .tRC        (tRC),
-    .tRAS       (tRAS),
-    .tRP        (tRP),
-    .tRCD       (tRCD),
-    .tMRD       (tMRD),
-    .tDPL       (tDPL),
-    .tQMD       (tQMD),
-    .tRRD       (tRRD),
-    .tINIT      (tINIT),
-    .tREF       (tREF),
-    .CAS        (CAS),
-    .BURST      (BURST)
+    .tRC   (tRC),
+    .tRAS  (tRAS),
+    .tRP   (tRP),
+    .tRCD  (tRCD),
+    .tMRD  (tMRD),
+    .tDPL  (tDPL),
+    .tQMD  (tQMD),
+    .tRRD  (tRRD),
+    .tINIT (tINIT),
+    .tREF  (tREF),
+    .CAS   (CAS),
+    .BURST (BURST)
 ) bank_arb (
-    .CLK            (CLK),
-    .RESET_IN       (RESET_IN),
+    .CLK                (CLK),
+    .RESET_IN           (RESET_IN),
+    .INIT_DONE_OUT      (INIT_DONE_OUT),
 
-    .INIT_DONE_OUT  (INIT_DONE_OUT),
+    .BANK_WRITE_IN      (bank_write),
+    .BANK_ACS_IN        (bank_acs),
+    .BANK_REQ_IN        (bank_req),
+    .BANK_ACK_OUT       (bank_ack),
+    .BANK_WRITE_DATA_IN (bank_write_data),
+    .BANK_VALID_OUT     (bank_valid),
+    .BANK_READ_DATA_OUT (bank_read_data),
 
-    .BANK_WRITE_IN  (fifo_write),
-    .BANK_ACS_IN    (fifo_acs),
-    .BANK_RCHG_IN   (0),
-    .BANK_REQ_IN    (fifo_req),
-    .BANK_ACK_OUT   (fifo_ack),
-    .BANK_DATA_IN   ('hfedcba9876543210),
-    .BANK_DATA_OUT  (fifo_read_data),
-    .BANK_VALID_OUT (),
-
-    .CMD_OUT        (arb_cmd_data),
-    .READ_DATA_IN   (arb_read_data),
-    .READ_TAG_IN    (arb_read_tag)
+    .CMD_OUT            (arb_cmd_data),
+    .READ_DATA_IN       (arb_read_data),
+    .READ_TAG_IN        (arb_read_tag)
 );
 
+// Execute commands
 SDRAM_IO #(
-    .tRC        (tRC),
-    .tRAS       (tRAS),
-    .tRP        (tRP),
-    .tRCD       (tRCD),
-    .tMRD       (tMRD),
-    .tDPL       (tDPL),
-    .tQMD       (tQMD),
-    .tINIT      (tINIT),
-    .tREF       (tREF),
-    .CAS        (CAS),
-    .BURST      (BURST)
+    .tRC   (tRC),
+    .tRAS  (tRAS),
+    .tRP   (tRP),
+    .tRCD  (tRCD),
+    .tMRD  (tMRD),
+    .tDPL  (tDPL),
+    .tQMD  (tQMD),
+    .tINIT (tINIT),
+    .tREF  (tREF),
+    .CAS   (CAS),
+    .BURST (BURST)
 ) io (
-    .CLK        (CLK),
-    .RESET_IN   (RESET_IN),
+    .CLK            (CLK),
+    .RESET_IN       (RESET_IN),
 
     .CMD_IN         (arb_cmd_data),
     .READ_DATA_OUT  (arb_read_data),
     .READ_TAG_OUT   (arb_read_tag),
 
-    .DRAM_DQ    (DRAM_DQ),
-    .DRAM_ADDR  (DRAM_ADDR),
-    .DRAM_BA    (DRAM_BA),
-    .DRAM_DQM   (DRAM_DQM),
-    .DRAM_CLK   (DRAM_CLK),
-    .DRAM_CKE   (DRAM_CKE),
-    .DRAM_CS_N  (DRAM_CS_N),
-    .DRAM_RAS_N (DRAM_RAS_N),
-    .DRAM_CAS_N (DRAM_CAS_N),
-    .DRAM_WE_N  (DRAM_WE_N)
+    .DRAM_DQ        (DRAM_DQ),
+    .DRAM_ADDR      (DRAM_ADDR),
+    .DRAM_BA        (DRAM_BA),
+    .DRAM_DQM       (DRAM_DQM),
+    .DRAM_CLK       (DRAM_CLK),
+    .DRAM_CKE       (DRAM_CKE),
+    .DRAM_CS_N      (DRAM_CS_N),
+    .DRAM_RAS_N     (DRAM_RAS_N),
+    .DRAM_CAS_N     (DRAM_CAS_N),
+    .DRAM_WE_N      (DRAM_WE_N)
 );
 
 endmodule

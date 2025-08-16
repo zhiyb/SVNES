@@ -36,19 +36,21 @@ begin: test_0
     logic  out_req, out_ack;
 
     FIFO_SYNC #(
-        .WIDTH      ($bits(data_t)),
-        .DEPTH_LOG2 (3)
+        .WIDTH ($bits(data_t)),
+        .DEPTH (8)
     ) fifo0 (
-        .CLK            (clk),
-        .RESET_IN       (reset),
+        .CLK                (clk),
+        .RESET_IN           (reset),
 
-        .WRITE_DATA_IN  (in_data),
-        .WRITE_REQ_IN   (in_req),
-        .WRITE_ACK_OUT  (in_ack),
+        .WRITE_DATA_IN      (in_data),
+        .WRITE_REQ_IN       (in_req),
+        .WRITE_ACK_OUT      (in_ack),
+        .WRITE_THRES_OUT    (),
 
-        .READ_DATA_OUT  (out_data),
-        .READ_REQ_OUT   (out_req),
-        .READ_ACK_IN    (out_ack)
+        .READ_DATA_OUT      (out_data),
+        .READ_REQ_OUT       (out_req),
+        .READ_ACK_IN        (out_ack),
+        .READ_THRES_OUT     ()
     );
 
     // Input data generator
@@ -93,19 +95,21 @@ begin: test_1
     logic  out_req, out_ack;
 
     FIFO_SYNC #(
-        .WIDTH      ($bits(data_t)),
-        .DEPTH_LOG2 (3)
+        .WIDTH ($bits(data_t)),
+        .DEPTH (8)
     ) fifo0 (
-        .CLK            (clk),
-        .RESET_IN       (reset),
+        .CLK                (clk),
+        .RESET_IN           (reset),
 
-        .WRITE_DATA_IN  (in_data),
-        .WRITE_REQ_IN   (in_req),
-        .WRITE_ACK_OUT  (in_ack),
+        .WRITE_DATA_IN      (in_data),
+        .WRITE_REQ_IN       (in_req),
+        .WRITE_ACK_OUT      (in_ack),
+        .WRITE_THRES_OUT    (),
 
-        .READ_DATA_OUT  (out_data),
-        .READ_REQ_OUT   (out_req),
-        .READ_ACK_IN    (out_ack)
+        .READ_DATA_OUT      (out_data),
+        .READ_REQ_OUT       (out_req),
+        .READ_ACK_IN        (out_ack),
+        .READ_THRES_OUT     ()
     );
 
     // Input data generator

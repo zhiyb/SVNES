@@ -102,7 +102,8 @@ CLOCK_GEN clk (
 
 // System AHB bus
 localparam SDRAM_PORTS = 4;
-localparam TFT_PORT    = 0;
+localparam TFT_PORT    = 3;
+localparam TP_PORT     = 0;
 
 AHB_PKG::addr_t  [SDRAM_PORTS-1:0] haddr;
 AHB_PKG::burst_t [SDRAM_PORTS-1:0] hburst;
@@ -188,15 +189,15 @@ TEST_PATTERN_GEN #(
 ) tp (
     .HCLK       (clk_sys),
     .HRESET     (reset_sys),
-    .HADDR      (haddr[3]),
-    .HBURST     (hburst[3]),
-    .HSIZE      (hsize[3]),
-    .HTRANS     (htrans[3]),
-    .HWRITE     (hwrite[3]),
-    .HWDATA     (hwdata[3]),
-    .HRDATA     (hrdata[3]),
-    .HREADY     (hready[3]),
-    .HRESP      (hresp[3]),
+    .HADDR      (haddr[TP_PORT]),
+    .HBURST     (hburst[TP_PORT]),
+    .HSIZE      (hsize[TP_PORT]),
+    .HTRANS     (htrans[TP_PORT]),
+    .HWRITE     (hwrite[TP_PORT]),
+    .HWDATA     (hwdata[TP_PORT]),
+    .HRDATA     (hrdata[TP_PORT]),
+    .HREADY     (hready[TP_PORT]),
+    .HRESP      (hresp[TP_PORT]),
 
     .START_IN   (tp_start)
 );

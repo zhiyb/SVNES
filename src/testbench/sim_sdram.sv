@@ -19,21 +19,19 @@ module SIM_SDRAM #(
 logic [15:0] mem [2**N_ROW_BITS-1:0][2**N_COL_BITS-1:0];
 
 logic assert_disable;
-logic RESET;
 initial begin
     longint ir, ic, v;
     assert_disable = 1;
-    RESET = 0;
-    #1us RESET = 1;
-    #1us RESET = 0;
-    assert_disable = 0;
     v = 0;
     for (ir = 0; ir < 2**N_ROW_BITS; ir++) begin
         for (ic = 0; ic < 2**N_COL_BITS; ic++) begin
-            mem[ir][ic] = ic[0] ? v[23:16] : v[15:0];
+            mem[ir][ic] = ic[0] ? ~v[15:0] : v[15:0];
             v += ic[0];
         end
     end
+    // Wait for reset to finish
+    repeat(100) @(DRAM_CLK);
+    assert_disable = 0;
 end
 
 
@@ -84,7 +82,7 @@ always_ff @(posedge DRAM_CLK)
         mem[write_row][write_col] <= write_data;
 
 
-localparam READ_LATENCY = CAS - 1;
+localparam READ_LATENCY = CAS;
 
 logic [BURST-1:0] read_pipe;
 logic [READ_LATENCY-1:0] read_pipe_cas;
@@ -117,10 +115,6 @@ always @(DRAM_CLK)
 
 logic [15:0] read_tm;
 assign read_tm = mem[read_row][read_col];
-// always @(posedge read_out_clk) begin
-//     read_tm = 'x;
-//     #2.7ns read_tm = mem[read_row][read_col];
-// end
 
 assign DRAM_DQ = read_valid ? read_tm : 'z;
 

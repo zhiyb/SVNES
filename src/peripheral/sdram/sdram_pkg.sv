@@ -22,7 +22,7 @@ localparam N_ROW_BITS  = 13;
 localparam N_COL_BITS  = 10;
 localparam N_ADDR_BITS = 13;    // Maximum of ROW and COL
 localparam N_DATA_BITS = 16;
-localparam N_TAG_BITS  = 3;     // Concurrent access
+localparam N_TAG_BITS  = 3;     // Bank + 1 for keeping track of read data
 
 localparam MAX_BYTES   = N_BANKS * (2 ** (N_ROW_BITS + N_COL_BITS)) * (N_DATA_BITS / 2);
 
@@ -39,7 +39,6 @@ typedef struct packed {
     ba_t   bank;
     row_t  row;
     col_t  col;
-    data_t data;
 } dram_access_t;
 
 typedef struct packed {
@@ -50,7 +49,6 @@ typedef struct packed {
     // addr also acts as col number for read/write access
     addr_t addr;
     // data also acts as mode register value
-    // data also used to transfer tag value for read burst
     // data may be used otherwise for on-going write burst
     data_t data;
 } cmd_t;

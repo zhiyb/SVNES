@@ -1,9 +1,6 @@
 sdram_pkg.sv
-sdram_cache.sv
-sdram_stream.sv
-sdram_fifo.sv
-sdram_init.sv
-sdram_arb.sv
+sdram_ahb.sv
 sdram_bank_arb.sv
 sdram_io.sv
+
 sdram.sv

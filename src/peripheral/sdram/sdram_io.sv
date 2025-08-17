@@ -7,7 +7,6 @@ module SDRAM_IO
                   CAS = 3, BURST = 8
 ) (
     input wire CLK,
-    input wire CLK_IO,
     input wire RESET_IN,
 
     // Command interface

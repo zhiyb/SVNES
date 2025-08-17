@@ -77,8 +77,10 @@ always_ff @(posedge HCLK, posedge HRESET) begin
     end
 end
 
-assign HBURST = AHB_BURSTS == 4 ? AHB_PKG::BURST_INCR4 :
-                                  AHB_PKG::BURST_SINGLE;
+assign HBURST = AHB_BURSTS == 16 ? AHB_PKG::BURST_INCR16 :
+                AHB_BURSTS ==  8 ? AHB_PKG::BURST_INCR8  :
+                AHB_BURSTS ==  4 ? AHB_PKG::BURST_INCR4  :
+                                   AHB_PKG::BURST_SINGLE;
 assign HSIZE  = AHB_PKG::SIZE_4;
 // Only read transfers
 assign HWRITE = 0;

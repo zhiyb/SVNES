@@ -25,6 +25,12 @@ module SDRAM_AHB #(
     input  SDRAM_PKG::data_t        READ_DATA_IN
 );
 
+localparam BYTES_PER_BURST = BURST * $bits(SDRAM_PKG::data_t) / 8;
+localparam MAX_BURSTS      = 16 * $bits(AHB_PKG::data_t) / $bits(SDRAM_PKG::data_t) / BURST;
+localparam DATA_PER_AHB    = $bits(AHB_PKG::data_t) / $bits(SDRAM_PKG::data_t);
+localparam AHB_PER_BURST   = $bits(SDRAM_PKG::data_t) * BURST / $bits(AHB_PKG::data_t);
+localparam FIFO_DEPTH      = AHB_PER_BURST * 2;
+
 // FIFO for SDRAM request queue
 typedef struct packed {
     logic write;
@@ -38,7 +44,7 @@ logic req_fifo_read_req, req_fifo_read_ack;
 
 FIFO_SYNC #(
     .WIDTH ($bits(req_t)),
-    .DEPTH (4)
+    .DEPTH (MAX_BURSTS * 2)
 ) req_fifo (
     .CLK                (CLK),
     .RESET_IN           (RESET_IN),
@@ -58,13 +64,11 @@ logic data_fifo_write_req, data_fifo_write_thres;
 AHB_PKG::data_t data_fifo_read_data;
 logic data_fifo_read_req, data_fifo_read_ack, data_fifo_read_thres;
 
-localparam FIFO_PER_BURST = $bits(AHB_PKG::data_t) / $bits(SDRAM_PKG::data_t);
-localparam FIFO_DEPTH     = BURST / FIFO_PER_BURST * 2;
 FIFO_SYNC #(
     .WIDTH           ($bits(AHB_PKG::data_t)),
     .DEPTH           (FIFO_DEPTH),
-    .WRITE_THRESHOLD (FIFO_PER_BURST),
-    .READ_THRESHOLD  (FIFO_PER_BURST)
+    .WRITE_THRESHOLD (AHB_PER_BURST),
+    .READ_THRESHOLD  (AHB_PER_BURST)
 ) data_fifo (
     .CLK                (CLK),
     .RESET_IN           (RESET_IN),
@@ -81,19 +85,29 @@ FIFO_SYNC #(
 // Address phase
 
 // Convert AHB access to SDRAM request
-localparam BYTES_PER_BURST = BURST * $bits(SDRAM_PKG::data_t) / 8;
+logic [$clog2(MAX_BURSTS)-1:0] num_bursts;
 
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
+        num_bursts <= 0;
+        req_fifo_write_req <= 0;
         req_fifo_write_data <= req_t'(0);
-        req_fifo_write_req  <= 0;
     end else begin
-        req_fifo_write_data.write <= HWRITE;
-        {req_fifo_write_data.acs.bank, req_fifo_write_data.acs.row, req_fifo_write_data.acs.col} <=
-            HADDR >> $clog2($bits(SDRAM_PKG::data_t)/8);
-        req_fifo_write_req        <= 0;
-        if (HTRANS != AHB_PKG::TRANS_IDLE && HTRANS != AHB_PKG::TRANS_BUSY && HREADY)
-            req_fifo_write_req <= HADDR[$clog2(BYTES_PER_BURST)-1:0] == 0;
+        req_fifo_write_req <= 0;
+        if (HTRANS == AHB_PKG::TRANS_NONSEQ && HREADY) begin
+            num_bursts <= (HBURST == AHB_PKG::BURST_INCR16 || HBURST == AHB_PKG::BURST_WRAP16 ? 16 / AHB_PER_BURST :
+                           HBURST == AHB_PKG::BURST_INCR8  || HBURST == AHB_PKG::BURST_WRAP8  ?  8 / AHB_PER_BURST :
+                           HBURST == AHB_PKG::BURST_INCR4  || HBURST == AHB_PKG::BURST_WRAP4  ?  4 / AHB_PER_BURST :
+                           1) - 1;
+            req_fifo_write_req <= 1;
+            req_fifo_write_data.write <= HWRITE;
+            {req_fifo_write_data.acs.bank, req_fifo_write_data.acs.row, req_fifo_write_data.acs.col} <=
+                HADDR >> $clog2($bits(SDRAM_PKG::data_t)/8);
+        end else if (num_bursts) begin
+            num_bursts <= num_bursts - 1;
+            req_fifo_write_req <= 1;
+            req_fifo_write_data.acs.col <= req_fifo_write_data.acs.col + BURST;
+        end
     end
 end
 
@@ -121,22 +135,17 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
 end
 
 AHB_PKG::data_t ahb_read_data;
-logic ahb_read_ack;
-logic ahb_read_req;
+logic ahb_read_buf, ahb_read_ack, ahb_read_req;
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
-        ahb_read_ack <= 0;
-    end else if (VALID_IN && !ahb_read_ack) begin
-        ahb_read_ack <= 1;
+        ahb_read_buf <= 0;
     end else if (fifo_read) begin
-        if (HTRANS != AHB_PKG::TRANS_IDLE && HTRANS != AHB_PKG::TRANS_BUSY)
-            ahb_read_ack <= 1;
-        else if (data_fifo_read_req)
-            ahb_read_ack <= 0;
-    end else if (HTRANS != AHB_PKG::TRANS_IDLE && HTRANS != AHB_PKG::TRANS_BUSY && HWRITE && HREADY) begin
-        ahb_read_ack <= 0;
+        if (data_fifo_read_req & ahb_read_ack)
+            ahb_read_buf <= ahb_read_req;
     end
 end
+
+assign ahb_read_ack = fifo_read & (~ahb_read_buf | ahb_read_req);
 
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
@@ -149,7 +158,7 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
             HREADY <= 1;
         if (HREADY)
             ahb_fifo_write <= 0;
-        if (ahb_read_ack && data_fifo_read_req) begin
+        if (data_fifo_read_req && ahb_read_ack) begin
             ahb_read_req <= 0;
             ahb_read_data <= data_fifo_read_data;
             HREADY <= 1;
@@ -162,8 +171,9 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
             end else begin
                 if (HREADY) begin
                     ahb_read_req <= 1;
-                    ahb_read_data <= data_fifo_read_data;
-                    HREADY <= ahb_read_ack && data_fifo_read_req;
+                    if (data_fifo_read_req && ahb_read_ack)
+                        ahb_read_data <= data_fifo_read_data;
+                    HREADY <= data_fifo_read_req && ahb_read_ack;
                 end
             end
         end
@@ -201,7 +211,7 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
     end
 end
 
-logic [$clog2(FIFO_PER_BURST)-1:0] write_seg;
+logic [$clog2(DATA_PER_AHB)-1:0] write_seg;
 assign write_seg = BURST - write_burst;
 
 assign WRITE_DATA_OUT = data_fifo_read_data >> ($bits(SDRAM_PKG::data_t) * write_seg);
@@ -224,9 +234,9 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
     end
 end
 
-logic [$clog2(FIFO_PER_BURST)-1:0] read_seg;
+logic [$clog2(DATA_PER_AHB)-1:0] read_seg;
 assign read_seg = BURST - read_burst;
-assign read_valid = read_seg == FIFO_PER_BURST - 1;
+assign read_valid = read_seg == DATA_PER_AHB - 1;
 
 assign data_fifo_write_req = (HREADY && ahb_fifo_write) || read_valid;
 assign data_fifo_read_ack = sdram_write_ack | ahb_read_ack;

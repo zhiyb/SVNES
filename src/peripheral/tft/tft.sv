@@ -32,7 +32,7 @@ module TFT #(
     output logic [TFT_WIDTH-1:0] TFT_RGB
 );
 
-`define USE_RGB565 // SDRAM too slow for RGB888
+// `define USE_RGB565 // SDRAM too slow for RGB888
 
 // AHB CDC
 logic vsync_ahb, vsync_tft;
@@ -55,7 +55,8 @@ TFT_DMA #(
 `else
     .BPP        (32),
 `endif
-    .BASE_ADDR  (BASE_ADDR)
+    .BASE_ADDR  (BASE_ADDR),
+    .AHB_BURSTS (16)
 ) dma (
     .HCLK       (HCLK),
     .HRESET     (HRESET),
@@ -79,20 +80,41 @@ TFT_DMA #(
 logic [31:0] fifo_data;
 logic fifo_req, fifo_ack;
 
+FIFO_SYNC #(
+    .DEPTH  (8),
+    .WIDTH  (32)
+) fifo_sync (
+    .CLK             (HCLK),
+    .RESET_IN        (HRESET),
+
+    .WRITE_DATA_IN   (dma_data),
+    .WRITE_REQ_IN    (dma_req),
+    .WRITE_ACK_OUT   (dma_ack),
+    .WRITE_THRES_OUT (),
+
+    .READ_DATA_OUT   (fifo_data),
+    .READ_REQ_OUT    (fifo_req),
+    .READ_ACK_IN     (fifo_ack),
+    .READ_THRES_OUT  ()
+);
+
+logic [31:0] cdc_data;
+logic cdc_req, cdc_ack;
+
 FIFO_ASYNC #(
     .WIDTH  (32)
-) fifo (
+) fifo_async (
     .WRITE_CLK      (HCLK),
     .WRITE_RESET_IN (HRESET),
-    .WRITE_DATA_IN  (dma_data),
-    .WRITE_REQ_IN   (dma_req),
-    .WRITE_ACK_OUT  (dma_ack),
+    .WRITE_DATA_IN  (fifo_data),
+    .WRITE_REQ_IN   (fifo_req),
+    .WRITE_ACK_OUT  (fifo_ack),
 
     .READ_CLK       (CLK_TFT),
     .READ_RESET_IN  (RESET_TFT),
-    .READ_DATA_OUT  (fifo_data),
-    .READ_REQ_OUT   (fifo_req),
-    .READ_ACK_IN    (fifo_ack)
+    .READ_DATA_OUT  (cdc_data),
+    .READ_REQ_OUT   (cdc_req),
+    .READ_ACK_IN    (cdc_ack)
 );
 
 // Data width conversion, RGB mapping
@@ -106,18 +128,18 @@ TFT_MAPPING #(
     .CLK        (CLK_TFT),
     .RESET_IN   (RESET_TFT),
 
-    .DATA_IN    (fifo_data),
-    .REQ_IN     (fifo_req),
-    .ACK_OUT    (fifo_ack),
+    .DATA_IN    (cdc_data),
+    .REQ_IN     (cdc_req),
+    .ACK_OUT    (cdc_ack),
 
     .DATA_OUT   (data_tft),
     .REQ_OUT    (req_tft),
     .ACK_IN     (ack_tft)
 );
 `else
-assign data_tft = fifo_data;
-assign req_tft = fifo_req;
-assign dma_ack_tft = fifo_ack;
+assign data_tft = cdc_data;
+assign req_tft  = cdc_req;
+assign cdc_ack  = ack_tft;
 `endif
 
 // TFT interface

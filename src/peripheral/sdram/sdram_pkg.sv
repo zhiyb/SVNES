@@ -19,7 +19,7 @@ typedef logic [5:0] op_t;
 localparam N_BANKS     = 4;
 localparam N_BANK_BITS = $clog2(N_BANKS);
 localparam N_ROW_BITS  = 13;
-localparam N_COL_BITS  = 10;
+localparam N_COL_BITS  = 9;
 localparam N_ADDR_BITS = 13;    // Maximum of ROW and COL
 localparam N_DATA_BITS = 16;
 localparam N_TAG_BITS  = 3;     // Bank + 1 for keeping track of read data

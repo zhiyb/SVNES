@@ -185,7 +185,10 @@ CDC_ASYNC tp_cdc (
 );
 
 TEST_PATTERN_GEN #(
-    .BASE_ADDR (32'h0f000000)
+    .WIDTH     (800),
+    .HEIGHT    (480),
+    .BPP       (32),
+    .BASE_ADDR (32'h08800000)
 ) tp (
     .HCLK       (clk_sys),
     .HRESET     (reset_sys),
@@ -207,10 +210,10 @@ TEST_PATTERN_GEN #(
 logic tft_underflow;
 
 TFT #(
-    .BASE_ADDR  (32'h0f000000),
+    .BASE_ADDR  (32'h08800000),
 `ifndef SIMULATION
     .HSYNC      (1),
-    .HBACK      (45),
+    .HBACK      (46),
     .HDISP      (800),
     .HFRONT     (210),
     .VSYNC      (1),
@@ -219,7 +222,7 @@ TFT #(
     .VFRONT     (22),
 `else
     .HSYNC      (1),
-    .HBACK      (45),
+    .HBACK      (46),
     .HDISP      (800),
     .HFRONT     (21),
     .VSYNC      (1),
@@ -258,7 +261,11 @@ assign lcd_pwm = 1;
 
 
 // Debug LEDs
-assign LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
+always_comb begin
+    LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
+    LED[7] = htrans[TP_PORT] != AHB_PKG::TRANS_IDLE;
+    LED[6] = htrans[TFT_PORT] != AHB_PKG::TRANS_IDLE;
+end
 
 logic [7:0] rgb_led_cnt;
 logic rgb_led_pwm;

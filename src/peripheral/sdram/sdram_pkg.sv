@@ -33,7 +33,6 @@ typedef logic [N_ROW_BITS-1:0]  row_t;
 typedef logic [N_COL_BITS-1:0]  col_t;
 typedef logic [N_ADDR_BITS-1:0] addr_t;
 typedef logic [N_DATA_BITS-1:0] data_t;
-typedef logic [N_TAG_BITS-1:0]  tag_t;
 
 typedef struct packed {
     ba_t   bank;

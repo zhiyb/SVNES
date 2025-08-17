@@ -80,22 +80,38 @@ SDRAM_PKG::dram_access_t [N_BANKS-1:0] bank_acs;
 logic                    [N_BANKS-1:0] bank_req;
 logic                    [N_BANKS-1:0] bank_ack;
 SDRAM_PKG::data_t        [N_BANKS-1:0] bank_write_data;
-logic                    [N_BANKS-1:0] bank_valid;
-SDRAM_PKG::data_t        [N_BANKS-1:0] bank_read_data;
 
-// TODO
-assign bank_write      = burst_write;
-assign bank_acs        = burst_acs;
-assign bank_req        = burst_req;
-assign burst_ack       = bank_ack;
-assign bank_write_data = burst_write_data;
-assign burst_valid     = bank_valid;
-assign burst_read_data = bank_read_data;
+SDRAM_PKG::data_t read_data;
+logic             read_valid;
+
+SDRAM_AHB_ARB #(
+    .AHB_PORTS (AHB_PORTS),
+    .N_BANKS   (N_BANKS),
+    .BURST     (BURST)
+) ahb_arb (
+    .CLK                  (CLK),
+    .RESET_IN             (RESET_IN),
+
+    .BURST_WRITE_IN      (burst_write),
+    .BURST_ACS_IN        (burst_acs),
+    .BURST_REQ_IN        (burst_req),
+    .BURST_ACK_OUT       (burst_ack),
+    .BURST_WRITE_DATA_IN (burst_write_data),
+    .BURST_VALID_OUT     (burst_valid),
+    .BURST_READ_DATA_OUT (burst_read_data),
+
+    .BANK_WRITE_OUT      (bank_write),
+    .BANK_ACS_OUT        (bank_acs),
+    .BANK_REQ_OUT        (bank_req),
+    .BANK_ACK_IN         (bank_ack),
+    .BANK_WRITE_DATA_OUT (bank_write_data),
+
+    .READ_DATA_IN        (read_data),
+    .READ_VALID_IN       (read_valid)
+);
 
 // Per-bank access -> commands
 SDRAM_PKG::cmd_t arb_cmd_data;
-SDRAM_PKG::data_t arb_read_data;
-SDRAM_PKG::tag_t  arb_read_tag;
 
 SDRAM_BANK_ARB #(
     .tRC   (tRC),
@@ -120,12 +136,8 @@ SDRAM_BANK_ARB #(
     .BANK_REQ_IN        (bank_req),
     .BANK_ACK_OUT       (bank_ack),
     .BANK_WRITE_DATA_IN (bank_write_data),
-    .BANK_VALID_OUT     (bank_valid),
-    .BANK_READ_DATA_OUT (bank_read_data),
 
-    .CMD_OUT            (arb_cmd_data),
-    .READ_DATA_IN       (arb_read_data),
-    .READ_TAG_IN        (arb_read_tag)
+    .CMD_OUT            (arb_cmd_data)
 );
 
 // Execute commands
@@ -146,8 +158,8 @@ SDRAM_IO #(
     .RESET_IN       (RESET_IN),
 
     .CMD_IN         (arb_cmd_data),
-    .READ_DATA_OUT  (arb_read_data),
-    .READ_TAG_OUT   (arb_read_tag),
+    .READ_DATA_OUT  (read_data),
+    .READ_VALID_OUT (read_valid),
 
     .DRAM_DQ        (DRAM_DQ),
     .DRAM_ADDR      (DRAM_ADDR),

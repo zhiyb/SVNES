@@ -102,8 +102,8 @@ CLOCK_GEN clk (
 
 // System AHB bus
 localparam SDRAM_PORTS = 4;
-localparam TFT_PORT    = 3;
-localparam TP_PORT     = 0;
+localparam TFT_PORT    = 0;
+localparam TP_PORT     = 3;
 
 AHB_PKG::addr_t  [SDRAM_PORTS-1:0] haddr;
 AHB_PKG::burst_t [SDRAM_PORTS-1:0] hburst;
@@ -220,7 +220,7 @@ TFT #(
 `else
     .HSYNC      (1),
     .HBACK      (45),
-    .HDISP      (200),
+    .HDISP      (800),
     .HFRONT     (21),
     .VSYNC      (1),
     .VBACK      (2),

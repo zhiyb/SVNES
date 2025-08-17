@@ -17,14 +17,9 @@ module SDRAM_BANK_ARB #(
     input  logic                    [N_BANKS-1:0] BANK_REQ_IN,
     output logic                    [N_BANKS-1:0] BANK_ACK_OUT,
     input  SDRAM_PKG::data_t        [N_BANKS-1:0] BANK_WRITE_DATA_IN,
-    output logic                    [N_BANKS-1:0] BANK_VALID_OUT,
-    output SDRAM_PKG::data_t        [N_BANKS-1:0] BANK_READ_DATA_OUT,
 
     // Command output
-    output SDRAM_PKG::cmd_t CMD_OUT,
-    // SDRAM read data input
-    input  SDRAM_PKG::data_t READ_DATA_IN,
-    input  SDRAM_PKG::tag_t  READ_TAG_IN
+    output SDRAM_PKG::cmd_t CMD_OUT
 );
 
 // Arbitrartion clock cycles:
@@ -242,9 +237,6 @@ generate
             else
                 BANK_ACK_OUT[ba] <= 0;
         end
-
-        assign BANK_READ_DATA_OUT[ba] = READ_DATA_IN;
-        assign BANK_VALID_OUT[ba]     = READ_TAG_IN == ba + 1;
     end: gen_bank
 endgenerate
 
@@ -298,8 +290,10 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
                   (arb_cmd.op  == SDRAM_PKG::OP_READ || arb_cmd.op  == SDRAM_PKG::OP_WRITE)) &&
                 // Check tREAD/tWRITE
                 !(bank[ba].op == SDRAM_PKG::OP_READ && t_read != 0) &&
-                !(bank[ba].op == SDRAM_PKG::OP_WRITE && t_write != 0))
+                !(bank[ba].op == SDRAM_PKG::OP_WRITE && t_write != 0)) begin
                 grant <= 1 << ba;
+                break;      // Bank 0 has highest prority
+            end
         end
         if (ref_req)
             grant <= 1 << N_BANKS;

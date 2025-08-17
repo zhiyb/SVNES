@@ -72,14 +72,16 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
         ref_state_cnt <= 0;
     end else if (ref_req && ref_state != REF_IDLE) begin
         if (ref_state == REF_NOP) begin
-            if (bank_active) begin
-                // Need to precharge all
-                if (!t_pre_stall)
-                    ref_state <= REF_PRE;
-            end else begin
-                // Skip precharging
-                if (!t_act_stall)
-                    ref_state <= REF_REF;
+            if (grant[N_BANKS]) begin
+                if (bank_active) begin
+                    // Need to precharge all
+                    if (!t_pre_stall)
+                        ref_state <= REF_PRE;
+                end else begin
+                    // Skip precharging
+                    if (!t_act_stall)
+                        ref_state <= REF_REF;
+                end
             end
         end else if (ref_state == REF_PRE) begin
             ref_state_cnt <= ref_state_cnt + 1;

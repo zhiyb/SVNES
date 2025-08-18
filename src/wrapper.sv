@@ -84,17 +84,28 @@ assign {GPIO_0[26:24], GPIO_0[28]} = flash_io;
 wire clk_sys, reset_sys;
 // 33.3MHz TFT clock
 wire clk_tft, reset_tft;
+// Emulation CPU clock
+wire clk_emu, reset_emu;
+logic [1:0] video_mode;     // Video master clock selection
+logic video_toggle;         // Video master clock toggle
 logic pll_locked;
 
-CLOCK_GEN clk (
-    .CLK_50         (CLOCK_50),
-    .CLK_SYS        (clk_sys),
-    .CLK_TFT        (clk_tft),
+assign video_mode = 0;
 
+CLOCK_GEN clk (
     .RESET_ASYNC_IN (~KEY[0]),
+
+    .CLK_50         (CLOCK_50),
     .RESET_50_OUT   (),
+    .CLK_SYS        (clk_sys),
     .RESET_SYS_OUT  (reset_sys),
+    .CLK_TFT        (clk_tft),
     .RESET_TFT_OUT  (reset_tft),
+
+    .CLK_EMU          (clk_emu),
+    .RESET_EMU_OUT    (reset_emu),
+    .VIDEO_MODE_IN    (video_mode),
+    .VIDEO_TOGGLE_OUT (video_toggle),
 
     .PLL_LOCKED_OUT (pll_locked)
 );

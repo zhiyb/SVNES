@@ -27,6 +27,8 @@ module SDRAM_BANK_ARB #(
 // 2. Grant arbitration to a bank
 // 3. Generate command, update timers and requests
 
+logic [N_BANKS:0] grant;
+
 // Initialisation and refresh controller
 localparam logic [2:0] MRS_BURST[0:8] = '{0, 0, 1, 1, 2, 2, 2, 2, 3};
 localparam logic [2:0] MRS_CAS[0:3]   = '{0, 1, 2, 3};
@@ -152,7 +154,6 @@ typedef struct packed {
 } bank_t;
 
 bank_t [N_BANKS-1:0] bank;
-logic [N_BANKS:0] grant;
 SDRAM_PKG::cmd_t arb_cmd;
 
 localparam tRQL = CAS;

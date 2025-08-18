@@ -131,9 +131,7 @@ assign htrans[2] = AHB_PKG::TRANS_IDLE;
 
 
 // SDRAM controller
-// localparam CLK_SDRAM_FREQ_MHZ = 143;
-localparam CLK_SDRAM_FREQ_MHZ = 100;
-
+localparam CLK_SDRAM_FREQ_MHZ = 143;
 logic sdram_init_done;
 SDRAM #(
     .AHB_PORTS     (SDRAM_PORTS),

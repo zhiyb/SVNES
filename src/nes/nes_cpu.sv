@@ -67,7 +67,6 @@ RAM_SP #(
 ) ram (
     .CLK             (CLK),
     .RESET_IN        (RESET_IN),
-    .CLEAR_IN        ('0),
     .ADDR_IN         (sys_addr[10:0]),
     .READ_ENABLE_IN  (ram_sel & sys_read),
     .READ_DATA_OUT   (ram_read_data),

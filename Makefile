@@ -2,6 +2,7 @@
 
 SOURCES			:= $(shell ./scripts/sources.sh)
 FILELISTS		:= $(shell ./scripts/filelists.sh)
+ROMS			:= bootrom
 SIM_LIB			:= sim_lib
 DO				?=
 VIEW_DO			?=
@@ -55,7 +56,7 @@ include gmsl
 all: test sof sta
 
 .PHONY: clean
-clean:
+clean: $(ROMS:%=clean-%)
 	rm -rf $(CLEAN_DIRS)
 	rm -f $(CLEAN_FILES)
 
@@ -67,11 +68,17 @@ test: wlf
 
 sim/tb_nes_top.wlf: output_files/bootrom.svhex
 
-output_files/%.svhex: %/rom.bin
+output_files/%.svhex: %/rom.bin | output_files
 	./scripts/rom_to_svhex.py $< $@
 
-%/rom.bin:
+output_files: %:
+	mkdir -p $@
+
+%/rom.bin %/rom.hex: %
 	cd $* && $(MAKE)
+
+clean-%:
+	cd $* && $(MAKE) clean
 
 # ModelSim simulation
 
@@ -157,7 +164,7 @@ output_files/$(REV).fit.rpt: output_files/$(REV).map.rpt
 .PHONY: sof
 sof: output_files/$(REV).sof
 
-output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt
+output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt $(ROMS:%=%.hex)
 	$(QASM) --read_settings_files=off --write_settings_files=off $(PRJ) -c $(REV)
 
 .PHONY: pgm

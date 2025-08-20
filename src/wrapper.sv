@@ -90,8 +90,6 @@ logic [1:0] video_mode;     // Video master clock selection
 logic video_toggle;         // Video master clock toggle
 logic pll_locked;
 
-assign video_mode = 0;
-
 CLOCK_GEN clk (
     .RESET_ASYNC_IN (~KEY[0]),
 
@@ -128,6 +126,20 @@ AHB_PKG::resp_t  [SDRAM_PORTS-1:0] hresp;
 
 assign htrans[1] = AHB_PKG::TRANS_IDLE;
 assign htrans[2] = AHB_PKG::TRANS_IDLE;
+
+
+// NES emulator
+NES_TOP #(
+    .BOOTROM ("bootrom")
+) nes (
+    .CLK_SYS         (clk_sys),
+    .RESET_SYS_IN    (reset_sys),
+    .CLK_EMU         (clk_emu),
+    .RESET_EMU_IN    (reset_emu),
+    .VIDEO_MODE_OUT  (video_mode),
+    .VIDEO_TOGGLE_IN (video_toggle),
+    .BUTTON_IN       (btn_io)
+);
 
 
 // SDRAM controller

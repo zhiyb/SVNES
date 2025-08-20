@@ -2,6 +2,8 @@ common/
 peripheral/
 pll/
 platform/
+c6502/
+nes/
 test/
 
 clock_gen.sv

@@ -63,6 +63,16 @@ clean:
 test: wlf
 #test: fst
 
+# Build ROM content
+
+sim/tb_nes_top.wlf: output_files/bootrom.svhex
+
+output_files/%.svhex: %/rom.bin
+	./scripts/rom_to_svhex.py $< $@
+
+%/rom.bin:
+	cd $* && $(MAKE)
+
 # ModelSim simulation
 
 .PRECIOUS: $(WAVE)

@@ -164,7 +164,7 @@ output_files/$(REV).fit.rpt: output_files/$(REV).map.rpt
 .PHONY: sof
 sof: output_files/$(REV).sof
 
-output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt $(ROMS:%=%.hex)
+output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt $(ROMS:%=%/rom.hex)
 	$(QASM) --read_settings_files=off --write_settings_files=off $(PRJ) -c $(REV)
 
 .PHONY: pgm

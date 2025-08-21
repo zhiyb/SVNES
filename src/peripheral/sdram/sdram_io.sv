@@ -27,17 +27,11 @@ module SDRAM_IO
 // Pin input/output registers
 logic [15:0] dram_dq_in, dram_dq_in_reg;
 
-always_ff @(negedge CLK, posedge RESET_IN)
-    if (RESET_IN)
-        dram_dq_in <= 0;
-    else
-        dram_dq_in <= DRAM_DQ;
+always_ff @(negedge CLK)
+    dram_dq_in <= DRAM_DQ;
 
-always_ff @(posedge CLK, posedge RESET_IN)
-    if (RESET_IN)
-        dram_dq_in_reg <= 0;
-    else
-        dram_dq_in_reg <= dram_dq_in;
+always_ff @(posedge CLK)
+    dram_dq_in_reg <= dram_dq_in;
 
 logic [15:0] dram_dq_reg, dram_dq_out;
 logic        dram_dq_en_reg, dram_dq_out_en;
@@ -46,30 +40,17 @@ logic [1:0]  dram_ba_reg, dram_dqm_reg;
 logic        dram_cke_reg;
 logic        dram_cs_n_reg, dram_ras_n_reg, dram_cas_n_reg, dram_we_n_reg;
 
-always_ff @(negedge CLK, posedge RESET_IN) begin
-    if (RESET_IN) begin
-        dram_dq_out    <= 0;
-        dram_dq_out_en <= 0;
-        DRAM_ADDR      <= 0;
-        DRAM_BA        <= 0;
-        DRAM_DQM       <= 0;
-        DRAM_CKE       <= 0;
-        DRAM_CS_N      <= 0;
-        DRAM_RAS_N     <= 0;
-        DRAM_CAS_N     <= 0;
-        DRAM_WE_N      <= 0;
-    end else begin
-        dram_dq_out    <= dram_dq_reg;
-        dram_dq_out_en <= dram_dq_en_reg;
-        DRAM_ADDR      <= dram_addr_reg;
-        DRAM_BA        <= dram_ba_reg;
-        DRAM_DQM       <= dram_dqm_reg;
-        DRAM_CKE       <= dram_cke_reg;
-        DRAM_CS_N      <= dram_cs_n_reg;
-        DRAM_RAS_N     <= dram_ras_n_reg;
-        DRAM_CAS_N     <= dram_cas_n_reg;
-        DRAM_WE_N      <= dram_we_n_reg;
-    end
+always_ff @(negedge CLK) begin
+    dram_dq_out    <= dram_dq_reg;
+    dram_dq_out_en <= dram_dq_en_reg;
+    DRAM_ADDR      <= dram_addr_reg;
+    DRAM_BA        <= dram_ba_reg;
+    DRAM_DQM       <= dram_dqm_reg;
+    DRAM_CKE       <= dram_cke_reg;
+    DRAM_CS_N      <= dram_cs_n_reg;
+    DRAM_RAS_N     <= dram_ras_n_reg;
+    DRAM_CAS_N     <= dram_cas_n_reg;
+    DRAM_WE_N      <= dram_we_n_reg;
 end
 
 assign DRAM_DQ  = dram_dq_out_en ? dram_dq_out : 'z;
@@ -82,30 +63,17 @@ logic [1:0]  dram_ba, dram_dqm;
 logic        dram_cke;
 logic        dram_cs_n, dram_ras_n, dram_cas_n, dram_we_n;
 
-always_ff @(posedge CLK, posedge RESET_IN) begin
-    if (RESET_IN) begin
-        dram_dq_reg    <= 0;
-        dram_dq_en_reg <= 0;
-        dram_addr_reg  <= 0;
-        dram_ba_reg    <= 0;
-        dram_dqm_reg   <= 0;
-        dram_cke_reg   <= 0;
-        dram_cs_n_reg  <= 0;
-        dram_ras_n_reg <= 0;
-        dram_cas_n_reg <= 0;
-        dram_we_n_reg  <= 0;
-    end else begin
-        dram_dq_reg    <= dram_dq;
-        dram_dq_en_reg <= dram_dq_en;
-        dram_addr_reg  <= dram_addr;
-        dram_ba_reg    <= dram_ba;
-        dram_dqm_reg   <= dram_dqm;
-        dram_cke_reg   <= dram_cke;
-        dram_cs_n_reg  <= dram_cs_n;
-        dram_ras_n_reg <= dram_ras_n;
-        dram_cas_n_reg <= dram_cas_n;
-        dram_we_n_reg  <= dram_we_n;
-    end
+always_ff @(posedge CLK) begin
+    dram_dq_reg    <= dram_dq;
+    dram_dq_en_reg <= dram_dq_en;
+    dram_addr_reg  <= dram_addr;
+    dram_ba_reg    <= dram_ba;
+    dram_dqm_reg   <= dram_dqm;
+    dram_cke_reg   <= dram_cke;
+    dram_cs_n_reg  <= dram_cs_n;
+    dram_ras_n_reg <= dram_ras_n;
+    dram_cas_n_reg <= dram_cas_n;
+    dram_we_n_reg  <= dram_we_n;
 end
 
 // Read output CASE delay pipe

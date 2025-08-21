@@ -129,6 +129,7 @@ assign htrans[2] = AHB_PKG::TRANS_IDLE;
 
 
 // NES emulator
+logic [7:0] nes_debug;
 NES_TOP #(
     .BOOTROM ("bootrom")
 ) nes (
@@ -138,7 +139,8 @@ NES_TOP #(
     .RESET_EMU_IN    (reset_emu),
     .VIDEO_MODE_OUT  (video_mode),
     .VIDEO_TOGGLE_IN (video_toggle),
-    .BUTTON_IN       (btn_io)
+    .BUTTON_IN       (btn_io),
+    .DEBUG_OUT       (nes_debug)
 );
 
 
@@ -288,6 +290,7 @@ always_comb begin
     LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
     LED[7] = htrans[TP_PORT] != AHB_PKG::TRANS_IDLE;
     LED[6] = htrans[TFT_PORT] != AHB_PKG::TRANS_IDLE;
+    LED ^= nes_debug;
 end
 
 logic [7:0] rgb_led_cnt;

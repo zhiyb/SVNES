@@ -10,7 +10,8 @@ module NES_TOP #(
     output logic [1:0] VIDEO_MODE_OUT,
     input  logic       VIDEO_TOGGLE_IN,
 
-    input  logic [7:0] BUTTON_IN
+    input  logic [7:0] BUTTON_IN,
+    output logic [7:0] DEBUG_OUT
 );
 
 typedef enum logic [1:0] {
@@ -92,6 +93,8 @@ NES_CPU #(
 
 // TODO
 assign sys_read_data = 0;
+
+assign DEBUG_OUT = sys_addr[15:8] ^ sys_addr[7:0] ^ {6'b0, sys_read, sys_write};
 
 
 // PPU memory map

@@ -38,7 +38,8 @@ begin
 end
 
 NES_TOP #(
-    .BOOTROM ("bootrom")
+    .BOOTROM_PRG ("prg_rom"),
+    .BOOTROM_CHR ("chr_rom")
 ) nes (
     .CLK_SYS         (clk_sys),
     .RESET_SYS_IN    (reset_sys),

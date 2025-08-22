@@ -2,7 +2,7 @@ common/
 peripheral/
 pll/
 platform/
-c6502/
+mos6502/
 nes/
 test/
 

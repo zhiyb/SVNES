@@ -1,4 +1,4 @@
-module C6502 (
+module MOS6502 (
     input  wire         CLK,
     input  wire         RESET_IN,
     input  logic        CLK_ENABLE_IN,
@@ -17,47 +17,27 @@ module C6502 (
 );
 
 // CPU buses
-typedef enum {
-    SRC_00,
-    SRC_01,
-    SRC_FA,
-    SRC_FB,
-    SRC_FC,
-    SRC_FD,
-    SRC_FE,
-    SRC_FF,
-    SRC_ACC,
-    SRC_ALU,
-    SRC_ADD,
-    SRC_X,
-    SRC_Y,
-    SRC_S,
-    SRC_P,
-    SRC_DB,
-    SRC_SB,
-    SRC_ADL,
-    SRC_ADH,
-    SRC_ABL,
-    SRC_ABH,
-    SRC_PCL,
-    SRC_PCH,
-    SRC_EXT
-} src_t;
-
 typedef logic [15:0] u16_t;
 typedef logic [7:0]  u8_t;
+typedef logic [8:0]  alu_t;     // With carry bit
 
 u8_t adh, adl;
 
 // Registers
 u16_t pc;
-u8_t a, x, y, p, s;
-u8_t alu, add;
+u8_t a, x, y, s;
+alu_t alu, add;
+
+typedef struct packed {
+    logic n, v, o, b, d, i, z, c;
+} flag_t;
+flag_t p;
 
 // External bus
 typedef enum {
     EXT_PC,
     EXT_AD,
+    EXT_ADL_ZP,
     EXT_S,
     EXT_IMM_FA,
     EXT_IMM_FB,
@@ -72,6 +52,9 @@ typedef enum {
     EXT_DB_ALU,
     EXT_DB_PCH,
     EXT_DB_PCL,
+    EXT_DB_A,
+    EXT_DB_X,
+    EXT_DB_Y,
     EXT_DB_P
 } ext_db_t;
 ext_db_t ext_db;
@@ -94,30 +77,38 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
 
         if (ext_bus == EXT_PC)
             ADDR_OUT <= pc;
-        else if (ext_bus == EXT_AD)
+        if (ext_bus == EXT_ADL_ZP)
+            ADDR_OUT <= {8'h00, adl};
+        if (ext_bus == EXT_AD)
             ADDR_OUT <= {adh, adl};
-        else if (ext_bus == EXT_S)
+        if (ext_bus == EXT_S)
             ADDR_OUT <= {8'h01, s};
-        else if (ext_bus == EXT_IMM_FA)
+        if (ext_bus == EXT_IMM_FA)
             ADDR_OUT <= 16'hfffa;
-        else if (ext_bus == EXT_IMM_FB)
+        if (ext_bus == EXT_IMM_FB)
             ADDR_OUT <= 16'hfffb;
-        else if (ext_bus == EXT_IMM_FC)
+        if (ext_bus == EXT_IMM_FC)
             ADDR_OUT <= 16'hfffc;
-        else if (ext_bus == EXT_IMM_FD)
+        if (ext_bus == EXT_IMM_FD)
             ADDR_OUT <= 16'hfffd;
-        else if (ext_bus == EXT_IMM_FE)
+        if (ext_bus == EXT_IMM_FE)
             ADDR_OUT <= 16'hfffe;
-        else if (ext_bus == EXT_IMM_FF)
+        if (ext_bus == EXT_IMM_FF)
             ADDR_OUT <= 16'hffff;
 
         if (ext_db == EXT_DB_ALU)
-            WRITE_DATA_OUT <= alu;
-        else if (ext_db == EXT_DB_PCH)
+            WRITE_DATA_OUT <= alu[7:0];
+        if (ext_db == EXT_DB_PCH)
             WRITE_DATA_OUT <= pc[15:8];
-        else if (ext_db == EXT_DB_PCL)
+        if (ext_db == EXT_DB_PCL)
             WRITE_DATA_OUT <= pc[7:0];
-        else if (ext_db == EXT_DB_P)
+        if (ext_db == EXT_DB_A)
+            WRITE_DATA_OUT <= a;
+        if (ext_db == EXT_DB_X)
+            WRITE_DATA_OUT <= x;
+        if (ext_db == EXT_DB_Y)
+            WRITE_DATA_OUT <= y;
+        if (ext_db == EXT_DB_P)
             WRITE_DATA_OUT <= p;
 
         READ_ENABLE_OUT  <= ext_read;
@@ -130,36 +121,50 @@ end
 
 
 // Registers
-logic a_load_alu, a_load_x, a_load_y;
-logic x_load_a, x_load_s;
-logic y_load_a;
+logic a_load_ext, a_load_alu, a_load_x, a_load_y;
+logic x_load_ext, x_load_alu, x_load_a, x_load_s;
+logic y_load_ext, y_load_alu, y_load_a;
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
         a <= 0;
         x <= 0;
         y <= 0;
     end else if (CLK_ENABLE_IN) begin
-        if (a_load_alu)
-            a <= alu;
+        if (a_load_ext)
+            a <= READ_DATA_IN;
+        else if (a_load_alu)
+            a <= alu[7:0];
         else if (a_load_x)
             a <= x;
         else if (a_load_y)
             a <= y;
-        if (x_load_a)
+        if (x_load_ext)
+            x <= READ_DATA_IN;
+        else if (x_load_alu)
+            x <= alu[7:0];
+        else if (x_load_a)
             x <= a;
         else if (x_load_s)
             x <= s;
-        if (y_load_a)
+        if (y_load_ext)
+            y <= READ_DATA_IN;
+        else if (y_load_alu)
+            y <= alu[7:0];
+        else if (y_load_a)
             y <= a;
     end
 end
 
 
 // Status register
+flag_t p_update, p_value;
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
         p <= 0;
+        p.o <= 1;
     end else if (CLK_ENABLE_IN) begin
+        p <= (~p_update & p) | (p_update & p_value);
+        p.o <= 1;
     end
 end
 
@@ -219,7 +224,9 @@ end
 typedef enum {
     ALU_EXT,
     ALU_ADD,
-    ALU_ADD_INC
+    ALU_ADD_INC,
+    ALU_X_INC,
+    ALU_Y_INC
 } alu_mode_t;
 alu_mode_t alu_mode;
 
@@ -227,14 +234,23 @@ always_comb begin
     alu = 0;
     if (alu_mode == ALU_EXT)
         alu = READ_DATA_IN;
-    else if (alu_mode == ALU_ADD)
+    if (alu_mode == ALU_ADD)
         alu = add;
-    else if (alu_mode == ALU_ADD_INC)
+    if (alu_mode == ALU_ADD_INC)
         alu = add + 1;
-`ifdef SIMULATION
-    else
-        $error("alu_mode: unknown mode: %0s", alu_mode);
-`endif
+    if (alu_mode == ALU_X_INC)
+        alu = x + 1;
+    if (alu_mode == ALU_Y_INC)
+        alu = y + 1;
+end
+
+flag_t alu_p_value;
+always_comb begin
+    alu_p_value = 0;
+    alu_p_value.c = alu[8];
+    alu_p_value.z = alu[7:0] == 0;
+    alu_p_value.v = 0;       // TODO
+    alu_p_value.n = alu[7];
 end
 
 always_ff @(posedge CLK, posedge RESET_IN)
@@ -462,7 +478,7 @@ op_t op;
 `else
 u8_t op;
 `endif
-assign op = READ_DATA_IN;
+assign op = op_t'(READ_DATA_IN);
 
 typedef enum {
     MOP_INT_RESET,
@@ -473,13 +489,19 @@ typedef enum {
     MOP_INT_PCH_FETCH,
     MOP_PC_FETCH,
     MOP_LOAD_IMM,
-    MOP_TXFR,
     MOP_LOAD_A,
-    MOP_LOAD_ABS_L,
-    MOP_LOAD_ABS_H,
     MOP_LOAD_AD,
-    MOP_WRITE_ABS_WB,
-    MOP_WRITE_ABS_ALU
+    MOP_ZP,
+    MOP_ZP_WRITE_REG,
+    MOP_ABS_L,
+    MOP_ABS_H,
+    MOP_ABS_WRITE_WB,
+    MOP_ABS_WRITE_ALU,
+    MOP_ABS_WRITE_REG,
+    MOP_JSR_NOP,
+    MOP_TXFR,
+    MOP_ALU,
+    MOP_FLAGS
 } mop_t;
 mop_t mop, mop_next;
 
@@ -495,11 +517,16 @@ op_t cop;
 `else
 u8_t cop;
 `endif
-always_ff @(posedge CLK, posedge RESET_IN)
-    if (RESET_IN)
+always_ff @(posedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
         cop <= OP_NOP;
-    else if (CLK_ENABLE_IN && mop == MOP_PC_FETCH)
-        cop <= op;
+    end else if (CLK_ENABLE_IN) begin
+        if (mop == MOP_PC_FETCH)
+            cop <= op;
+        if (mop == MOP_INT_RESET)
+            cop <= OP_NOP;
+    end
+end
 
 always_comb begin
     int_reset_clear = 0;
@@ -515,14 +542,22 @@ always_comb begin
 
     alu_mode        = ALU_ADD;
 
+    a_load_ext      = 0;
     a_load_alu      = 0;
     a_load_x        = 0;
     a_load_y        = 0;
+    x_load_ext      = 0;
+    x_load_alu      = 0;
     x_load_a        = 0;
     x_load_s        = 0;
+    y_load_ext      = 0;
+    y_load_alu      = 0;
     y_load_a        = 0;
     s_dec           = 0;
     s_load_x        = 0;
+
+    p_update        = 0;
+    p_value         = 0;
 
     pc_inc          = 0;
     pcl_load_ext    = 0;
@@ -553,6 +588,9 @@ always_comb begin
         // S = S -1
         s_dec           = 1;
         mop_next        = MOP_INT_P_PUSH;
+        if (cop == OP_JSR_ABS) begin
+            mop_next    = MOP_ABS_H;
+        end
     end
 
     if (mop == MOP_INT_P_PUSH) begin
@@ -590,60 +628,94 @@ always_comb begin
         ext_bus         = EXT_PC;
         ext_read        = 1;
 
-        if (op == OP_LDA_IMM)
-            mop_next    = MOP_LOAD_IMM;
-        else if (op == OP_TAX || op == OP_TAY || op == OP_TSX || op == OP_TXA || op == OP_TXS || op == OP_TYA)
-            mop_next    = MOP_TXFR;
-        else if (op == OP_INC_ABS || op == OP_DEC_ABS)
-            mop_next    = MOP_LOAD_ABS_L;
-        else if (op == OP_JMP_ABS)
-            mop_next    = MOP_LOAD_ABS_L;
+        if (op == OP_LDA_IMM || op == OP_LDX_IMM || op == OP_LDY_IMM)
+            mop_next = MOP_LOAD_IMM;
+        if (op == OP_TAX || op == OP_TAY || op == OP_TSX || op == OP_TXA || op == OP_TXS || op == OP_TYA)
+            mop_next = MOP_TXFR;
+        if (op == OP_INX || op == OP_INY)
+            mop_next = MOP_ALU;
+        if (op == OP_CLC || op == OP_CLD || op == OP_CLI || op == OP_SEC || op == OP_SED || op == OP_SEI)
+            mop_next = MOP_FLAGS;
+        if (op == OP_STA_ZP || op == OP_STX_ZP || op == OP_STY_ZP)
+            mop_next = MOP_ZP;
+        if (op == OP_STA_ABS || op == OP_STX_ABS || op == OP_STY_ABS)
+            mop_next = MOP_ABS_L;
+        if (op == OP_INC_ABS || op == OP_DEC_ABS)
+            mop_next = MOP_ABS_L;
+        if (op == OP_JMP_ABS || op == OP_JSR_ABS)
+            mop_next = MOP_ABS_L;
     end
 
     if (mop == MOP_LOAD_IMM) begin
         // PC = PC + 1
         pc_inc          = 1;
-        // ALU = EXT PC
+        // REG = EXT PC
         ext_bus         = EXT_PC;
         ext_read        = 1;
+        if (cop == OP_LDA_IMM) begin
+            a_load_ext  = 1;
+            p_value.z   = a == 0;
+            p_value.n   = a[7];
+        end
+        if (cop == OP_LDX_IMM) begin
+            x_load_ext  = 1;
+            p_value.z   = x == 0;
+            p_value.n   = x[7];
+        end
+        if (cop == OP_LDY_IMM) begin
+            y_load_ext  = 1;
+            p_value.z   = y == 0;
+            p_value.n   = y[7];
+        end
+        p_update.z      = 1;
+        p_update.n      = 1;
+        mop_next        = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_LOAD_AD) begin
+        // ALU = EXT AD
+        ext_bus         = EXT_AD;
+        ext_read        = 1;
         alu_mode        = ALU_EXT;
-
-        // REG.A = ALU
-        a_load_alu      = cop == OP_LDA_IMM;
-        //  || op == OP_LDA_ZP || op == OP_LDA_ZP_X ||
-        //                   op == OP_LDA_ABS || op == OP_LDA_ABS_X || op == OP_LDA_ABS_Y ||
-        //                   op == OP_LDA_IND_X || op == OP_LDA_IND_Y
-
-        mop_next        = MOP_PC_FETCH;
+        mop_next        = MOP_ABS_WRITE_WB;
     end
 
-    if (mop == MOP_TXFR) begin
-        // REG.A = X
-        a_load_x        = cop == OP_TXA;
-        // REG.A = Y
-        a_load_y        = cop == OP_TYA;
-        // REG.X = A
-        x_load_a        = cop == OP_TAX;
-        // REG.X = S
-        x_load_s        = cop == OP_TSX;
-        // REG.Y = A
-        y_load_a        = cop == OP_TAY;
-        // REG.S = X
-        s_load_x        = cop == OP_TXS;
-        mop_next        = MOP_PC_FETCH;
-    end
-
-    if (mop == MOP_LOAD_ABS_L) begin
+    if (mop == MOP_ZP) begin
         // PC = PC + 1
         pc_inc          = 1;
         // ADL = EXT PC
         ext_bus         = EXT_PC;
         ext_read        = 1;
         adl_load_ext    = 1;
-        mop_next        = MOP_LOAD_ABS_H;
+        mop_next        = MOP_ZP_WRITE_REG;
     end
 
-    if (mop == MOP_LOAD_ABS_H) begin
+    if (mop == MOP_ZP_WRITE_REG) begin
+        // EXT ZP = REG
+        ext_bus         = EXT_ADL_ZP;
+        ext_write       = 1;
+        if (cop == OP_STA_ZP)
+            ext_db      = EXT_DB_A;
+        if (cop == OP_STX_ZP)
+            ext_db      = EXT_DB_X;
+        if (cop == OP_STY_ZP)
+            ext_db      = EXT_DB_Y;
+        mop_next        = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_ABS_L) begin
+        // PC = PC + 1
+        pc_inc          = 1;
+        // ADL = EXT PC
+        ext_bus         = EXT_PC;
+        ext_read        = 1;
+        adl_load_ext    = 1;
+        mop_next        = MOP_ABS_H;
+        if (cop == OP_JSR_ABS)
+            mop_next    = MOP_JSR_NOP;
+    end
+
+    if (mop == MOP_ABS_H) begin
         // PC = PC + 1
         pc_inc          = 1;
         // ADH = EXT PC
@@ -652,7 +724,9 @@ always_comb begin
         adh_load_ext    = 1;
         mop_next        = MOP_LOAD_AD;
 
-        if (cop == OP_JMP_ABS) begin
+        if (cop == OP_STA_ABS || cop == OP_STX_ABS || cop == OP_STY_ABS)
+            mop_next        = MOP_ABS_WRITE_REG;
+        if (cop == OP_JMP_ABS || cop == OP_JSR_ABS) begin
             // PC = {EXT, ADL}
             pch_load_ext    = 1;
             pcl_load_adl    = 1;
@@ -660,31 +734,118 @@ always_comb begin
         end
     end
 
-    if (mop == MOP_LOAD_AD) begin
-        // ALU = EXT AD
-        ext_bus         = EXT_AD;
-        ext_read        = 1;
-        alu_mode        = ALU_EXT;
-        mop_next        = MOP_WRITE_ABS_WB;
-    end
-
-    if (mop == MOP_WRITE_ABS_WB) begin
+    if (mop == MOP_ABS_WRITE_WB) begin
         // EXT AD = ALU
         ext_bus         = EXT_AD;
         ext_db          = EXT_DB_ALU;
         ext_write       = 1;
         alu_mode        = ALU_ADD;
-        mop_next        = MOP_WRITE_ABS_ALU;
+        mop_next        = MOP_ABS_WRITE_ALU;
     end
 
-    if (mop == MOP_WRITE_ABS_ALU) begin
-        // ALU = ADD + 1
-        alu_mode        = ALU_ADD_INC;
+    if (mop == MOP_ABS_WRITE_ALU) begin
+        if (cop == OP_INC_ABS) begin
+            // ALU = ADD + 1
+            alu_mode    = ALU_ADD_INC;
+        end
         // EXT AD = ALU
         ext_bus         = EXT_AD;
         ext_db          = EXT_DB_ALU;
         ext_write       = 1;
+        p_update.z      = 1;
+        p_update.n      = 1;
+        p_value         = alu_p_value;
         mop_next        = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_ABS_WRITE_REG) begin
+        // EXT AD = REG
+        ext_bus         = EXT_AD;
+        ext_write       = 1;
+        if (cop == OP_STA_ABS)
+            ext_db      = EXT_DB_A;
+        if (cop == OP_STX_ABS)
+            ext_db      = EXT_DB_X;
+        if (cop == OP_STY_ABS)
+            ext_db      = EXT_DB_Y;
+        mop_next        = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_TXFR) begin
+        // REG.A = X
+        if (cop == OP_TXA) begin
+            a_load_x    = 1;
+            p_value.z   = x == 0;
+            p_value.n   = x[7];
+        end
+        // REG.A = Y
+        if (cop == OP_TYA) begin
+            a_load_y    = 1;
+            p_value.z   = y == 0;
+            p_value.n   = y[7];
+        end
+        // REG.X = A
+        if (cop == OP_TAX) begin
+            x_load_a    = 1;
+            p_value.z   = a == 0;
+            p_value.n   = a[7];
+        end
+        // REG.X = S
+        if (cop == OP_TSX) begin
+            x_load_s    = 1;
+            p_value.z   = s == 0;
+            p_value.n   = s[7];
+        end
+        // REG.Y = A
+        if (cop == OP_TAY) begin
+            y_load_a    = 1;
+            p_value.z   = a == 0;
+            p_value.n   = a[7];
+        end
+        // REG.S = X
+        if (cop == OP_TXS) begin
+            s_load_x    = 1;
+            p_value.z   = x == 0;
+            p_value.n   = x[7];
+        end
+        p_update.z      = 1;
+        p_update.n      = 1;
+        mop_next        = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_ALU) begin
+        if (cop == OP_INX) begin
+            alu_mode = ALU_X_INC;
+            x_load_alu = 1;
+        end
+        if (cop == OP_INY) begin
+            alu_mode = ALU_Y_INC;
+            y_load_alu = 1;
+        end
+        p_update.z = 1;
+        p_update.n = 1;
+        p_value = alu_p_value;
+        mop_next = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_FLAGS) begin
+        if (cop == OP_CLC || cop == OP_SEC) begin
+            p_update.c  = 1;
+            p_value.c   = cop == OP_SEC;
+        end
+        if (cop == OP_CLD || cop == OP_SED) begin
+            p_update.d  = 1;
+            p_value.d   = cop == OP_SED;
+        end
+        if (cop == OP_CLI || cop == OP_SEI) begin
+            p_update.i  = 1;
+            p_value.i   = cop == OP_SEI;
+        end
+        mop_next        = MOP_PC_FETCH;
+    end
+
+    if (mop == MOP_JSR_NOP) begin
+        mop_next        = MOP_INT_PCH_PUSH;
     end
 end
 
@@ -694,8 +855,6 @@ end
 typedef struct packed {
     op_t op;
     u16_t pc;
-    // u16_t pc_fetch;
-    // u16_t pc_update;
 } debug_t;
 debug_t debug;
 
@@ -706,21 +865,10 @@ initial begin
             debug.pc = 'hfffc;
         end
 
-        // if (mop == MOP_INT_PCL_FETCH) begin
-        //     debug.pc_fetch = sys_addr;
-        //     @(posedge CLK_ENABLE_IN);
-        //     debug.pc_update[7:0] = sys_data;
-        // end
-
-        // if (mop == MOP_INT_PCH_FETCH) begin
-        //     @(posedge CLK_ENABLE_IN);
-        //     debug.pc_update[15:8] = sys_data;
-        // end
-
         if (mop == MOP_PC_FETCH) begin
             @(posedge CLK_ENABLE_IN);
             debug.pc = pc;
-            debug.op = READ_DATA_IN;
+            debug.op = op_t'(READ_DATA_IN);
         end
 
         @(negedge CLK_ENABLE_IN);

@@ -66,7 +66,13 @@ test: wlf
 
 # Build ROM content
 
-sim/tb_nes_top.wlf: output_files/bootrom.svhex
+sim/tb_nes_top.wlf: output_files/bootrom.svhex output_files/prg_rom.svhex
+
+NES_TEST	?= nes-test-roms/instr_test-v5/rom_singles/01-basics.nes
+
+CLEAN_FILES	+= output_files/prg_rom.svhex output_files/chr_rom.svhex
+output_files/prg_rom.svhex output_files/chr_rom.svhex: $(NES_TEST)
+	./scripts/nes_extract.py $< output_files/prg_rom.svhex output_files/chr_rom.svhex
 
 output_files/%.svhex: %/rom.bin | output_files
 	./scripts/rom_to_svhex.py $< $@

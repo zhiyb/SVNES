@@ -1,5 +1,6 @@
 module NES_TOP #(
-    parameter string BOOTROM
+    parameter string BOOTROM_PRG,
+    parameter string BOOTROM_CHR
 ) (
     input  wire        CLK_SYS,
     input  wire        RESET_SYS_IN,
@@ -63,18 +64,15 @@ always_ff @(posedge CLK_EMU, posedge RESET_EMU_IN) begin
 end
 
 
-// System bus
-typedef logic [15:0] addr_t;
+// CPU bus
+typedef logic [15:0] cpu_addr_t;
 typedef logic [7:0]  data_t;
-addr_t sys_addr;
-data_t sys_read_data, sys_write_data;
-logic  sys_read, sys_write;
-
+cpu_addr_t cpu_addr;
+data_t cpu_read_data, cpu_write_data;
+logic cpu_read, cpu_write;
 
 // CPU and related peripherals
-NES_CPU #(
-    .BOOTROM (BOOTROM)
-) cpu (
+NES_CPU cpu (
     .CLK              (CLK_EMU),
     .RESET_IN         (RESET_EMU_IN),
     .CLK_ENABLE_IN    (cpu_pulse),
@@ -83,21 +81,51 @@ NES_CPU #(
     .INT_NMI_IN       ('0),
     .INT_IRQ_IN       ('0),
 
-    .ADDR_OUT         (sys_addr),
-    .READ_ENABLE_OUT  (sys_read),
-    .READ_DATA_IN     (sys_read_data),
-    .WRITE_ENABLE_OUT (sys_write),
-    .WRITE_DATA_OUT   (sys_write_data)
+    .ADDR_OUT         (cpu_addr),
+    .READ_ENABLE_OUT  (cpu_read),
+    .READ_DATA_IN     (cpu_read_data),
+    .WRITE_ENABLE_OUT (cpu_write),
+    .WRITE_DATA_OUT   (cpu_write_data)
 );
 
 
+// PPU bus
+typedef logic [13:0] ppu_addr_t;
+ppu_addr_t ppu_addr;
+data_t ppu_read_data, ppu_write_data;
+logic ppu_read, ppu_write;
+
 // TODO
-assign sys_read_data = 0;
+assign ppu_read = 0;
+assign ppu_write = 0;
+assign ppu_write_data = 0;
 
-assign DEBUG_OUT = sys_addr[15:8] ^ sys_addr[7:0] ^ {6'b0, sys_read, sys_write};
+
+// Mapper
+logic mapper_cpu_sel;
+assign mapper_cpu_sel = cpu_addr >= 'h4020;
+NES_MAPPER #(
+    .BOOTROM_PRG (BOOTROM_PRG),
+    .BOOTROM_CHR (BOOTROM_CHR)
+) mapper (
+    .CLK                 (CLK_EMU),
+    .RESET_IN            (RESET_EMU_IN),
+
+    .CPU_ADDR_IN         (cpu_addr),
+    .CPU_READ_ENABLE_IN  (mapper_cpu_sel & cpu_read),
+    .CPU_READ_DATA_OUT   (cpu_read_data),
+    .CPU_WRITE_ENABLE_IN (mapper_cpu_sel & cpu_write),
+    .CPU_WRITE_DATA_IN   (cpu_write_data),
+
+    .PPU_ADDR_IN         (ppu_addr),
+    .PPU_READ_ENABLE_IN  (ppu_read),
+    .PPU_READ_DATA_OUT   (ppu_read_data),
+    .PPU_WRITE_ENABLE_IN (ppu_write),
+    .PPU_WRITE_DATA_IN   (ppu_write_data)
+);
 
 
-// PPU memory map
-
+// To keep synthesis not optimising away everything
+assign DEBUG_OUT = cpu_addr[15:8] ^ cpu_addr[7:0] ^ {6'b0, cpu_read, cpu_write};
 
 endmodule

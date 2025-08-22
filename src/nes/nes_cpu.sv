@@ -1,6 +1,4 @@
-module NES_CPU #(
-    parameter string BOOTROM
-) (
+module NES_CPU (
     input  wire         CLK,
     input  wire         RESET_IN,
     input  logic        CLK_ENABLE_IN,
@@ -18,10 +16,6 @@ module NES_CPU #(
     output logic [7:0]  WRITE_DATA_OUT
 );
 
-// Use initialised internal RAM as bootrom
-logic bootrom_mode;
-assign bootrom_mode = '1;
-
 // CPU system bus
 typedef logic [15:0] addr_t;
 typedef logic [7:0]  data_t;
@@ -31,7 +25,7 @@ logic  sys_read, sys_write;
 
 // External bus
 logic ext_sel;
-assign ext_sel          = !bootrom_mode && sys_addr >= 'h2000;
+assign ext_sel          = sys_addr >= 'h2000;
 assign ADDR_OUT         = sys_addr;
 assign READ_ENABLE_OUT  = ext_sel & sys_read;
 assign WRITE_ENABLE_OUT = ext_sel & sys_write;
@@ -48,7 +42,7 @@ always_ff @(posedge CLK, posedge RESET_IN)
 
 // Internal 2KiB RAM @ 0x0000 + 0x2000
 logic ram_sel;
-assign ram_sel = bootrom_mode || sys_addr <= 'h1fff;
+assign ram_sel = sys_addr <= 'h1fff;
 
 logic ram_out;
 always_ff @(posedge CLK, posedge RESET_IN)
@@ -62,8 +56,7 @@ always_ff @(posedge CLK, posedge RESET_IN)
 data_t ram_read_data;
 RAM_SP #(
     .WIDTH (8),
-    .DEPTH ('h800),
-    .INIT  (BOOTROM)
+    .DEPTH ('h800)
 ) ram (
     .CLK             (CLK),
     .RESET_IN        (RESET_IN),
@@ -84,7 +77,7 @@ always_comb begin
 end
 
 // 6502 CPU
-C6502 cpu (
+MOS6502 cpu (
     .CLK              (CLK),
     .RESET_IN         (RESET_IN),
     .CLK_ENABLE_IN    (CLK_ENABLE_IN),

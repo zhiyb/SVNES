@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
 
+def conv_svhex(data):
+    out = ""
+    for i in range(0, len(data), 8):
+        out += (" ".join([f"{v:02x}" for v in data[i:i+8]]) + "\n")
+    return out.encode("ascii")
+
 def main():
     parser = ArgumentParser()
     parser.add_argument('in', type=str, default="rom.bin",

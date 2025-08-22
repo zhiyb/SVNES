@@ -185,7 +185,8 @@ end
 
 
 // Address bus latch
-logic adh_load_ext, adl_load_ext;
+logic adh_load_ext, adh_load_alu;
+logic adl_load_ext, adl_load_alu, adl_inc;
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
         adh <= 0;
@@ -193,8 +194,14 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
     end else if (CLK_ENABLE_IN) begin
         if (adh_load_ext)
             adh <= READ_DATA_IN;
+        else if (adh_load_alu)
+            adh <= alu;
         if (adl_load_ext)
             adl <= READ_DATA_IN;
+        else if (adl_load_alu)
+            adl <= alu[7:0];
+        else if (adl_inc)
+            adl <= adl + 1;
     end
 end
 
@@ -225,6 +232,8 @@ typedef enum {
     ALU_EXT,
     ALU_ADD,
     ALU_ADD_INC,
+    ALU_ADD_Y,
+    ALU_ADH_C,
     ALU_X_INC,
     ALU_Y_INC
 } alu_mode_t;
@@ -238,10 +247,14 @@ always_comb begin
         alu = add;
     if (alu_mode == ALU_ADD_INC)
         alu = add + 1;
+    if (alu_mode == ALU_ADD_Y)
+        alu = add + y;
     if (alu_mode == ALU_X_INC)
         alu = x + 1;
     if (alu_mode == ALU_Y_INC)
         alu = y + 1;
+    if (alu_mode == ALU_ADH_C)
+        alu = adh + add[8];
 end
 
 flag_t alu_p_value;
@@ -492,6 +505,9 @@ typedef enum {
     MOP_LOAD_A,
     MOP_LOAD_AD,
     MOP_ZP,
+    MOP_ZP_IND_L,
+    MOP_ZP_IND_H,
+    MOP_ZP_IND_H_FIX,
     MOP_ZP_WRITE_REG,
     MOP_ABS_L,
     MOP_ABS_H,
@@ -538,7 +554,10 @@ always_comb begin
     ext_write       = 0;
 
     adh_load_ext    = 0;
+    adh_load_alu    = 0;
     adl_load_ext    = 0;
+    adl_load_alu    = 0;
+    adl_inc         = 0;
 
     alu_mode        = ALU_ADD;
 
@@ -638,6 +657,8 @@ always_comb begin
             mop_next = MOP_FLAGS;
         if (op == OP_STA_ZP || op == OP_STX_ZP || op == OP_STY_ZP)
             mop_next = MOP_ZP;
+        if (op == OP_STA_IND_Y)
+            mop_next = MOP_ZP;
         if (op == OP_STA_ABS || op == OP_STX_ABS || op == OP_STY_ABS)
             mop_next = MOP_ABS_L;
         if (op == OP_INC_ABS || op == OP_DEC_ABS)
@@ -673,7 +694,7 @@ always_comb begin
     end
 
     if (mop == MOP_LOAD_AD) begin
-        // ALU = EXT AD
+        // ALU = EXT.AD
         ext_bus         = EXT_AD;
         ext_read        = 1;
         alu_mode        = ALU_EXT;
@@ -683,15 +704,50 @@ always_comb begin
     if (mop == MOP_ZP) begin
         // PC = PC + 1
         pc_inc          = 1;
-        // ADL = EXT PC
+        // ADL = EXT.PC
         ext_bus         = EXT_PC;
         ext_read        = 1;
         adl_load_ext    = 1;
         mop_next        = MOP_ZP_WRITE_REG;
+        if (cop == OP_STA_IND_Y)
+            mop_next    = MOP_ZP_IND_L;
+    end
+
+    if (mop == MOP_ZP_IND_L) begin
+        // ALU = EXT.ZP
+        ext_bus         = EXT_ADL_ZP;
+        ext_read        = 1;
+        alu_mode        = ALU_EXT;
+        // ADL = ADL + 1
+        adl_inc         = 1;
+        mop_next        = MOP_ZP_IND_H;
+    end
+
+    if (mop == MOP_ZP_IND_H) begin
+        // ADH = EXT.ZP
+        ext_bus         = EXT_ADL_ZP;
+        ext_read        = 1;
+        adh_load_ext    = 1;
+        // ALU = ADD + REG.Y
+        alu_mode        = ALU_ADD_Y;
+        // ADL = ALU
+        adl_load_alu    = 1;
+        mop_next        = MOP_ZP_IND_H_FIX;
+    end
+
+    if (mop == MOP_ZP_IND_H_FIX) begin
+        // Read EXT.AD
+        ext_bus         = EXT_AD;
+        ext_read        = 1;
+        // ALU = ADH + C
+        alu_mode        = ALU_ADH_C;
+        // ADH = ALU
+        adh_load_alu    = 1;
+        mop_next        = MOP_ABS_WRITE_REG;
     end
 
     if (mop == MOP_ZP_WRITE_REG) begin
-        // EXT ZP = REG
+        // EXT.ZP = REG
         ext_bus         = EXT_ADL_ZP;
         ext_write       = 1;
         if (cop == OP_STA_ZP)
@@ -706,7 +762,7 @@ always_comb begin
     if (mop == MOP_ABS_L) begin
         // PC = PC + 1
         pc_inc          = 1;
-        // ADL = EXT PC
+        // ADL = EXT.PC
         ext_bus         = EXT_PC;
         ext_read        = 1;
         adl_load_ext    = 1;
@@ -735,7 +791,7 @@ always_comb begin
     end
 
     if (mop == MOP_ABS_WRITE_WB) begin
-        // EXT AD = ALU
+        // EXT.AD = ALU
         ext_bus         = EXT_AD;
         ext_db          = EXT_DB_ALU;
         ext_write       = 1;
@@ -748,7 +804,7 @@ always_comb begin
             // ALU = ADD + 1
             alu_mode    = ALU_ADD_INC;
         end
-        // EXT AD = ALU
+        // EXT.AD = ALU
         ext_bus         = EXT_AD;
         ext_db          = EXT_DB_ALU;
         ext_write       = 1;
@@ -759,10 +815,10 @@ always_comb begin
     end
 
     if (mop == MOP_ABS_WRITE_REG) begin
-        // EXT AD = REG
+        // EXT.AD = REG
         ext_bus         = EXT_AD;
         ext_write       = 1;
-        if (cop == OP_STA_ABS)
+        if (cop == OP_STA_ABS || cop == OP_STA_IND_X || cop == OP_STA_IND_Y)
             ext_db      = EXT_DB_A;
         if (cop == OP_STX_ABS)
             ext_db      = EXT_DB_X;
@@ -866,9 +922,10 @@ initial begin
         end
 
         if (mop == MOP_PC_FETCH) begin
-            @(posedge CLK_ENABLE_IN);
-            debug.pc = pc;
+            @(negedge READ_ENABLE_OUT);
+            @(negedge CLK);
             debug.op = op_t'(READ_DATA_IN);
+            debug.pc = pc;
         end
 
         @(negedge CLK_ENABLE_IN);

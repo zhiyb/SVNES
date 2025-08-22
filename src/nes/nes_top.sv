@@ -95,15 +95,45 @@ ppu_addr_t ppu_addr;
 data_t ppu_read_data, ppu_write_data;
 logic ppu_read, ppu_write;
 
-// TODO
-assign ppu_read = 0;
-assign ppu_write = 0;
-assign ppu_write_data = 0;
+// PPU
+data_t ppu_cpu_read_data;
+
+logic ppu_cpu_sel;
+assign ppu_cpu_sel = cpu_addr >= 'h2000 && cpu_addr < 'h4000;
+
+logic ppu_cpu_read_out;
+always_ff @(posedge CLK_EMU, posedge RESET_EMU_IN)
+    if (RESET_EMU_IN)
+        ppu_cpu_read_out <= 0;
+    else if (cpu_read)
+        ppu_cpu_read_out <= ppu_cpu_sel;
+
+NES_PPU ppu (
+    .CLK                  (CLK_EMU),
+    .RESET_IN             (RESET_EMU_IN),
+    .CLK_ENABLE_IN        (ppu_pulse),
+
+    .CPU_ADDR_IN          (cpu_addr),
+    .CPU_READ_ENABLE_IN   (ppu_cpu_sel & cpu_read),
+    .CPU_READ_DATA_OUT    (ppu_cpu_read_data),
+    .CPU_WRITE_ENABLE_IN  (ppu_cpu_sel & cpu_write),
+    .CPU_WRITE_DATA_IN    (cpu_write_data),
+
+    .PPU_ADDR_OUT         (ppu_addr),
+    .PPU_READ_ENABLE_OUT  (ppu_read),
+    .PPU_READ_DATA_IN     (ppu_read_data),
+    .PPU_WRITE_ENABLE_OUT (ppu_write),
+    .PPU_WRITE_DATA_OUT   (ppu_write_data)
+
+);
 
 
 // Mapper
+data_t mapper_cpu_read_data;
+
 logic mapper_cpu_sel;
 assign mapper_cpu_sel = cpu_addr >= 'h4020;
+
 NES_MAPPER #(
     .BOOTROM_PRG (BOOTROM_PRG),
     .BOOTROM_CHR (BOOTROM_CHR)
@@ -113,7 +143,7 @@ NES_MAPPER #(
 
     .CPU_ADDR_IN         (cpu_addr),
     .CPU_READ_ENABLE_IN  (mapper_cpu_sel & cpu_read),
-    .CPU_READ_DATA_OUT   (cpu_read_data),
+    .CPU_READ_DATA_OUT   (mapper_cpu_read_data),
     .CPU_WRITE_ENABLE_IN (mapper_cpu_sel & cpu_write),
     .CPU_WRITE_DATA_IN   (cpu_write_data),
 
@@ -123,6 +153,14 @@ NES_MAPPER #(
     .PPU_WRITE_ENABLE_IN (ppu_write),
     .PPU_WRITE_DATA_IN   (ppu_write_data)
 );
+
+
+// Read data mux
+always_comb begin
+    cpu_read_data = mapper_cpu_read_data;
+    if (ppu_cpu_read_out)
+        cpu_read_data = ppu_cpu_read_data;
+end
 
 
 // To keep synthesis not optimising away everything

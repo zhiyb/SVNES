@@ -51,6 +51,6 @@ NES_TOP #(
 );
 
 initial
-    #12ms $finish(0);
+    #35ms $finish(0);
 
 endmodule

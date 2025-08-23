@@ -18,7 +18,24 @@ module NES_MAPPER #(
     input  logic [7:0]  PPU_WRITE_DATA_IN
 );
 
+typedef logic [7:0] u8_t;
+
 // Mapper 0
+
+// Report RAM
+u8_t [0:63] report;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        report <= 0;
+    else if (CPU_ADDR_IN >= 'h6000 && CPU_ADDR_IN < 'h8000 && CPU_WRITE_ENABLE_IN)
+        report[CPU_ADDR_IN[5:0]] <= CPU_WRITE_DATA_IN;
+
+u8_t rpt;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        rpt <= 0;
+    else if (CPU_ADDR_IN >= 'h6000 && CPU_ADDR_IN < 'h8000 && CPU_WRITE_ENABLE_IN)
+        rpt <= CPU_WRITE_DATA_IN;
 
 // CPU.PRG @ 0x8000 + 0x8000
 logic [7:0] prg_ram_read_data;

@@ -97,22 +97,24 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
         if (ext_bus == EXT_IMM_FF)
             ADDR_OUT <= 16'hffff;
 
-        if (ext_db == EXT_DB_ALU)
-            WRITE_DATA_OUT <= alu[7:0];
-        if (ext_db == EXT_DB_PCH)
-            WRITE_DATA_OUT <= pc[15:8];
-        if (ext_db == EXT_DB_PCL)
-            WRITE_DATA_OUT <= pc[7:0];
-        if (ext_db == EXT_DB_A)
-            WRITE_DATA_OUT <= a;
-        if (ext_db == EXT_DB_X)
-            WRITE_DATA_OUT <= x;
-        if (ext_db == EXT_DB_Y)
-            WRITE_DATA_OUT <= y;
-        if (ext_db == EXT_DB_P)
-            WRITE_DATA_OUT <= p;
-        if (ext_db == EXT_DB_P_B)
-            WRITE_DATA_OUT <= p | ('h01 << 4);
+        if (ext_write) begin
+            if (ext_db == EXT_DB_ALU)
+                WRITE_DATA_OUT <= alu[7:0];
+            if (ext_db == EXT_DB_PCH)
+                WRITE_DATA_OUT <= pc[15:8];
+            if (ext_db == EXT_DB_PCL)
+                WRITE_DATA_OUT <= pc[7:0];
+            if (ext_db == EXT_DB_A)
+                WRITE_DATA_OUT <= a;
+            if (ext_db == EXT_DB_X)
+                WRITE_DATA_OUT <= x;
+            if (ext_db == EXT_DB_Y)
+                WRITE_DATA_OUT <= y;
+            if (ext_db == EXT_DB_P)
+                WRITE_DATA_OUT <= p;
+            if (ext_db == EXT_DB_P_B)
+                WRITE_DATA_OUT <= p | ('h01 << 4);
+        end
 
         READ_ENABLE_OUT  <= ext_read;
         WRITE_ENABLE_OUT <= ext_write;
@@ -124,34 +126,28 @@ end
 
 
 // Registers
-logic a_load_ext, a_load_alu, a_load_x, a_load_y;
-logic x_load_ext, x_load_alu, x_load_a, x_load_s;
-logic y_load_ext, y_load_alu, y_load_a;
+logic a_load_alu, a_load_x, a_load_y;
+logic x_load_alu, x_load_a, x_load_s;
+logic y_load_alu, y_load_a;
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
         a <= 0;
         x <= 0;
         y <= 0;
     end else if (CLK_ENABLE_IN) begin
-        if (a_load_ext)
-            a <= READ_DATA_IN;
-        else if (a_load_alu)
+        if (a_load_alu)
             a <= alu[7:0];
         else if (a_load_x)
             a <= x;
         else if (a_load_y)
             a <= y;
-        if (x_load_ext)
-            x <= READ_DATA_IN;
-        else if (x_load_alu)
+        if (x_load_alu)
             x <= alu[7:0];
         else if (x_load_a)
             x <= a;
         else if (x_load_s)
             x <= s;
-        if (y_load_ext)
-            y <= READ_DATA_IN;
-        else if (y_load_alu)
+        if (y_load_alu)
             y <= alu[7:0];
         else if (y_load_a)
             y <= a;
@@ -257,14 +253,15 @@ typedef enum {
     ALU_ADD,
     ALU_ADD_INC,
     ALU_ADD_DEC,
+    ALU_ADD_SL,
+    ALU_ADD_SR,
+    ALU_ADD_SL_C,
+    ALU_ADD_SR_C,
     ALU_ADD_X,
     ALU_ADD_Y,
     ALU_ADD_PCL,
     ALU_ADH_C,
-    ALU_A_SL,
-    ALU_A_SR,
-    ALU_A_SL_C,
-    ALU_A_SR_C,
+    ALU_A,
     ALU_X_INC,
     ALU_X_DEC,
     ALU_Y_INC,
@@ -285,33 +282,39 @@ always_comb begin
     if (alu_mode == ALU_A_ADD_EXT_C)
         alu = a + READ_DATA_IN + p.c;
     if (alu_mode == ALU_A_SUB_EXT_C)
-        alu = a - READ_DATA_IN - p.c;
+        alu = a + 8'(~READ_DATA_IN) + p.c;
+        // alu = (a - READ_DATA_IN - ~p.c) ^ 'h100;
     if (alu_mode == ALU_A_SUB_EXT)
-        alu = a - READ_DATA_IN;
+        alu = a + 8'(~READ_DATA_IN) + 1;
+        // alu = (a - READ_DATA_IN) ^ 'h100;
     if (alu_mode == ALU_X_SUB_EXT)
-        alu = x - READ_DATA_IN;
+        alu = x + 8'(~READ_DATA_IN) + 1;
+        // alu = (x - READ_DATA_IN) ^ 'h100;
     if (alu_mode == ALU_Y_SUB_EXT)
-        alu = y - READ_DATA_IN;
+        alu = y + 8'(~READ_DATA_IN) + 1;
+        // alu = (y - READ_DATA_IN) ^ 'h100;
     if (alu_mode == ALU_ADD)
         alu = add;
     if (alu_mode == ALU_ADD_INC)
         alu = add + 1;
     if (alu_mode == ALU_ADD_DEC)
         alu = add - 1;
+    if (alu_mode == ALU_ADD_SL)
+        alu = {add[7:0], 1'b0};
+    if (alu_mode == ALU_ADD_SR)
+        alu = {add[0], 1'b0, add[7:1]};
+    if (alu_mode == ALU_ADD_SL_C)
+        alu = {add[7:0], p.c};
+    if (alu_mode == ALU_ADD_SR_C)
+        alu = {add[0], p.c, add[7:1]};
     if (alu_mode == ALU_ADD_X)
         alu = add + x;
     if (alu_mode == ALU_ADD_Y)
         alu = add + y;
     if (alu_mode == ALU_ADD_PCL)
         alu = add + pc[7:0];
-    if (alu_mode == ALU_A_SL)
-        alu = {a[7:0], 1'b0};
-    if (alu_mode == ALU_A_SR)
-        alu = {a[0], 1'b0, a[7:1]};
-    if (alu_mode == ALU_A_SL_C)
-        alu = {a[7:0], p.c};
-    if (alu_mode == ALU_A_SR_C)
-        alu = {a[0], p.c, a[7:1]};
+    if (alu_mode == ALU_A)
+        alu = a;
     if (alu_mode == ALU_X_INC)
         alu = x + 1;
     if (alu_mode == ALU_X_DEC)
@@ -577,20 +580,20 @@ typedef enum {
     MOP_LOAD_A,
     MOP_LOAD,
     MOP_LOAD_H_FIX,
-    MOP_IMM,
     MOP_IMM_NOP,
     MOP_ZP,
     MOP_ZP_LOAD,
     MOP_ZP_IND,
     MOP_ZP_IND_L,
     MOP_ZP_IND_H,
-    MOP_ZP_IND_H_FIX,
     MOP_ABS_L,
     MOP_ABS_H,
     MOP_WRITE_BACK,
     MOP_WRITE_ALU,
     MOP_WRITE_REG,
     MOP_JSR_NOP,
+    MOP_IND_JMP_L,
+    MOP_IND_JMP_H,
     MOP_RTS_LOAD,
     MOP_RTS_POP_S,
     MOP_RTS_POP_PCL,
@@ -644,7 +647,7 @@ always_comb begin
     int_nmi_clear   = 0;
 
     ext_bus         = EXT_PC;
-    ext_db          = EXT_DB_ALU;
+    ext_db          = EXT_DB_A;
     ext_read        = 0;
     ext_write       = 0;
 
@@ -658,15 +661,12 @@ always_comb begin
 
     alu_mode        = ALU_ADD;
 
-    a_load_ext      = 0;
     a_load_alu      = 0;
     a_load_x        = 0;
     a_load_y        = 0;
-    x_load_ext      = 0;
     x_load_alu      = 0;
     x_load_a        = 0;
     x_load_s        = 0;
-    y_load_ext      = 0;
     y_load_alu      = 0;
     y_load_a        = 0;
     s_inc           = 0;
@@ -749,6 +749,8 @@ always_comb begin
         // OP = EXT PC
         ext_bus         = EXT_PC;
         ext_read        = 1;
+        // ALU = A
+        alu_mode        = ALU_A;
 
         if (op == OP_TAX || op == OP_TAY || op == OP_TSX || op == OP_TXA || op == OP_TXS || op == OP_TYA)
             mop_next = MOP_TXFR;
@@ -767,18 +769,26 @@ always_comb begin
         if (op == OP_LDA_IMM || op == OP_LDX_IMM || op == OP_LDY_IMM)
             mop_next = MOP_LOAD;
         if (op == OP_CMP_IMM || op == OP_CPX_IMM || op == OP_CPY_IMM)
-            mop_next = MOP_IMM;
+            mop_next = MOP_LOAD;
         if (op == OP_AND_IMM || op == OP_ORA_IMM || op == OP_EOR_IMM)
             mop_next = MOP_LOAD;
         if (op == OP_ADC_IMM || op == OP_SBC_IMM)
             mop_next = MOP_LOAD;
         if (op == OP_LDA_ZP || op == OP_LDX_ZP || op == OP_LDY_ZP)
             mop_next = MOP_ZP;
+        if (op == OP_CMP_ZP || op == OP_CPX_ZP || op == OP_CPY_ZP)
+            mop_next = MOP_ZP;
+        if (op == OP_LDA_IND_Y)
+            mop_next = MOP_ZP;
         if (op == OP_INC_ZP || op == OP_DEC_ZP)
+            mop_next = MOP_ZP;
+        if (op == OP_ASL_ZP || op == OP_LSR_ZP || op == OP_ROL_ZP || op == OP_ROR_ZP)
             mop_next = MOP_ZP;
         if (op == OP_AND_ZP || op == OP_ORA_ZP || op == OP_EOR_ZP)
             mop_next = MOP_ZP;
         if (op == OP_ADC_ZP || op == OP_SBC_ZP)
+            mop_next = MOP_ZP;
+        if (op == OP_BIT_ZP)
             mop_next = MOP_ZP;
         if (op == OP_STA_ZP || op == OP_STX_ZP || op == OP_STY_ZP)
             mop_next = MOP_ZP;
@@ -786,21 +796,33 @@ always_comb begin
             mop_next = MOP_ZP;
         if (op == OP_STA_IND_Y)
             mop_next = MOP_ZP;
-        if (op == OP_LDA_ABS || op == OP_LDX_ABS || op == OP_LDY_ABS)
+        if (op == OP_LDA_ABS || op == OP_LDA_ABS_X || op == OP_LDA_ABS_Y)
             mop_next = MOP_ABS_L;
-        if (op == OP_INC_ABS || op == OP_DEC_ABS)
+        if (op == OP_LDX_ABS || op == OP_LDX_ABS_Y)
             mop_next = MOP_ABS_L;
-        if (op == OP_AND_ABS || op == OP_ORA_ABS || op == OP_EOR_ABS)
+        if (op == OP_LDY_ABS || op == OP_LDY_ABS_X)
             mop_next = MOP_ABS_L;
-        if (op == OP_ADC_ABS || op == OP_SBC_ABS)
+        // if (op == OP_INC_ABS || op == OP_DEC_ABS)
+        //     mop_next = MOP_ABS_L;
+        if (op == OP_AND_ABS || op == OP_AND_ABS_X || op == OP_AND_ABS_Y)
             mop_next = MOP_ABS_L;
-        if (op == OP_BIT_ABS)
+        if (op == OP_ORA_ABS || op == OP_ORA_ABS_X || op == OP_ORA_ABS_Y)
+            mop_next = MOP_ABS_L;
+        if (op == OP_EOR_ABS || op == OP_EOR_ABS_X || op == OP_EOR_ABS_Y)
+            mop_next = MOP_ABS_L;
+        if (op == OP_ADC_ABS || op == OP_ADC_ABS_X || op == OP_ADC_ABS_Y)
+            mop_next = MOP_ABS_L;
+        if (op == OP_SBC_ABS || op == OP_SBC_ABS_X || op == OP_SBC_ABS_Y)
+            mop_next = MOP_ABS_L;
+        if (op == OP_BIT_ABS || op == OP_CPX_ABS || op == OP_CPY_ABS)
+            mop_next = MOP_ABS_L;
+        if (op == OP_CMP_ABS || op == OP_CMP_ABS_X || op == OP_CMP_ABS_Y)
             mop_next = MOP_ABS_L;
         if (op == OP_STA_ABS || op == OP_STA_ABS_X || op == OP_STA_ABS_Y)
             mop_next = MOP_ABS_L;
         if (op == OP_STX_ABS || op == OP_STY_ABS)
             mop_next = MOP_ABS_L;
-        if (op == OP_JMP_ABS || op == OP_JSR_ABS)
+        if (op == OP_JMP_ABS || op == OP_JMP_IND || op == OP_JSR_ABS)
             mop_next = MOP_ABS_L;
         if (op == OP_BCC_REL || op == OP_BCS_REL || op == OP_BNE_REL || op == OP_BEQ_REL)
             mop_next = MOP_REL_CHECK;
@@ -819,35 +841,6 @@ always_comb begin
         mop_next        = MOP_PC_FETCH;
     end
 
-    if (mop == MOP_IMM) begin
-        // PC = PC + 1
-        pc_inc          = 1;
-        // ALU = EXT.PC
-        ext_bus         = EXT_PC;
-        ext_read        = 1;
-        alu_mode        = ALU_A_SUB_EXT;
-        p_value         = alu_p_value;
-        if (cop == OP_CMP_IMM) begin
-            alu_mode    = ALU_A_SUB_EXT;
-            p_update.c  = 1;
-            p_update.z  = 1;
-            p_update.n  = 1;
-        end
-        if (cop == OP_CPX_IMM) begin
-            alu_mode    = ALU_X_SUB_EXT;
-            p_update.c  = 1;
-            p_update.z  = 1;
-            p_update.n  = 1;
-        end
-        if (cop == OP_CPY_IMM) begin
-            alu_mode    = ALU_Y_SUB_EXT;
-            p_update.c  = 1;
-            p_update.z  = 1;
-            p_update.n  = 1;
-        end
-        mop_next        = MOP_PC_FETCH;
-    end
-
     if (mop == MOP_NOP) begin
         // Read EXT.PC
         ext_bus         = EXT_PC;
@@ -862,8 +855,8 @@ always_comb begin
     if (mop == MOP_PUSH_A) begin
         // EXT.S = REG
         ext_bus         = EXT_S;
-        ext_write       = 1;
         ext_db          = cop == OP_PHP ? EXT_DB_P_B : EXT_DB_A;
+        ext_write       = 1;
         // S = S - 1
         s_dec           = 1;
         mop_next        = MOP_PC_FETCH;
@@ -876,10 +869,11 @@ always_comb begin
     end
 
     if (mop == MOP_POP_REG) begin
-        // REG = EXT.S
+        // ALU = EXT.S
         ext_bus         = EXT_S;
         ext_read        = 1;
-        a_load_ext      = cop == OP_PLA;
+        alu_mode        = ALU_EXT;
+        a_load_alu      = cop == OP_PLA;
         p_update        = cop == OP_PLP ? 'hcf : 'h00;
         p_value         = READ_DATA_IN;
         mop_next        = MOP_PC_FETCH;
@@ -890,6 +884,7 @@ always_comb begin
         ext_bus         = EXT_AD;
         ext_read        = 1;
         if (cop == OP_LDA_IMM || cop == OP_LDX_IMM || cop == OP_LDY_IMM ||
+            cop == OP_CMP_IMM || cop == OP_CPX_IMM || cop == OP_CPY_IMM ||
             cop == OP_AND_IMM || cop == OP_ORA_IMM || cop == OP_EOR_IMM ||
             cop == OP_ADC_IMM || cop == OP_SBC_IMM) begin
             // PC = PC + 1
@@ -905,49 +900,120 @@ always_comb begin
         p_value         = alu_p_value;
         p_update.z      = 1;
         p_update.n      = 1;
-        if (cop == OP_LDA_IMM || cop == OP_LDA_ZP || cop == OP_LDA_ABS) begin
-            a_load_ext  = 1;
-            p_value.z   = a == 0;
-            p_value.n   = a[7];
+        if (cop == OP_LDA_IMM || cop == OP_LDA_ZP || cop == OP_LDA_IND_Y)
+            a_load_alu  = 1;
+        if (cop == OP_LDA_ABS || cop == OP_LDA_ABS_X || cop == OP_LDA_ABS_Y)
+            a_load_alu  = 1;
+        if (cop == OP_LDX_IMM || cop == OP_LDX_ZP || cop == OP_LDX_ABS || cop == OP_LDX_ABS_Y) begin
+            a_load_alu  = 0;
+            x_load_alu  = 1;
         end
-        if (cop == OP_LDX_IMM || cop == OP_LDX_ZP || cop == OP_LDX_ABS) begin
-            x_load_ext  = 1;
-            p_value.z   = x == 0;
-            p_value.n   = x[7];
+        if (cop == OP_LDY_IMM || cop == OP_LDY_ZP || cop == OP_LDY_ABS || cop == OP_LDY_ABS_X) begin
+            a_load_alu  = 0;
+            y_load_alu  = 1;
         end
-        if (cop == OP_LDY_IMM || cop == OP_LDY_ZP || cop == OP_LDY_ABS) begin
-            y_load_ext  = 1;
-            p_value.z   = y == 0;
-            p_value.n   = y[7];
+        if (cop == OP_CMP_IMM || cop == OP_CMP_ZP ||
+            cop == OP_CMP_ABS || cop == OP_CMP_ABS_X || cop == OP_CMP_ABS_Y) begin
+            a_load_alu  = 0;
+            alu_mode    = ALU_A_SUB_EXT;
+            p_update.c  = 1;
         end
-        if (cop == OP_AND_IMM || cop == OP_AND_ZP || cop == OP_AND_ABS)
+        if (cop == OP_CPX_IMM || cop == OP_CPX_ZP || cop == OP_CPX_ABS) begin
+            a_load_alu  = 0;
+            alu_mode    = ALU_X_SUB_EXT;
+            p_update.c  = 1;
+        end
+        if (cop == OP_CPY_IMM || cop == OP_CPY_ZP || cop == OP_CPY_ABS) begin
+            a_load_alu  = 0;
+            alu_mode    = ALU_Y_SUB_EXT;
+            p_update.c  = 1;
+        end
+        if (cop == OP_AND_IMM || cop == OP_AND_ZP ||
+            cop == OP_AND_ABS || cop == OP_AND_ABS_X || cop == OP_AND_ABS_Y)
             alu_mode    = ALU_A_AND_EXT;
-        if (cop == OP_ORA_IMM || cop == OP_ORA_ZP || cop == OP_ORA_ABS)
+        if (cop == OP_ORA_IMM || cop == OP_ORA_ZP ||
+            cop == OP_ORA_ABS || cop == OP_ORA_ABS_X || cop == OP_ORA_ABS_Y)
             alu_mode    = ALU_A_OR_EXT;
-        if (cop == OP_EOR_IMM || cop == OP_EOR_ZP || cop == OP_EOR_ABS)
+        if (cop == OP_EOR_IMM || cop == OP_EOR_ZP ||
+            cop == OP_EOR_ABS || cop == OP_EOR_ABS_X || cop == OP_EOR_ABS_Y)
             alu_mode    = ALU_A_XOR_EXT;
-        if (cop == OP_ADC_IMM || cop == OP_ADC_ZP || cop == OP_ADC_ABS) begin
+        if (cop == OP_ADC_IMM || cop == OP_ADC_ZP ||
+            cop == OP_ADC_ABS || cop == OP_ADC_ABS_X || cop == OP_ADC_ABS_Y) begin
             alu_mode    = ALU_A_ADD_EXT_C;
             p_update.c  = 1;
             p_update.v  = 1;
         end
-        if (cop == OP_SBC_IMM || cop == OP_SBC_ZP || cop == OP_SBC_ABS) begin
+        if (cop == OP_SBC_IMM || cop == OP_SBC_ZP ||
+            cop == OP_SBC_ABS || cop == OP_SBC_ABS_X || cop == OP_SBC_ABS_Y) begin
             alu_mode    = ALU_A_SUB_EXT_C;
             p_update.c  = 1;
             p_update.v  = 1;
         end
         mop_next    = MOP_PC_FETCH;
+        if (cop == OP_ASL_ZP || cop == OP_LSR_ZP || cop == OP_ROL_ZP || cop == OP_ROR_ZP ||
+            cop == OP_INC_ZP || cop == OP_DEC_ZP) begin
+            a_load_alu  = 0;
+            mop_next    = MOP_WRITE_BACK;
+        end
     end
 
     if (mop == MOP_LOAD_H_FIX) begin
         // Read EXT.AD
-        ext_bus         = EXT_AD;
-        ext_read        = 1;
-        // ALU = ADH + C
-        alu_mode        = ALU_ADH_C;
-        // ADH = ALU
-        adh_load_alu    = 1;
-        mop_next        = MOP_WRITE_REG;
+        ext_bus             = EXT_AD;
+        ext_read            = 1;
+        if (add[8]) begin
+            // ADH correction needed
+            // ALU = ADH + C
+            alu_mode        = ALU_ADH_C;
+            // ADH = ALU
+            adh_load_alu    = 1;
+            mop_next        = MOP_LOAD;
+        end else begin
+            // ADH is correct
+            alu_mode        = ALU_EXT;
+            p_value         = alu_p_value;
+            p_update.z      = 1;
+            p_update.n      = 1;
+            if (cop == OP_LDA_ABS_X || cop == OP_LDA_ABS_Y || cop == OP_LDA_IND_Y)
+                a_load_alu  = 1;
+            if (cop == OP_LDX_ABS_Y)
+                x_load_alu  = 1;
+            if (cop == OP_LDY_ABS_X)
+                y_load_alu  = 1;
+            if (cop == OP_CMP_ABS_X || cop == OP_CMP_ABS_Y) begin
+                alu_mode    = ALU_A_SUB_EXT;
+                p_update.c  = 1;
+            end
+            if (cop == OP_AND_ABS_X || cop == OP_AND_ABS_Y) begin
+                alu_mode    = ALU_A_AND_EXT;
+                a_load_alu  = 1;
+            end
+            if (cop == OP_ORA_ABS_X || cop == OP_ORA_ABS_Y) begin
+                alu_mode    = ALU_A_OR_EXT;
+                a_load_alu  = 1;
+            end
+            if (cop == OP_EOR_ABS_X || cop == OP_EOR_ABS_Y) begin
+                alu_mode    = ALU_A_XOR_EXT;
+                a_load_alu  = 1;
+            end
+            if (cop == OP_ADC_ABS_X || cop == OP_ADC_ABS_Y) begin
+                alu_mode    = ALU_A_ADD_EXT_C;
+                a_load_alu  = 1;
+                p_update.c  = 1;
+                p_update.v  = 1;
+            end
+            if (cop == OP_SBC_ABS_X || cop == OP_SBC_ABS_Y) begin
+                alu_mode    = ALU_A_SUB_EXT_C;
+                a_load_alu  = 1;
+                p_update.c  = 1;
+                p_update.v  = 1;
+            end
+            mop_next        = MOP_PC_FETCH;
+        end
+        if (cop == OP_STA_ABS_X || cop == OP_STA_ABS_Y || cop == OP_STA_IND_Y) begin
+            p_update        = 0;
+            mop_next        = MOP_WRITE_REG;
+        end
     end
 
     if (mop == MOP_ZP) begin
@@ -963,10 +1029,14 @@ always_comb begin
         alu_mode        = ALU_EXT;
 
         mop_next        = MOP_LOAD;
+        if (cop == OP_BIT_ZP)
+            mop_next    = MOP_BIT;
         if (cop == OP_STA_ZP || cop == OP_STX_ZP || cop == OP_STY_ZP)
             mop_next    = MOP_WRITE_REG;
         if (cop == OP_STA_ZP_X || cop == OP_STX_ZP_Y || cop == OP_STY_ZP_X)
             mop_next    = MOP_ZP_IND;
+        if (cop == OP_LDA_IND_Y)
+            mop_next    = MOP_ZP_IND_L;
         if (cop == OP_STA_IND_Y)
             mop_next    = MOP_ZP_IND_L;
     end
@@ -1004,18 +1074,7 @@ always_comb begin
         alu_mode        = ALU_ADD_Y;
         // ADL = ALU
         adl_load_alu    = 1;
-        mop_next        = MOP_ZP_IND_H_FIX;
-    end
-
-    if (mop == MOP_ZP_IND_H_FIX) begin
-        // Read EXT.AD
-        ext_bus         = EXT_AD;
-        ext_read        = 1;
-        // ALU = ADH + C
-        alu_mode        = ALU_ADH_C;
-        // ADH = ALU
-        adh_load_alu    = 1;
-        mop_next        = MOP_WRITE_REG;
+        mop_next        = MOP_LOAD_H_FIX;
     end
 
     if (mop == MOP_ABS_L) begin
@@ -1042,20 +1101,36 @@ always_comb begin
         // ALU = ADD
         alu_mode        = ALU_ADD;
         // ALU = ADD + REG
-        if (cop == OP_STA_ABS_X)
+        if (cop == OP_LDA_ABS_X || cop == OP_LDY_ABS_X ||
+            cop == OP_AND_ABS_X || cop == OP_ORA_ABS_X || cop == OP_EOR_ABS_X ||
+            cop == OP_ADC_ABS_X || cop == OP_SBC_ABS_X ||
+            cop == OP_CMP_ABS_X || cop == OP_STA_ABS_X)
             alu_mode    = ALU_ADD_X;
-        if (cop == OP_STA_ABS_Y)
+        if (cop == OP_LDA_ABS_Y || cop == OP_LDX_ABS_Y ||
+            cop == OP_AND_ABS_Y || cop == OP_ORA_ABS_Y || cop == OP_EOR_ABS_Y ||
+            cop == OP_ADC_ABS_Y || cop == OP_SBC_ABS_Y ||
+            cop == OP_CMP_ABS_Y || cop == OP_STA_ABS_Y)
             alu_mode    = ALU_ADD_Y;
         // ADL = ALU
         adl_load_alu    = 1;
 
-        mop_next        = MOP_LOAD;
+        mop_next            = MOP_LOAD;
         if (cop == OP_STA_ABS || cop == OP_STX_ABS || cop == OP_STY_ABS)
             mop_next        = MOP_WRITE_REG;
-        if (cop == OP_STA_ABS_X || cop == OP_STA_ABS_Y)
+        if (cop == OP_LDA_ABS_X || cop == OP_LDY_ABS_X ||
+            cop == OP_AND_ABS_X || cop == OP_ORA_ABS_X || cop == OP_EOR_ABS_X ||
+            cop == OP_ADC_ABS_X || cop == OP_SBC_ABS_X ||
+            cop == OP_CMP_ABS_X || cop == OP_STA_ABS_X)
+            mop_next        = MOP_LOAD_H_FIX;
+        if (cop == OP_LDA_ABS_Y || cop == OP_LDX_ABS_Y ||
+            cop == OP_AND_ABS_Y || cop == OP_ORA_ABS_Y || cop == OP_EOR_ABS_Y ||
+            cop == OP_ADC_ABS_Y || cop == OP_SBC_ABS_Y ||
+            cop == OP_CMP_ABS_Y || cop == OP_STA_ABS_Y)
             mop_next        = MOP_LOAD_H_FIX;
         if (cop == OP_BIT_ABS)
             mop_next        = MOP_BIT;
+        if (cop == OP_JMP_IND)
+            mop_next        = MOP_IND_JMP_L;
         if (cop == OP_JMP_ABS || cop == OP_JSR_ABS) begin
             // PC = {EXT, ADL}
             pch_load_ext    = 1;
@@ -1078,6 +1153,23 @@ always_comb begin
             alu_mode    = ALU_ADD_INC;
         if (cop == OP_DEC_ZP || cop == OP_DEC_ABS)
             alu_mode    = ALU_ADD_DEC;
+        if (cop == OP_ASL_ZP || cop == OP_ASL_ABS) begin
+            alu_mode    = ALU_ADD_SL;
+            p_update.c  = 1;
+        end
+        if (cop == OP_LSR_ZP || cop == OP_LSR_ABS) begin
+            alu_mode    = ALU_ADD_SR;
+            p_update.c  = 1;
+        end
+        if (cop == OP_ROL_ZP || cop == OP_ROL_ABS) begin
+            alu_mode    = ALU_ADD_SL_C;
+            p_update.c  = 1;
+        end
+        if (cop == OP_ROR_ZP || cop == OP_ROR_ABS) begin
+            alu_mode    = ALU_ADD_SR_C;
+            p_update.c  = 1;
+        end
+
         // EXT.AD = ALU
         ext_bus         = EXT_AD;
         ext_db          = EXT_DB_ALU;
@@ -1091,6 +1183,7 @@ always_comb begin
     if (mop == MOP_WRITE_REG) begin
         // EXT.AD = REG
         ext_bus         = EXT_AD;
+        ext_db          = EXT_DB_A;
         ext_write       = 1;
         if (cop == OP_STA_ZP || cop == OP_STA_ZP_X)
             ext_db      = EXT_DB_A;
@@ -1106,7 +1199,27 @@ always_comb begin
     end
 
     if (mop == MOP_JSR_NOP) begin
-        mop_next    = MOP_INT_PCH_PUSH;
+        mop_next        = MOP_INT_PCH_PUSH;
+    end
+
+    if (mop == MOP_IND_JMP_L) begin
+        // PCL = EXT.AD
+        ext_bus         = EXT_AD;
+        ext_read        = 1;
+        pcl_load_ext    = 1;
+        // ALU = ADD + 1
+        alu_mode        = ALU_ADD_INC;
+        // ADL = ALU
+        adl_load_alu    = 1;
+        mop_next        = MOP_IND_JMP_H;
+    end
+
+    if (mop == MOP_IND_JMP_H) begin
+        // PCH = EXT.AD
+        ext_bus         = EXT_AD;
+        ext_read        = 1;
+        pch_load_ext    = 1;
+        mop_next        = MOP_PC_FETCH;
     end
 
     if (mop == MOP_RTS_LOAD) begin
@@ -1241,22 +1354,22 @@ always_comb begin
             y_load_alu  = 1;
         end
         if (cop == OP_ASL_ACC) begin
-            alu_mode    = ALU_A_SL;
+            alu_mode    = ALU_ADD_SL;
             a_load_alu  = 1;
             p_update.c  = 1;
         end
         if (cop == OP_LSR_ACC) begin
-            alu_mode    = ALU_A_SR;
+            alu_mode    = ALU_ADD_SR;
             a_load_alu  = 1;
             p_update.c  = 1;
         end
         if (cop == OP_ROL_ACC) begin
-            alu_mode    = ALU_A_SL_C;
+            alu_mode    = ALU_ADD_SL_C;
             a_load_alu  = 1;
             p_update.c  = 1;
         end
         if (cop == OP_ROR_ACC) begin
-            alu_mode    = ALU_A_SR_C;
+            alu_mode    = ALU_ADD_SR_C;
             a_load_alu  = 1;
             p_update.c  = 1;
         end

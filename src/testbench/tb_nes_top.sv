@@ -50,7 +50,14 @@ NES_TOP #(
     .BUTTON_IN       ('0)
 );
 
+initial begin
+    forever begin
+        #10ms;
+        $display("Simulation time: %0g ms", $realtime / 1.0ms);
+    end
+end
+
 initial
-    #35ms $finish(0);
+    #120ms $finish(0);
 
 endmodule

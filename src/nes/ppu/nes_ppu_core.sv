@@ -350,7 +350,7 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
     end else if (CLK_ENABLE_IN) begin
         if (vblank)
             rdr_valid <= 0;
-        else if (x == 250)
+        else if (x == 252)
             rdr_valid <= 0;
         else if (y != 239 && x == 332)
             rdr_valid <= 1;

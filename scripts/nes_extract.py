@@ -38,11 +38,17 @@ def main():
 
         # Extract PRG ROM
         with open(args.prg, "wb") as fprg:
-            fprg.write(conv_svhex(fin.read(prg_size)))
+            data = fin.read(prg_size)
+            if args.prg.endswith(".svhex"):
+                data = conv_svhex(data)
+            fprg.write(data)
 
         # Extract CHR ROM
         with open(args.chr, "wb") as fchr:
-            fchr.write(conv_svhex(fin.read(chr_size)))
+            data = fin.read(chr_size)
+            if args.chr.endswith(".svhex"):
+                data = conv_svhex(data)
+            fchr.write(data)
 
 if __name__ == '__main__':
     main()

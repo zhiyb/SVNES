@@ -110,9 +110,9 @@ CLOCK_GEN clk (
 
 
 // System AHB bus
-localparam SDRAM_PORTS = 4;
-localparam TFT_PORT    = 0;
-localparam TP_PORT     = 3;
+localparam SDRAM_PORTS  = 4;
+localparam TFT_PORT     = 0;
+localparam NES_PPU_PORT = 3;
 
 AHB_PKG::addr_t  [SDRAM_PORTS-1:0] haddr;
 AHB_PKG::burst_t [SDRAM_PORTS-1:0] hburst;
@@ -166,15 +166,15 @@ NES_DMA #(
 
     .HCLK            (clk_sys),
     .HRESET          (reset_sys),
-    .HADDR           (haddr[TP_PORT]),
-    .HBURST          (hburst[TP_PORT]),
-    .HSIZE           (hsize[TP_PORT]),
-    .HTRANS          (htrans[TP_PORT]),
-    .HWRITE          (hwrite[TP_PORT]),
-    .HWDATA          (hwdata[TP_PORT]),
-    .HRDATA          (hrdata[TP_PORT]),
-    .HREADY          (hready[TP_PORT]),
-    .HRESP           (hresp[TP_PORT])
+    .HADDR           (haddr[NES_PPU_PORT]),
+    .HBURST          (hburst[NES_PPU_PORT]),
+    .HSIZE           (hsize[NES_PPU_PORT]),
+    .HTRANS          (htrans[NES_PPU_PORT]),
+    .HWRITE          (hwrite[NES_PPU_PORT]),
+    .HWDATA          (hwdata[NES_PPU_PORT]),
+    .HRDATA          (hrdata[NES_PPU_PORT]),
+    .HREADY          (hready[NES_PPU_PORT]),
+    .HRESP           (hresp[NES_PPU_PORT])
 );
 
 
@@ -230,39 +230,6 @@ SDRAM #(
     .DRAM_CAS_N     (DRAM_CAS_N),
     .DRAM_WE_N      (DRAM_WE_N)
 );
-
-
-// // LCD test pattern generator
-// logic [7:0] btn_io_sys;
-// CDC_ASYNC #(
-//     .WIDTH (8)
-// ) tp_cdc (
-//     .CLK        (clk_sys),
-//     .RESET_IN   (reset_sys),
-//     .DATA_IN    (btn_io),
-//     .DATA_OUT   (btn_io_sys)
-// );
-
-// TEST_PATTERN_GEN #(
-//     .WIDTH     (800),
-//     .HEIGHT    (480),
-//     .BPP       (32),
-//     .BASE_ADDR (32'h08800000)
-// ) tp (
-//     .HCLK       (clk_sys),
-//     .HRESET     (reset_sys),
-//     .HADDR      (haddr[TP_PORT]),
-//     .HBURST     (hburst[TP_PORT]),
-//     .HSIZE      (hsize[TP_PORT]),
-//     .HTRANS     (htrans[TP_PORT]),
-//     .HWRITE     (hwrite[TP_PORT]),
-//     .HWDATA     (hwdata[TP_PORT]),
-//     .HRDATA     (hrdata[TP_PORT]),
-//     .HREADY     (hready[TP_PORT]),
-//     .HRESP      (hresp[TP_PORT]),
-
-//     .START_IN   (btn_io_sys)
-// );
 
 
 // TFT LCD
@@ -322,9 +289,8 @@ assign lcd_pwm = 1;
 // Debug LEDs
 always_comb begin
     LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
-    LED[7] = htrans[TP_PORT] != AHB_PKG::TRANS_IDLE;
+    LED[7] = htrans[NES_PPU_PORT] != AHB_PKG::TRANS_IDLE;
     LED[6] = htrans[TFT_PORT] != AHB_PKG::TRANS_IDLE;
-    LED ^= nes_debug;
 end
 
 logic [7:0] rgb_led_cnt;

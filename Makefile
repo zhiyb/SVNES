@@ -74,6 +74,10 @@ CLEAN_FILES	+= output_files/prg_rom.svhex output_files/chr_rom.svhex
 output_files/prg_rom.svhex output_files/chr_rom.svhex: $(NES_TEST)
 	./scripts/nes_extract.py $< output_files/prg_rom.svhex output_files/chr_rom.svhex
 
+CLEAN_FILES	+= output_files/prg_rom.bin output_files/chr_rom.bin
+output_files/prg_rom.bin output_files/chr_rom.bin: $(NES_TEST)
+	./scripts/nes_extract.py $< output_files/prg_rom.bin output_files/chr_rom.bin
+
 output_files/%.svhex: %/rom.bin | output_files
 	./scripts/rom_to_svhex.py $< $@
 
@@ -82,6 +86,9 @@ output_files: %:
 
 %/rom.bin %/rom.hex: %
 	cd $* && $(MAKE)
+
+%.hex: %.bin
+	srec_cat $< -binary -o $@ -intel
 
 clean-%:
 	cd $* && $(MAKE) clean
@@ -170,7 +177,8 @@ output_files/$(REV).fit.rpt: output_files/$(REV).map.rpt
 .PHONY: sof
 sof: output_files/$(REV).sof
 
-output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt $(ROMS:%=%/rom.hex)
+output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt \
+$(ROMS:%=%/rom.hex) output_files/prg_rom.hex output_files/chr_rom.hex
 	$(QASM) --read_settings_files=off --write_settings_files=off $(PRJ) -c $(REV)
 
 .PHONY: pgm

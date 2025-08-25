@@ -282,10 +282,10 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
             end
         end
         if (!vblank && x == 256) begin
-            v.x_coarse = t.x_coarse;
+            v.x_coarse <= t.x_coarse;
         end
         if (!vblank && y >= 261 && x >= 280 && x <= 304) begin
-            {v.y_coarse, v.y_fine} = {t.y_coarse, t.y_fine};
+            {v.y_coarse, v.y_fine} <= {t.y_coarse, t.y_fine};
         end
         if (cpu_write) begin
             if (reg_addr == PPU_CTRL)
@@ -345,10 +345,16 @@ end
 
 logic rdr_valid;
 always_ff @(posedge CLK, posedge RESET_IN) begin
-    if (RESET_IN)
+    if (RESET_IN) begin
         rdr_valid <= 0;
-    else if (y < 240)
-        rdr_valid <= x < 320;
+    end else if (CLK_ENABLE_IN) begin
+        if (vblank)
+            rdr_valid <= 0;
+        else if (x == 250)
+            rdr_valid <= 0;
+        else if (y != 239 && x == 332)
+            rdr_valid <= 1;
+    end
 end
 
 // Renderer

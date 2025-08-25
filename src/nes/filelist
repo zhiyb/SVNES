@@ -1,6 +1,8 @@
 nes_top.sv
 nes_cpu.sv
+nes_dma.sv
 ppu/nes_ppu.sv
 ppu/nes_ppu_core.sv
 ppu/nes_ppu_palette.sv
+ppu/nes_ppu_rgb.sv
 mapper/nes_mapper.sv

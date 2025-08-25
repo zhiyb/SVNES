@@ -6,6 +6,11 @@ module NES_PPU (
     // Interrupts
     output logic        INT_VBLANK_OUT,
 
+    // Pixel output
+    output logic        PIXEL_VBLANK_OUT,
+    output logic        PIXEL_VALID_OUT,
+    output logic [23:0] PIXEL_RGB_OUT,
+
     // CPU register bus
     input  logic [15:0] CPU_ADDR_IN,
     input  logic        CPU_READ_ENABLE_IN,
@@ -27,7 +32,6 @@ typedef logic [7:0] u8_t;
 u8_t ppu_read_data;
 logic ppu_read_enable, ppu_write_enable;
 
-logic       pixel_vblank;
 logic       pixel_valid;
 logic       pixel_sp;
 logic [1:0] pixel_plt;
@@ -40,7 +44,7 @@ NES_PPU_CORE core (
 
     .INT_VBLANK_OUT       (INT_VBLANK_OUT),
 
-    .PIXEL_VBLANK_OUT     (pixel_vblank),
+    .PIXEL_VBLANK_OUT     (PIXEL_VBLANK_OUT),
     .PIXEL_VALID_OUT      (pixel_valid),
     .PIXEL_SP_OUT         (pixel_sp),
     .PIXEL_PLT_OUT        (pixel_plt),
@@ -71,6 +75,10 @@ always_ff @(posedge CLK, posedge RESET_IN)
         palette_read_out <= palette_sel;
 
 u8_t palette_read_data;
+
+logic pixel_plt_valid;
+logic [5:0] pixel_plt_clr;
+
 NES_PPU_PALETTE palette (
     .CLK                 (CLK),
     .RESET_IN            (RESET_IN),
@@ -81,14 +89,23 @@ NES_PPU_PALETTE palette (
     .PIXEL_PLT_IN        (pixel_plt),
     .PIXEL_PTN_IN        (pixel_ptn),
 
-    .PIXEL_VALID_OUT     (),
-    .PIXEL_CLR_OUT       (),
+    .PIXEL_VALID_OUT     (pixel_plt_valid),
+    .PIXEL_CLR_OUT       (pixel_plt_clr),
 
     .PPU_ADDR_IN         (PPU_ADDR_OUT),
     .PPU_READ_ENABLE_IN  (ppu_read_enable & palette_sel),
     .PPU_READ_DATA_OUT   (palette_read_data),
     .PPU_WRITE_ENABLE_IN (ppu_write_enable & palette_sel),
     .PPU_WRITE_DATA_IN   (PPU_WRITE_DATA_OUT)
+);
+
+NES_PPU_RGB rgb (
+    .CLK             (CLK),
+    .RESET_IN        (RESET_IN),
+    .PIXEL_VALID_IN  (pixel_plt_valid),
+    .PIXEL_CLR_IN    (pixel_plt_clr),
+    .PIXEL_VALID_OUT (PIXEL_VALID_OUT),
+    .PIXEL_RGB_OUT   (PIXEL_RGB_OUT)
 );
 
 // External mapper

@@ -129,19 +129,52 @@ assign htrans[2] = AHB_PKG::TRANS_IDLE;
 
 
 // NES emulator
-logic [7:0] nes_debug;
+logic        nes_pixel_vblank;
+logic        nes_pixel_valid;
+logic [23:0] nes_pixel_rgb;
+logic [7:0]  nes_debug;
+
 NES_TOP #(
-    .BOOTROM_PRG ("prg_rom"),
-    .BOOTROM_CHR ("chr_rom")
+    .BOOTROM_PRG ("output_files/prg_rom"),
+    .BOOTROM_CHR ("output_files/chr_rom")
 ) nes (
-    .CLK_SYS         (clk_sys),
-    .RESET_SYS_IN    (reset_sys),
-    .CLK_EMU         (clk_emu),
-    .RESET_EMU_IN    (reset_emu),
-    .VIDEO_MODE_OUT  (video_mode),
-    .VIDEO_TOGGLE_IN (video_toggle),
-    .BUTTON_IN       (btn_io),
-    .DEBUG_OUT       (nes_debug)
+    .CLK_SYS          (clk_sys),
+    .RESET_SYS_IN     (reset_sys),
+    .CLK_EMU          (clk_emu),
+    .RESET_EMU_IN     (reset_emu),
+    .VIDEO_MODE_OUT   (video_mode),
+    .VIDEO_TOGGLE_IN  (video_toggle),
+    .PIXEL_VBLANK_OUT (nes_pixel_vblank),
+    .PIXEL_VALID_OUT  (nes_pixel_valid),
+    .PIXEL_RGB_OUT    (nes_pixel_rgb),
+    .BUTTON_IN        (btn_io),
+    .DEBUG_OUT        (nes_debug)
+);
+
+// NES screen to framebuffer
+NES_DMA #(
+    .BASE_ADDR (32'h08800000),
+    .H_STRIP   (800),
+    .X_OFFSET  (128),
+    .Y_OFFSET  (128)
+) nes_dma (
+    .CLK             (clk_emu),
+    .RESET_IN        (reset_emu),
+    .PIXEL_VBLANK_IN (nes_pixel_vblank),
+    .PIXEL_VALID_IN  (nes_pixel_valid),
+    .PIXEL_RGB_IN    (nes_pixel_rgb),
+
+    .HCLK            (clk_sys),
+    .HRESET          (reset_sys),
+    .HADDR           (haddr[TP_PORT]),
+    .HBURST          (hburst[TP_PORT]),
+    .HSIZE           (hsize[TP_PORT]),
+    .HTRANS          (htrans[TP_PORT]),
+    .HWRITE          (hwrite[TP_PORT]),
+    .HWDATA          (hwdata[TP_PORT]),
+    .HRDATA          (hrdata[TP_PORT]),
+    .HREADY          (hready[TP_PORT]),
+    .HRESP           (hresp[TP_PORT])
 );
 
 
@@ -199,37 +232,37 @@ SDRAM #(
 );
 
 
-// LCD test pattern generator
-logic [7:0] btn_io_sys;
-CDC_ASYNC #(
-    .WIDTH (8)
-) tp_cdc (
-    .CLK        (clk_sys),
-    .RESET_IN   (reset_sys),
-    .DATA_IN    (btn_io),
-    .DATA_OUT   (btn_io_sys)
-);
+// // LCD test pattern generator
+// logic [7:0] btn_io_sys;
+// CDC_ASYNC #(
+//     .WIDTH (8)
+// ) tp_cdc (
+//     .CLK        (clk_sys),
+//     .RESET_IN   (reset_sys),
+//     .DATA_IN    (btn_io),
+//     .DATA_OUT   (btn_io_sys)
+// );
 
-TEST_PATTERN_GEN #(
-    .WIDTH     (800),
-    .HEIGHT    (480),
-    .BPP       (32),
-    .BASE_ADDR (32'h08800000)
-) tp (
-    .HCLK       (clk_sys),
-    .HRESET     (reset_sys),
-    .HADDR      (haddr[TP_PORT]),
-    .HBURST     (hburst[TP_PORT]),
-    .HSIZE      (hsize[TP_PORT]),
-    .HTRANS     (htrans[TP_PORT]),
-    .HWRITE     (hwrite[TP_PORT]),
-    .HWDATA     (hwdata[TP_PORT]),
-    .HRDATA     (hrdata[TP_PORT]),
-    .HREADY     (hready[TP_PORT]),
-    .HRESP      (hresp[TP_PORT]),
+// TEST_PATTERN_GEN #(
+//     .WIDTH     (800),
+//     .HEIGHT    (480),
+//     .BPP       (32),
+//     .BASE_ADDR (32'h08800000)
+// ) tp (
+//     .HCLK       (clk_sys),
+//     .HRESET     (reset_sys),
+//     .HADDR      (haddr[TP_PORT]),
+//     .HBURST     (hburst[TP_PORT]),
+//     .HSIZE      (hsize[TP_PORT]),
+//     .HTRANS     (htrans[TP_PORT]),
+//     .HWRITE     (hwrite[TP_PORT]),
+//     .HWDATA     (hwdata[TP_PORT]),
+//     .HRDATA     (hrdata[TP_PORT]),
+//     .HREADY     (hready[TP_PORT]),
+//     .HRESP      (hresp[TP_PORT]),
 
-    .START_IN   (btn_io_sys)
-);
+//     .START_IN   (btn_io_sys)
+// );
 
 
 // TFT LCD

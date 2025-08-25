@@ -180,6 +180,8 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
     end
 end
 
+assign HRESP = AHB_PKG::RESP_OKAY;
+
 assign HRDATA = ahb_read_data;
 
 logic read_valid;

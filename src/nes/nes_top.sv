@@ -2,17 +2,22 @@ module NES_TOP #(
     parameter string BOOTROM_PRG,
     parameter string BOOTROM_CHR
 ) (
-    input  wire        CLK_SYS,
-    input  wire        RESET_SYS_IN,
+    input  wire         CLK_SYS,
+    input  wire         RESET_SYS_IN,
 
-    input  wire        CLK_EMU,
-    input  wire        RESET_EMU_IN,
+    input  wire         CLK_EMU,
+    input  wire         RESET_EMU_IN,
 
-    output logic [1:0] VIDEO_MODE_OUT,
-    input  logic       VIDEO_TOGGLE_IN,
+    output logic [1:0]  VIDEO_MODE_OUT,
+    input  logic        VIDEO_TOGGLE_IN,
 
-    input  logic [7:0] BUTTON_IN,
-    output logic [7:0] DEBUG_OUT
+    // Pixel output
+    output logic        PIXEL_VBLANK_OUT,
+    output logic        PIXEL_VALID_OUT,
+    output logic [23:0] PIXEL_RGB_OUT,
+
+    input  logic [7:0]  BUTTON_IN,
+    output logic [7:0]  DEBUG_OUT
 );
 
 typedef enum logic [1:0] {
@@ -115,6 +120,10 @@ NES_PPU ppu (
 
     .INT_VBLANK_OUT       (),
 
+    .PIXEL_VBLANK_OUT     (PIXEL_VBLANK_OUT),
+    .PIXEL_VALID_OUT      (PIXEL_VALID_OUT),
+    .PIXEL_RGB_OUT        (PIXEL_RGB_OUT),
+
     .CPU_ADDR_IN          (cpu_addr),
     .CPU_READ_ENABLE_IN   (ppu_cpu_sel & cpu_read),
     .CPU_READ_DATA_OUT    (ppu_cpu_read_data),
@@ -126,7 +135,6 @@ NES_PPU ppu (
     .PPU_READ_DATA_IN     (ppu_read_data),
     .PPU_WRITE_ENABLE_OUT (ppu_write),
     .PPU_WRITE_DATA_OUT   (ppu_write_data)
-
 );
 
 

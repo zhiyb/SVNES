@@ -2,7 +2,11 @@
 module RAM_SP #(
     parameter WIDTH,
     parameter DEPTH,
+`ifdef SIMULATION
     parameter string INIT = "",
+`else
+    parameter logic [256*8-1:0] INIT = "UNUSED",
+`endif
     parameter AW = $clog2(DEPTH)
 ) (
     input  wire               CLK,
@@ -21,7 +25,7 @@ data_t mem [DEPTH-1:0];
 
 initial begin
     if (INIT != "")
-        $readmemh({"output_files/", INIT, ".svhex"}, mem);
+        $readmemh({INIT, ".svhex"}, mem);
 end
 
 always_ff @(posedge CLK)
@@ -63,7 +67,7 @@ altsyncram	altsyncram_component (
 defparam
     altsyncram_component.clock_enable_input_a = "BYPASS",
     altsyncram_component.clock_enable_output_a = "BYPASS",
-    altsyncram_component.init_file = {INIT, "/rom.hex"},
+    altsyncram_component.init_file = {INIT, ".hex"},
     altsyncram_component.intended_device_family = "Cyclone IV E",
     altsyncram_component.lpm_hint = "ENABLE_RUNTIME_MOD=NO",
     altsyncram_component.lpm_type = "altsyncram",

@@ -113,6 +113,8 @@ NES_PPU ppu (
     .RESET_IN             (RESET_EMU_IN),
     .CLK_ENABLE_IN        (ppu_pulse),
 
+    .INT_VBLANK_OUT       (),
+
     .CPU_ADDR_IN          (cpu_addr),
     .CPU_READ_ENABLE_IN   (ppu_cpu_sel & cpu_read),
     .CPU_READ_DATA_OUT    (ppu_cpu_read_data),

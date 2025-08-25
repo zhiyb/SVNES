@@ -58,6 +58,6 @@ initial begin
 end
 
 initial
-    #120ms $finish(0);
+    #(150ms + 30ms) $finish(0);
 
 endmodule

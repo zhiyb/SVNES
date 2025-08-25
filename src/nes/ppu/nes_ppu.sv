@@ -4,6 +4,7 @@ module NES_PPU (
     input  logic        CLK_ENABLE_IN,
 
     // Interrupts
+    output logic        INT_VBLANK_OUT,
 
     // CPU register bus
     input  logic [15:0] CPU_ADDR_IN,
@@ -25,10 +26,25 @@ typedef logic [7:0] u8_t;
 // Rendering logic
 u8_t ppu_read_data;
 logic ppu_read_enable, ppu_write_enable;
+
+logic       pixel_vblank;
+logic       pixel_valid;
+logic       pixel_sp;
+logic [1:0] pixel_plt;
+logic [1:0] pixel_ptn;
+
 NES_PPU_CORE core (
     .CLK                  (CLK),
     .RESET_IN             (RESET_IN),
     .CLK_ENABLE_IN        (CLK_ENABLE_IN),
+
+    .INT_VBLANK_OUT       (INT_VBLANK_OUT),
+
+    .PIXEL_VBLANK_OUT     (pixel_vblank),
+    .PIXEL_VALID_OUT      (pixel_valid),
+    .PIXEL_SP_OUT         (pixel_sp),
+    .PIXEL_PLT_OUT        (pixel_plt),
+    .PIXEL_PTN_OUT        (pixel_ptn),
 
     .CPU_ADDR_IN          (CPU_ADDR_IN),
     .CPU_READ_ENABLE_IN   (CPU_READ_ENABLE_IN),
@@ -56,21 +72,29 @@ always_ff @(posedge CLK, posedge RESET_IN)
 
 u8_t palette_read_data;
 NES_PPU_PALETTE palette (
-    .CLK                  (CLK),
-    .RESET_IN             (RESET_IN),
-    .CLK_ENABLE_IN        (CLK_ENABLE_IN),
+    .CLK                 (CLK),
+    .RESET_IN            (RESET_IN),
+    .CLK_ENABLE_IN       (CLK_ENABLE_IN),
 
-    .PPU_ADDR_IN          (PPU_ADDR_OUT),
-    .PPU_READ_ENABLE_IN   (ppu_read_enable & palette_sel),
-    .PPU_READ_DATA_OUT    (palette_read_data),
-    .PPU_WRITE_ENABLE_IN  (ppu_write_enable & palette_sel),
-    .PPU_WRITE_DATA_IN    (PPU_WRITE_DATA_OUT)
+    .PIXEL_VALID_IN      (pixel_valid),
+    .PIXEL_SP_IN         (pixel_sp),
+    .PIXEL_PLT_IN        (pixel_plt),
+    .PIXEL_PTN_IN        (pixel_ptn),
+
+    .PIXEL_VALID_OUT     (),
+    .PIXEL_CLR_OUT       (),
+
+    .PPU_ADDR_IN         (PPU_ADDR_OUT),
+    .PPU_READ_ENABLE_IN  (ppu_read_enable & palette_sel),
+    .PPU_READ_DATA_OUT   (palette_read_data),
+    .PPU_WRITE_ENABLE_IN (ppu_write_enable & palette_sel),
+    .PPU_WRITE_DATA_IN   (PPU_WRITE_DATA_OUT)
 );
 
 // External mapper
 logic mapper_sel;
 assign mapper_sel = !palette_sel;
-assign PPU_READ_ENABLE_OUT  = ppu_read_enable & mapper_sel;
+assign PPU_READ_ENABLE_OUT  = ppu_read_enable;
 assign PPU_WRITE_ENABLE_OUT = ppu_write_enable & mapper_sel;
 
 // Read data mux

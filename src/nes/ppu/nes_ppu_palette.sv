@@ -3,6 +3,16 @@ module NES_PPU_PALETTE (
     input  wire         RESET_IN,
     input  logic        CLK_ENABLE_IN,
 
+    // Pixel input
+    input  logic        PIXEL_VALID_IN,
+    input  logic        PIXEL_SP_IN,
+    input  logic [1:0]  PIXEL_PLT_IN,
+    input  logic [1:0]  PIXEL_PTN_IN,
+
+    // Pixel output
+    output logic        PIXEL_VALID_OUT,
+    output logic [5:0]  PIXEL_CLR_OUT,
+
     // PPU data bus
     input  logic [13:0] PPU_ADDR_IN,
     input  logic        PPU_READ_ENABLE_IN,
@@ -50,6 +60,23 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
             PPU_READ_DATA_OUT <= data[ppu_palette].sp[ppu_entry];
         else
             PPU_READ_DATA_OUT <= data[ppu_palette].bg[ppu_entry];
+    end
+end
+
+always_ff @(posedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
+        PIXEL_VALID_OUT <= 0;
+        PIXEL_CLR_OUT <= 0;
+    end else if (CLK_ENABLE_IN) begin
+        PIXEL_VALID_OUT <= PIXEL_VALID_IN;
+        if (PIXEL_PTN_IN == 0)
+            PIXEL_CLR_OUT <= data[PIXEL_PLT_IN].clr0;
+        else if (PIXEL_SP_IN)
+            PIXEL_CLR_OUT <= data[PIXEL_PLT_IN].sp[PIXEL_PTN_IN];
+        else
+            PIXEL_CLR_OUT <= data[PIXEL_PLT_IN].bg[PIXEL_PTN_IN];
+    end else begin
+        PIXEL_VALID_OUT <= 0;
     end
 end
 

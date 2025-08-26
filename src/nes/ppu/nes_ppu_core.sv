@@ -338,36 +338,38 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
         if (rdr_fetch_read == 7)
             rdr_bg_ptn[15:8] <= PPU_READ_DATA_IN;
         rdr_latch <= 0;
-        if (rdr_fetch_read == 7)
+        if (rdr_fetch_read == 7 && ~vblank)
             rdr_latch <= ~sp_sel;
     end
 end
 
-logic rdr_valid;
-always_ff @(posedge CLK, posedge RESET_IN) begin
-    if (RESET_IN) begin
-        rdr_valid <= 0;
-    end else if (CLK_ENABLE_IN) begin
-        if (vblank)
-            rdr_valid <= 0;
-        else if (x == 252)
-            rdr_valid <= 0;
-        else if (y != 239 && x == 332)
-            rdr_valid <= 1;
-    end
-end
-
 // Renderer
+logic shift_out_mask;
+always_ff @(posedge CLK, posedge RESET_IN)
+    if (RESET_IN)
+        shift_out_mask <= 0;
+    else if (x >= 332)
+        shift_out_mask <= y >= 239 && y < 261;
+    else if (x >= 252)
+        shift_out_mask <= 1;
+
 logic [31:0] shift_at, shift_bg;
-logic [3:0] shift_cnt;
-logic shift_valid;
+logic [2:0] shift_cnt;
+logic shift_out;
 always_ff @(posedge CLK, posedge RESET_IN) begin
     if (RESET_IN) begin
         shift_at <= 0;
         shift_bg <= 0;
         shift_cnt <= 0;
-        shift_valid <= 1;
+        shift_out <= 0;
     end else if (CLK_ENABLE_IN) begin
+        if (shift_cnt == 0)
+            shift_out <= 0;
+        if (rdr_latch || shift_cnt != 0) begin
+            shift_at[31:2] <= shift_at[29:0];
+            shift_bg[31:2] <= shift_bg[29:0];
+            shift_cnt <= shift_cnt - 1;
+        end
         if (rdr_latch) begin
             int i;
             for (i = 0; i < 8; i++) begin
@@ -375,12 +377,8 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
                 shift_bg[i * 2 + 0] <= rdr_bg_ptn[i + 0];
                 shift_bg[i * 2 + 1] <= rdr_bg_ptn[i + 8];
             end
-            shift_cnt <= 8;
-            shift_valid <= rdr_valid;
-        end else if (shift_cnt != 0) begin
-            shift_at[31:2] <= shift_at[29:0];
-            shift_bg[31:2] <= shift_bg[29:0];
-            shift_cnt <= shift_cnt - 1;
+            shift_cnt <= 7;
+            shift_out <= ~shift_out_mask;
         end
     end
 end
@@ -388,10 +386,12 @@ end
 logic [1:0] pixel_ptn, pixel_at;
 logic pixel_sp;
 logic pixel_out;
-assign pixel_ptn = shift_bg[16 + (7 - x_fine) * 2 +: 2];    // TODO
-assign pixel_at = shift_at[16 + (7 - x_fine) * 2 +: 2];
-assign pixel_sp = 0;
-assign pixel_out = shift_valid && shift_cnt != 0;
+
+// TODO Sprite
+assign pixel_ptn = shift_bg[16 + (7 - x_fine) * 2 +: 2];
+assign pixel_at  = shift_at[16 + (7 - x_fine) * 2 +: 2];
+assign pixel_sp  = 0;
+assign pixel_out = shift_out;
 
 assign PIXEL_VBLANK_OUT = vblank;
 

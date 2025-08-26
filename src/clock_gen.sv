@@ -18,13 +18,61 @@ module CLOCK_GEN #(
     output logic PLL_LOCKED_OUT
 );
 
-wire reset_pll;
+logic reset_in;
+CDC_ASYNC reset_cdc (
+    .CLK        (CLK_50),
+    .RESET_IN   ('0),
+    .DATA_IN    (RESET_ASYNC_IN | ~PLL_LOCKED_OUT),
+    .DATA_OUT   (reset_in)
+);
+
+logic [5:0] reset_cnt;
+
+initial
+    reset_cnt <= '1;
+
+always @(posedge CLK_50)
+    if (reset_in)
+        reset_cnt <= '1;
+    else if (reset_cnt != 0)
+        reset_cnt <= reset_cnt - 1;
+
+wire reset_pulse;
+assign reset_pulse = ~reset_cnt[5];
+
+CDC_ASYNC reset_sys (
+    .CLK        (CLK_SYS),
+    .RESET_IN   ('0),
+    .DATA_IN    (reset_pulse),
+    .DATA_OUT   (RESET_SYS_OUT)
+);
+
+CDC_ASYNC reset_lcd (
+    .CLK        (CLK_TFT),
+    .RESET_IN   ('0),
+    .DATA_IN    (reset_pulse),
+    .DATA_OUT   (RESET_TFT_OUT)
+);
+
+CDC_ASYNC reset_emu (
+    .CLK        (CLK_EMU),
+    .RESET_IN   ('0),
+    .DATA_IN    (reset_pulse),
+    .DATA_OUT   (RESET_EMU_OUT)
+);
+
+CDC_ASYNC reset_50 (
+    .CLK        (CLK_50),
+    .RESET_IN   ('0),
+    .DATA_IN    (reset_pulse),
+    .DATA_OUT   (RESET_50_OUT)
+);
 
 `ifndef SIMULATION
 
 logic pll_sys_locked;
 pll_sys pll_sys (
-    .areset (reset_pll),
+    .areset ('0),
     .inclk0 (CLK_50),
     .c0     (CLK_SYS),
     .c1     (CLK_EMU),
@@ -35,26 +83,32 @@ pll_sys pll_sys (
 wire clk_ntsc_236, clk_pal_106;
 logic pll_video_locked;
 pll_video pll_video (
-    .areset (reset_pll),
+    .areset ('0),
     .inclk0 (CLK_50),
     .c0     (clk_ntsc_236),     // 236.25
     .c1     (clk_pal_106),      // 107.386360
     .locked (pll_video_locked)
 );
 
-CDC_ASYNC #(
-    .WIDTH  (1)
-) pll_locked_cdc (
+CDC_ASYNC pll_locked_cdc (
     .CLK        (CLK_50),
-    .RESET_IN   (reset_pll),
+    .RESET_IN   ('0),
     .DATA_IN    (pll_sys_locked | pll_video_locked),
     .DATA_OUT   (PLL_LOCKED_OUT)
 );
 
+logic reset_ntsc_236;
+CDC_ASYNC reset_ntsc_236_cdc (
+    .CLK        (CLK_50),
+    .RESET_IN   ('0),
+    .DATA_IN    (reset_pulse),
+    .DATA_OUT   (reset_ntsc_236)
+);
+
 logic toggle_ntsc_21;
 logic [3:0] div_ntsc_21_cnt;
-always_ff @(posedge clk_ntsc_236, posedge reset_pll) begin
-    if (reset_pll) begin
+always_ff @(posedge clk_ntsc_236, posedge reset_ntsc_236) begin
+    if (reset_ntsc_236) begin
         toggle_ntsc_21 <= 0;
         div_ntsc_21_cnt <= 0;
     end else if (div_ntsc_21_cnt == 0) begin
@@ -65,10 +119,18 @@ always_ff @(posedge clk_ntsc_236, posedge reset_pll) begin
     end
 end
 
+logic reset_pal_106;
+CDC_ASYNC reset_pal_106_cdc (
+    .CLK        (CLK_50),
+    .RESET_IN   ('0),
+    .DATA_IN    (reset_pulse),
+    .DATA_OUT   (reset_pal_106)
+);
+
 logic toggle_pal_27;
 logic [1:0] div_pal_27_cnt;
-always_ff @(posedge clk_pal_106, posedge reset_pll) begin
-    if (reset_pll) begin
+always_ff @(posedge clk_pal_106, posedge reset_pal_106) begin
+    if (reset_pal_106) begin
         toggle_pal_27 <= 0;
         div_pal_27_cnt <= 0;
     end else begin
@@ -138,95 +200,9 @@ CDC_ASYNC #(
     .WIDTH  (1)
 ) video_toggle_cdc (
     .CLK        (CLK_EMU),
-    .RESET_IN   (reset_pll),
+    .RESET_IN   (RESET_EMU_OUT),
     .DATA_IN    (video_toggle),
     .DATA_OUT   (VIDEO_TOGGLE_OUT)
-);
-
-// RESET_ASYNC_IN -> reset_50_pll
-
-wire reset_50_cnt;
-CDC_ASYNC #(
-    .WIDTH  (1)
-) cdc_50_cnt (
-    .CLK        (CLK_50),
-    .RESET_IN   (1'b0),
-    .DATA_IN    (RESET_ASYNC_IN),
-    .DATA_OUT   (reset_50_cnt)
-);
-
-logic [$clog2(RESET_50_CYCLES)-1:0] reset_cnt;
-always_ff @(posedge CLK_50, posedge reset_50_cnt)
-    if (reset_50_cnt)
-        reset_cnt <= RESET_50_CYCLES - 1;
-    else if (reset_cnt != 0)
-        reset_cnt <= reset_cnt - 1;
-
-logic reset_50_pll;
-assign reset_pll = reset_50_pll;
-always_ff @(posedge CLK_50, posedge reset_50_cnt)
-    if (reset_50_cnt)
-        reset_50_pll <= 0;
-    else
-        reset_50_pll <= reset_cnt != 0;
-
-// reset_50_pll -> RESET_50_OUT
-
-wire locked_50;
-CDC_ASYNC #(
-    .WIDTH  (1)
-) cdc_50_locked (
-    .CLK        (CLK_50),
-    .RESET_IN   (1'b0),
-    .DATA_IN    (PLL_LOCKED_OUT),
-    .DATA_OUT   (locked_50)
-);
-
-logic [$clog2(RESET_50_CYCLES)-1:0] reset_50_pll_cnt;
-always_ff @(posedge CLK_50, posedge reset_50_pll)
-    if (reset_50_pll)
-        reset_50_pll_cnt <= RESET_50_CYCLES - 1;
-    else if (reset_50_pll_cnt != 0)
-        reset_50_pll_cnt <= reset_50_pll_cnt - 1;
-
-logic reset_50;
-assign RESET_50_OUT = reset_50;
-always_ff @(posedge CLK_50, posedge reset_50_pll)
-    if (reset_50_pll)
-        reset_50 <= 0;
-    else if (reset_50_pll_cnt != 0 || ~locked_50)
-        reset_50 <= 1;
-    else
-        reset_50 <= 0;
-
-// RESET_50_OUT -> RESET_SYS_OUT
-CDC_ASYNC #(
-    .WIDTH  (1)
-) cdc_sys (
-    .CLK        (CLK_SYS),
-    .RESET_IN   (1'b0),
-    .DATA_IN    (RESET_50_OUT),
-    .DATA_OUT   (RESET_SYS_OUT)
-);
-
-// RESET_50_OUT -> RESET_EMU_OUT
-CDC_ASYNC #(
-    .WIDTH  (1)
-) cdc_emu (
-    .CLK        (CLK_EMU),
-    .RESET_IN   (1'b0),
-    .DATA_IN    (RESET_50_OUT),
-    .DATA_OUT   (RESET_EMU_OUT)
-);
-
-// RESET_50_OUT -> RESET_TFT_OUT
-CDC_ASYNC #(
-    .WIDTH  (1)
-) cdc_tft (
-    .CLK        (CLK_TFT),
-    .RESET_IN   (1'b0),
-    .DATA_IN    (RESET_50_OUT),
-    .DATA_OUT   (RESET_TFT_OUT)
 );
 
 endmodule

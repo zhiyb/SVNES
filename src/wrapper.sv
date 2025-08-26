@@ -91,7 +91,7 @@ logic video_toggle;         // Video master clock toggle
 logic pll_locked;
 
 CLOCK_GEN clk (
-    .RESET_ASYNC_IN (~KEY[0]),
+    .RESET_ASYNC_IN (KEY[0]),
 
     .CLK_50         (CLOCK_50),
     .RESET_50_OUT   (),

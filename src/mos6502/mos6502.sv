@@ -13,7 +13,10 @@ module MOS6502 (
     output logic        READ_ENABLE_OUT,
     input  logic [7:0]  READ_DATA_IN,
     output logic        WRITE_ENABLE_OUT,
-    output logic [7:0]  WRITE_DATA_OUT
+    output logic [7:0]  WRITE_DATA_OUT,
+
+    output logic        DEBUG_VALID_OUT,
+    output logic [7:0]  DEBUG_OUT
 );
 
 // CPU buses
@@ -668,20 +671,25 @@ always_ff @(posedge CLK, posedge RESET_IN)
     else if (CLK_ENABLE_IN)
         mop <= mop_next;
 
-`ifdef SIMULATION
 mop_t mop_last;
 logic mop_error;
-always_ff @(posedge CLK) begin
-    if (CLK_ENABLE_IN) begin
-        mop_last <= mop;
+always_ff @(posedge CLK, posedge RESET_IN) begin
+    if (RESET_IN) begin
+        mop_last <= MOP_NOP;
         mop_error <= 0;
+    end else if (CLK_ENABLE_IN) begin
+        mop_last <= mop;
+`ifdef SIMULATION
+        mop_error <= 0;
+`endif
         if (mop == MOP_PC_FETCH && mop_last == MOP_PC_FETCH) begin
             mop_error <= 1;
+`ifdef SIMULATION
             $error("Unknown instruction");
+`endif
         end
     end
 end
-`endif
 
 // Current op being processed
 op_t cop;
@@ -695,6 +703,9 @@ always_ff @(posedge CLK, posedge RESET_IN) begin
             cop <= OP_NOP;
     end
 end
+
+assign DEBUG_VALID_OUT = CLK_ENABLE_IN && mop == MOP_PC_FETCH && mop_last == MOP_PC_FETCH;
+assign DEBUG_OUT = cop;
 
 always_comb begin
     int_reset_clear = 0;

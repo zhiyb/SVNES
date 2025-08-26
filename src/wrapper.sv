@@ -132,6 +132,8 @@ assign htrans[2] = AHB_PKG::TRANS_IDLE;
 logic        nes_pixel_vblank;
 logic        nes_pixel_valid;
 logic [23:0] nes_pixel_rgb;
+
+logic        nes_debug_valid;
 logic [7:0]  nes_debug;
 
 NES_TOP #(
@@ -148,6 +150,7 @@ NES_TOP #(
     .PIXEL_VALID_OUT  (nes_pixel_valid),
     .PIXEL_RGB_OUT    (nes_pixel_rgb),
     .BUTTON_IN        (btn_io),
+    .DEBUG_VALID_OUT  (nes_debug_valid),
     .DEBUG_OUT        (nes_debug)
 );
 
@@ -287,10 +290,58 @@ assign lcd_pwm = 1;
 
 
 // Debug LEDs
+
+logic [7:0] debug_out;
+logic debug_req, debug_ack;
+FIFO_SYNC #(
+    .WIDTH (8),
+    .DEPTH (64)
+) debug_fifo (
+    .CLK                (clk_emu),
+    .RESET_IN           (reset_emu),
+    .WRITE_DATA_IN      (nes_debug),
+    .WRITE_REQ_IN       (nes_debug_valid),
+    .WRITE_ACK_OUT      (),
+    .WRITE_THRES_OUT    (),
+    .READ_DATA_OUT      (debug_out),
+    .READ_REQ_OUT       (debug_req),
+    .READ_ACK_IN        (debug_ack),
+    .READ_THRES_OUT     ()
+);
+
+logic [7:0] debug_btn;
+CDC_ASYNC #(
+    .WIDTH (8)
+) debug_cdc (
+    .CLK        (clk_emu),
+    .RESET_IN   (reset_emu),
+    .DATA_IN    (btn_io),
+    .DATA_OUT   (debug_btn)
+);
+
+logic debug_toggle;
+always_ff @(posedge clk_emu, posedge reset_emu)
+    if (reset_emu)
+        debug_toggle <= 0;
+    else if (debug_btn[0])
+        debug_toggle <= 1;
+    else if (debug_btn[1])
+        debug_toggle <= 0;
+
+logic debug_toggle_last;
+always_ff @(posedge clk_emu, posedge reset_emu)
+    if (reset_emu)
+        debug_toggle_last <= 0;
+    else
+        debug_toggle_last <= debug_toggle;
+
+assign debug_ack = debug_toggle & ~debug_toggle_last;
+
 always_comb begin
     LED = 8'({tft_underflow, ~sdram_init_done, ~pll_locked});
     LED[7] = htrans[NES_PPU_PORT] != AHB_PKG::TRANS_IDLE;
     LED[6] = htrans[TFT_PORT] != AHB_PKG::TRANS_IDLE;
+    LED = debug_out;
 end
 
 logic [7:0] rgb_led_cnt;
@@ -302,6 +353,7 @@ begin
     rgb_led_pwm <= rgb_led_cnt < 10;
 end
 
-assign rgb_led = (3*5)'({2{^btn_disp, btn_io}}) & {15{rgb_led_pwm}};
+// assign rgb_led = (3*5)'({2{^btn_disp, btn_io}}) & {15{rgb_led_pwm}};
+assign rgb_led = {debug_out, debug_ack, debug_req};
 
 endmodule

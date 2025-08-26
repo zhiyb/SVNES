@@ -1,4 +1,5 @@
 Makefile_local
+*.nes
 
 sim_lib/
 sim/

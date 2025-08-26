@@ -17,6 +17,8 @@ module NES_TOP #(
     output logic [23:0] PIXEL_RGB_OUT,
 
     input  logic [7:0]  BUTTON_IN,
+
+    output logic        DEBUG_VALID_OUT,
     output logic [7:0]  DEBUG_OUT
 );
 
@@ -90,7 +92,10 @@ NES_CPU cpu (
     .READ_ENABLE_OUT  (cpu_read),
     .READ_DATA_IN     (cpu_read_data),
     .WRITE_ENABLE_OUT (cpu_write),
-    .WRITE_DATA_OUT   (cpu_write_data)
+    .WRITE_DATA_OUT   (cpu_write_data),
+
+    .DEBUG_VALID_OUT  (DEBUG_VALID_OUT),
+    .DEBUG_OUT        (DEBUG_OUT)
 );
 
 
@@ -113,7 +118,11 @@ always_ff @(posedge CLK_EMU, posedge RESET_EMU_IN)
     else if (cpu_read)
         ppu_cpu_read_out <= ppu_cpu_sel;
 
+`ifdef SIMULATIONx
+NES_PPU_MODEL ppu (
+`else
 NES_PPU ppu (
+`endif
     .CLK                  (CLK_EMU),
     .RESET_IN             (RESET_EMU_IN),
     .CLK_ENABLE_IN        (ppu_pulse),
@@ -174,6 +183,6 @@ end
 
 
 // To keep synthesis not optimising away everything
-assign DEBUG_OUT = cpu_addr[15:8] ^ cpu_addr[7:0] ^ {6'b0, cpu_read, cpu_write};
+// assign DEBUG_OUT = cpu_addr[15:8] ^ cpu_addr[7:0] ^ {6'b0, cpu_read, cpu_write};
 
 endmodule

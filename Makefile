@@ -66,16 +66,25 @@ test: wlf
 
 # Build ROM content
 
-sim/tb_nes_top.wlf: output_files/bootrom.svhex output_files/prg_rom.svhex
+sim/tb_nes_top.wlf: output_files/bootrom.svhex output_files/prg_rom.svhex output_files/chr_rom.svhex
+gui_sim: output_files/bootrom.svhex output_files/prg_rom.svhex output_files/chr_rom.svhex
 
-NES_TEST	?= nes-test-roms/instr_test-v5/rom_singles/01-basics.nes
+# NES_TEST	?= nes-test-roms/instr_test-v5/rom_singles/01-basics.nes
+# NES_TEST	?= nes-test-roms/instr_test-v5/rom_singles/02-implied.nes
+# NES_TEST	?= nes-test-roms/instr_test-v5/rom_singles/03-immediate.nes
+NES_TEST	?= nes-test-roms/instr_test-v5/rom_singles/04-zero_page.nes
+# NES_TEST	?= smb.nes
+
+# 04-zero_page.nes  07-abs_xy.nes  10-branches.nes  13-rts.nes  16-special.nes
+# 05-zp_xy.nes      08-ind_x.nes   11-stack.nes     14-rti.nes
+# 06-absolute.nes   09-ind_y.nes   12-jmp_jsr.nes   15-brk.nes
 
 CLEAN_FILES	+= output_files/prg_rom.svhex output_files/chr_rom.svhex
-output_files/prg_rom.svhex output_files/chr_rom.svhex: $(NES_TEST)
+output_files/prg_rom.svhex output_files/chr_rom.svhex: $(NES_TEST) | output_files
 	./scripts/nes_extract.py $< output_files/prg_rom.svhex output_files/chr_rom.svhex
 
 CLEAN_FILES	+= output_files/prg_rom.bin output_files/chr_rom.bin
-output_files/prg_rom.bin output_files/chr_rom.bin: $(NES_TEST)
+output_files/prg_rom.bin output_files/chr_rom.bin: $(NES_TEST) | output_files
 	./scripts/nes_extract.py $< output_files/prg_rom.bin output_files/chr_rom.bin
 
 output_files/%.svhex: %/rom.bin | output_files
@@ -168,7 +177,8 @@ CLEAN_DIRS	+= $(SIM_LIB)
 # Quartus FPGA synthesis
 CLEAN_DIRS	+= db incremental_db output_files
 
-output_files/$(REV).map.rpt: filelist.qsf $(SOURCES)
+output_files/$(REV).map.rpt: filelist.qsf $(SOURCES) \
+$(ROMS:%=%/rom.hex) output_files/prg_rom.hex output_files/chr_rom.hex
 	$(QMAP) --read_settings_files=on --write_settings_files=off $(PRJ) -c $(REV)
 
 output_files/$(REV).fit.rpt: output_files/$(REV).map.rpt
@@ -177,8 +187,7 @@ output_files/$(REV).fit.rpt: output_files/$(REV).map.rpt
 .PHONY: sof
 sof: output_files/$(REV).sof
 
-output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt \
-$(ROMS:%=%/rom.hex) output_files/prg_rom.hex output_files/chr_rom.hex
+output_files/$(REV).asm.rpt output_files/$(REV).sof: output_files/$(REV).fit.rpt
 	$(QASM) --read_settings_files=off --write_settings_files=off $(PRJ) -c $(REV)
 
 .PHONY: pgm

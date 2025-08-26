@@ -13,7 +13,10 @@ module NES_CPU (
     output logic        READ_ENABLE_OUT,
     input  logic [7:0]  READ_DATA_IN,
     output logic        WRITE_ENABLE_OUT,
-    output logic [7:0]  WRITE_DATA_OUT
+    output logic [7:0]  WRITE_DATA_OUT,
+
+    output logic        DEBUG_VALID_OUT,
+    output logic [7:0]  DEBUG_OUT
 );
 
 // CPU system bus
@@ -90,7 +93,10 @@ MOS6502 cpu (
     .READ_ENABLE_OUT  (sys_read),
     .READ_DATA_IN     (sys_read_data),
     .WRITE_ENABLE_OUT (sys_write),
-    .WRITE_DATA_OUT   (sys_write_data)
+    .WRITE_DATA_OUT   (sys_write_data),
+
+    .DEBUG_VALID_OUT  (DEBUG_VALID_OUT),
+    .DEBUG_OUT        (DEBUG_OUT)
 );
 
 endmodule
